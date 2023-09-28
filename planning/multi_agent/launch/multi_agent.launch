@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<launch>
+    <arg name="node_name_launcher" default="auv_launch_node"/>   
+    <arg name="num_auvs" default="1"/> 
+    <arg name="mode" default="sim"/>
+	<arg name="dataset" default="lost_targets"/>
+    <arg name="vehicle_model" default="hugin"/>
+    <arg name="spawn_separation" default="10"/>
+    <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
+
+    
+
+    <node type="auv_launcher.py" pkg="multi_agent" name="$(arg node_name_launcher)" output="screen">
+        <param name="num_auvs" value="$(arg num_auvs)"/>
+        <param name="mode" value="$(arg mode)"/>
+        <param name="dataset" value="$(arg dataset)"/>
+        <param name="auv_launch_file" value="$(find auv_model)/launch/auv_environment.launch"/>    
+        <param name="vehicle_model" value="$(arg vehicle_model)"/> 
+        <param name="spawn_separation" value="$(arg spawn_separation)"/> 
+
+
+      
+    </node>
+</launch>
