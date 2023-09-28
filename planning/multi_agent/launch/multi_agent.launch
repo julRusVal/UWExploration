@@ -1,24 +1,40 @@
 <?xml version="1.0" ?>
 <launch>
-    <arg name="node_name_launcher" default="auv_launch_node"/>   
+    <!-- Common args for all nodes -->
     <arg name="num_auvs" default="1"/> 
-    <arg name="mode" default="sim"/>
-	<arg name="dataset" default="lost_targets"/>
     <arg name="vehicle_model" default="hugin"/>
+    
+    <!-- Specific args for spawner -->
     <arg name="spawn_separation" default="10"/>
+    <arg name="node_name_spawner" default="auv_spawn_node"/>
+    <arg name="dataset" default="lost_targets"/> 
+    <arg name="mode" default="sim"/>
+
+    <!-- Specific args for navigation -->
+    <arg name="manual_control" default="false"/>
+    <arg name="node_name_navigation" default="auv_navigation_node"/>
+
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
 
-    
+    <!-- Global params needed by all nodes -->
     <param name="num_auvs" value="$(arg num_auvs)"/>
-    
-    <node type="auv_launcher.py" pkg="multi_agent" name="$(arg node_name_launcher)" output="screen">
+    <param name="vehicle_model" value="$(arg vehicle_model)"/> 
+
+    <!-- Spawn AUVs -->
+    <node type="auv_spawner.py" pkg="multi_agent" name="$(arg node_name_spawner)" output="screen">
         <param name="mode" value="$(arg mode)"/>
         <param name="dataset" value="$(arg dataset)"/>
         <param name="auv_launch_file" value="$(find auv_model)/launch/auv_environment.launch"/>    
-        <param name="vehicle_model" value="$(arg vehicle_model)"/> 
+        <!-- <param name="vehicle_model" value="$(arg vehicle_model)"/>  -->
         <param name="spawn_separation" value="$(arg spawn_separation)"/> 
-
-
-      
     </node>
+
+    <!-- Enable navigation for AUVs -->
+    <node type="auv_navigation.py" pkg="multi_agent" name="$(arg node_name_navigation)" output="screen">
+        <param name="navigation_launch_file" value="$(find basic_navigation)/launch/basic_mission.launch"/>    
+        
+        <param name="manual_control" value="$(arg manual_control)"/> 
+        
+    </node>
+
 </launch>
