@@ -30,8 +30,8 @@ install/*
 *.pth
 
 
-# RVIZ
-*.rviz
+# # RVIZ
+# *.rviz
 
 *.code*
 .vscode/*
