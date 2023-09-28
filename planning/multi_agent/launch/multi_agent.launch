@@ -19,6 +19,10 @@
     <arg name="manual_control" default="false"/>
     <arg name="node_name_navigation" default="auv_navigation_node"/>
 
+    <!-- Specific args for path relayer -->
+    <arg name="path_array_topic" default="/multi_agent/path_array"/>
+
+
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
 
     <!-- Global params needed by all nodes -->
@@ -38,6 +42,11 @@
     <node type="auv_navigation.py" pkg="multi_agent" name="$(arg node_name_navigation)" output="screen">
         <param name="navigation_launch_file" value="$(find basic_navigation)/launch/basic_mission.launch"/>    
         
+        <param name="manual_control" value="$(arg manual_control)"/> 
+        
+    </node>
+
+    <node type="auv_navigation.py" pkg="multi_agent" name="$(arg node_name_navigation)" output="screen">
         <param name="manual_control" value="$(arg manual_control)"/> 
         
     </node>
