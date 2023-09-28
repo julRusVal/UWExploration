@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <launch>
-    <!-- Common args for all nodes -->
+    <!-- Common args for multiple nodes -->
+    <arg name="path_array_topic" default="/multi_agent/path_array"/>
     <!-- Choose number of AUVs to spawn -->
     <arg name="num_auvs" default="1"/> 
     <arg name="vehicle_model" default="hugin"/>
@@ -20,14 +21,19 @@
     <arg name="node_name_navigation" default="auv_navigation_node"/>
 
     <!-- Specific args for path relayer -->
-    <arg name="path_array_topic" default="/multi_agent/path_array"/>
+    <arg name="node_name_relay" default="path_relay_node"/>
+
+    <!-- Specific args for rviz helper -->
+    <arg name="node_name_helper" default="rviz_helper_node"/>
+    <arg name="rviz_helper" default="false"/>
 
 
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
 
-    <!-- Global params needed by all nodes -->
+    <!-- Global params needed by multiple nodes -->
     <param name="num_auvs" value="$(arg num_auvs)"/>
     <param name="vehicle_model" value="$(arg vehicle_model)"/> 
+    <param name="path_array_topic" value="$(arg path_array_topic)"/>
 
     <!-- Spawn AUVs -->
     <node type="auv_spawner.py" pkg="multi_agent" name="$(arg node_name_spawner)" output="screen">
@@ -46,9 +52,14 @@
         
     </node>
 
-    <node type="auv_navigation.py" pkg="multi_agent" name="$(arg node_name_navigation)" output="screen">
-        <param name="manual_control" value="$(arg manual_control)"/> 
-        
+    <!-- Relay paths to all AUVs -->
+    <node type="path_relay.py" pkg="multi_agent" name="$(arg node_name_relay)" output="screen">
     </node>
+
+     <!-- Rviz helper  -->
+     <group if="$(arg rviz_helper)">
+        <node type="rviz_wp_helper.py" pkg="multi_agent" name="$(arg node_name_helper)" output="screen">
+        </node>
+    </group>
 
 </launch>
