@@ -1,16 +1,21 @@
 <?xml version="1.0" ?>
 <launch>
     <!-- Common args for all nodes -->
+    <!-- Choose number of AUVs to spawn -->
     <arg name="num_auvs" default="1"/> 
     <arg name="vehicle_model" default="hugin"/>
     
     <!-- Specific args for spawner -->
+    <!-- Choose spawn separation distance in meters along y-axis -->
     <arg name="spawn_separation" default="10"/>
     <arg name="node_name_spawner" default="auv_spawn_node"/>
+    <!-- Choose dataset to use -->
     <arg name="dataset" default="lost_targets"/> 
+    <!-- Choose mode ( eg 'gt','sim') -->
     <arg name="mode" default="sim"/>
 
     <!-- Specific args for navigation -->
+    <!-- Choose manual control or waypoint following -->
     <arg name="manual_control" default="false"/>
     <arg name="node_name_navigation" default="auv_navigation_node"/>
 
