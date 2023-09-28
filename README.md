@@ -108,16 +108,38 @@ roslaunch basic_navigation basic_mission.launch manual_control:=False namespace:
 ```
 And add and publish waypoints through RVIZ as in their tutorial.
 
-### Manual navigation with multiple AUVs
-Example of multi-agent mission with 2 AUVs:
+### Multiple AUVs
+#### Manual navigation with multiple AUVs
+Example of multi-agent mission with 5 AUVs:
+
 ```
-roslaunch auv_model auv_environment.launch namespace:=hugin_0
-roslaunch auv_model auv_environment.launch namespace:=hugin_1 y:=10
+roslaunch multi_agent multi_agent.launch num_auvs:=5 manual_control:=true
+```
+
+- num_auvs: number of auvs to spawn
+- manual_control: if true, opens a pygame-window for each AUV to control it manually.
+
+#### Waypoint navigation with multiple AUVs
+Example of multi-agent mission with 5 AUVs:
+
+```
+roslaunch multi_agent multi_agent.launch num_auvs:=5 rviz_helper:=true
+```
+
+- num_auvs: number of auvs to spawn
+- rviz_helper: if true, enables the "2D Nav Goal" tool in rviz to set waypoint to which all spawned AUVs will navigate to.  
+
+#### External launch files 
+Choosing either waypoint navigation or manual control above, also run:
+
+```
 roslaunch auv_model auv_env_aux.launch
-roslaunch basic_navigation basic_mission.launch manual_control:=True namespace:=hugin_0
-roslaunch basic_navigation basic_mission.launch manual_control:=True namespace:=hugin_1
 ```
-*WP navigation isn't implemented yet for several AUVs and currently you'll need a manual controller per AUV, although this is easy to modify in the launch if required.
+
+```
+rviz
+```
+
 
 ### Particle filter localization with an AUV
 Replay the AUV bathymetric survey with a PF running on a mesh or a Gaussian process created from the bathymetry.
