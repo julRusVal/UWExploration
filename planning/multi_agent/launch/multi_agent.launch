@@ -9,9 +9,9 @@
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
 
     
-
+    <param name="num_auvs" value="$(arg num_auvs)"/>
+    
     <node type="auv_launcher.py" pkg="multi_agent" name="$(arg node_name_launcher)" output="screen">
-        <param name="num_auvs" value="$(arg num_auvs)"/>
         <param name="mode" value="$(arg mode)"/>
         <param name="dataset" value="$(arg dataset)"/>
         <param name="auv_launch_file" value="$(find auv_model)/launch/auv_environment.launch"/>    
