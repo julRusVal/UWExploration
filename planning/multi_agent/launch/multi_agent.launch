@@ -27,6 +27,19 @@
     <arg name="node_name_helper" default="rviz_helper_node"/>
     <arg name="rviz_helper" default="false"/>
 
+    <!-- Specific args for path pattern generator -->
+    <arg name="node_name_pattern" default="path_pattern_generator_node"/>
+    <arg name="swath" default="50"/>
+    <arg name="speed" default="1.0"/>
+    <arg name="straight_slack" default="1.0"/>
+    <arg name="overlap_between_rows" default="0.0"/>
+    <arg name="overlap_between_lanes" default="0.0"/>
+    <arg name="double_sided" default="false"/>
+    <arg name="center_x" default="false"/>
+    <arg name="center_y" default="false"/>
+    <arg name="exiting_line" default="true"/>
+
+
 
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
 
@@ -34,6 +47,8 @@
     <param name="num_auvs" value="$(arg num_auvs)"/>
     <param name="vehicle_model" value="$(arg vehicle_model)"/> 
     <param name="path_array_topic" value="$(arg path_array_topic)"/>
+    <param name="spawn_separation" value="$(arg spawn_separation)"/> 
+
 
     <!-- Spawn AUVs -->
     <node type="auv_spawner.py" pkg="multi_agent" name="$(arg node_name_spawner)" output="screen">
@@ -41,7 +56,7 @@
         <param name="dataset" value="$(arg dataset)"/>
         <param name="auv_launch_file" value="$(find auv_model)/launch/auv_environment.launch"/>    
         <!-- <param name="vehicle_model" value="$(arg vehicle_model)"/>  -->
-        <param name="spawn_separation" value="$(arg spawn_separation)"/> 
+        <!-- <param name="spawn_separation" value="$(arg spawn_separation)"/>  -->
     </node>
 
     <!-- Enable navigation for AUVs -->
@@ -56,9 +71,25 @@
     <node type="path_relay.py" pkg="multi_agent" name="$(arg node_name_relay)" output="screen">
     </node>
 
-     <!-- Rviz helper  -->
-     <group if="$(arg rviz_helper)">
+    <!-- Rviz helper  -->
+    <group if="$(arg rviz_helper)">
         <node type="rviz_wp_helper.py" pkg="multi_agent" name="$(arg node_name_helper)" output="screen">
+        </node>
+    </group>
+
+    
+    <group unless="$(arg rviz_helper)">
+    <!-- Generate lawn mower pattern -->
+        <node type="path_pattern_generator.py" pkg="multi_agent" name="$(arg node_name_pattern)" output="screen">
+        <param name="swath" type="double" value="$(arg swath)"/>
+        <param name="speed" type="double" value="$(arg speed)"/>
+        <param name="straight_slack" type="double" value="$(arg straight_slack)"/>
+        <param name="overlap_between_rows" type="double" value="$(arg overlap_between_rows)"/>
+        <param name="overlap_between_lanes" type="double" value="$(arg overlap_between_lanes)"/>
+        <param name="double_sided" type="bool" value="$(arg double_sided)"/>
+        <param name="center_x" type="bool" value="$(arg center_x)"/>
+        <param name="center_y" type="bool" value="$(arg center_y)"/>
+        <param name="exiting_line" type="bool" value="$(arg exiting_line)"/>
         </node>
     </group>
 

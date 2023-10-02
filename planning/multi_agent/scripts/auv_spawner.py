@@ -10,7 +10,7 @@ class AUVSpawner():
         self.mode = rospy.get_param('~mode','sim')
         self.dataset = rospy.get_param('~dataset','lost_targets')
         self.vehicle_model = rospy.get_param('vehicle_model','hugin')
-        self.spawn_sep = rospy.get_param('~spawn_separation',10)
+        self.spawn_sep = rospy.get_param('spawn_separation',10)
         rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~auv_launch_file',rospack.get_path('auv_model') + '/launch/auv_environment.launch')
         
