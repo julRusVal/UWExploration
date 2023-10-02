@@ -77,9 +77,8 @@
         </node>
     </group>
 
-    
-    <group unless="$(arg rviz_helper)">
     <!-- Generate lawn mower pattern -->
+    <!-- <group unless="$(arg rviz_helper)">
         <node type="path_pattern_generator.py" pkg="multi_agent" name="$(arg node_name_pattern)" output="screen">
         <param name="swath" type="double" value="$(arg swath)"/>
         <param name="speed" type="double" value="$(arg speed)"/>
@@ -91,6 +90,6 @@
         <param name="center_y" type="bool" value="$(arg center_y)"/>
         <param name="exiting_line" type="bool" value="$(arg exiting_line)"/>
         </node>
-    </group>
+    </group> -->
 
 </launch>
