@@ -58,6 +58,8 @@ class RvizHelper():
             self.paths.path_array.append(agent)
         rospy.loginfo("Publishing AgentPathArray")
         self.path_array_pub.publish(self.paths)
+        #Reset
+        self.paths = AgentPathArray()
         self.goal = None
 
 
