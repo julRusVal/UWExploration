@@ -28,7 +28,10 @@ class AUVSpawner():
         for i in range(self.num_auvs):
             rospy.loginfo(str("Spawning AUV: "+ str(i)))
             namespace = self.vehicle_model + '_' + str(i)
-
+            
+            #TODO: 
+            #1. Spawn auvs in correct position and orientation for the first wps they'll be given (i.e. the first wps in the mission plan) 
+            #2. Make turns tighter, such that auvs don't make large loops when turning
             
 
 
