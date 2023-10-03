@@ -11,6 +11,9 @@ import tf2_ros
 from tf2_geometry_msgs import do_transform_pose
 import matplotlib.pyplot as plt
 
+import tf.transformations
+from geometry_msgs.msg import Quaternion
+
 class PatternGenerator():
     def __init__(self):
         # Initialize the TF2 buffer and listener
@@ -108,7 +111,14 @@ class PatternGenerator():
                 pose_stamped.pose.position.x = waypoint.pose[0]
                 pose_stamped.pose.position.y = waypoint.pose[1]
                 heading = waypoint.pose[2]
-                #TODO: Convert heading to quaternion and add to pose_stamped
+                #Convert heading to quaternion and add to pose_stamped
+                # Convert heading to quaternion
+                quaternion = tf.transformations.quaternion_from_euler(0, 0, heading)
+
+                # Add the quaternion to pose_stamped
+                pose_stamped.pose.orientation = Quaternion(*quaternion)
+
+            
                 path_msg.poses.append(pose_stamped)
 
             # Publish the Path message for this agent
