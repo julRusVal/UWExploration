@@ -4,6 +4,7 @@ from subprocess import call, Popen
 import numpy as np
 import rospkg
 import math
+import pdb
 
 class AUVSpawner():
     def __init__(self):
@@ -18,18 +19,20 @@ class AUVSpawner():
 
         rospy.loginfo(str("Preparing to spawn '%s' AUVs..." % str(self.num_auvs)))
 
+        #spawn_points should be an array consisting of evenly spaced points along the x-axis with 2*self.spawn_sep spacing
+        # spacing = 2*self.spawn_sep
+        # elements = self.num_auvs-2
+        # spawn_points = np.linspace(0, self.num_auvs*self.spawn_sep, elements, endpoint=True)
+        # print(spawn_points)
+        
         for i in range(self.num_auvs):
             rospy.loginfo(str("Spawning AUV: "+ str(i)))
             namespace = self.vehicle_model + '_' + str(i)
-            
-            if i == 0:
-                x = 0
-            elif i%2 != 0:
-                x = i*self.spawn_sep
-            else:
-                x = (i-1)*self.spawn_sep
 
-            # x = i*self.spawn_sep
+            
+
+
+            x = i*self.spawn_sep
 
             proc = Popen(["roslaunch", self.launch_file, 
                           "mode:=" + self.mode,
