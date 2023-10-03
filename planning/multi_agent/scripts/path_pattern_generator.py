@@ -113,7 +113,7 @@ class PatternGenerator():
 
             # Publish the Path message for this agent
             agent_path = AgentPath()
-            agent_path.agent_id = agent_idx  # Set a unique ID for each agent
+            agent_path.agent_id = (self.num_agents-1) - agent_idx  # Reverse the order of the generated paths to match the order of the spawned AUVs
             agent_path.path = path_msg
             self.paths.path_array.append(agent_path)
 
