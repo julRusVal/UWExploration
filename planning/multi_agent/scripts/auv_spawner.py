@@ -21,7 +21,16 @@ class AUVSpawner():
         for i in range(self.num_auvs):
             rospy.loginfo(str("Spawning AUV: "+ str(i)))
             namespace = self.vehicle_model + '_' + str(i)
-            x = i*self.spawn_sep
+            
+            if i == 0:
+                x = 0
+            elif i%2 != 0:
+                x = i*self.spawn_sep
+            else:
+                x = (i-1)*self.spawn_sep
+
+            # x = i*self.spawn_sep
+
             proc = Popen(["roslaunch", self.launch_file, 
                           "mode:=" + self.mode,
                           "dataset:=" + self.dataset,
