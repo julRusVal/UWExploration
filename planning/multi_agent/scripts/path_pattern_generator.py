@@ -9,6 +9,7 @@ from geometry_msgs.msg import PoseStamped, Pose
 from coop_cov import mission_plan
 import tf2_ros
 from tf2_geometry_msgs import do_transform_pose
+import matplotlib.pyplot as plt
 
 class PatternGenerator():
     def __init__(self):
@@ -89,7 +90,10 @@ class PatternGenerator():
         center_y=self.center_y,
         exiting_line=self.exiting_line
         )
-        print(timed_paths_list)
+
+        # Visualization
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
 
         # Publish waypoints as Path messages for each AUV
         for agent_idx, timed_path in enumerate(timed_paths_list):
@@ -113,11 +117,15 @@ class PatternGenerator():
             agent_path.path = path_msg
             self.paths.path_array.append(agent_path)
 
+            timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k')
+
         # Publish AgentPathArray containing all agent paths
         self.paths.header.stamp = rospy.Time.now()
         self.paths.header.frame_id = "map"  # Assuming the paths are in the map frame
         self.path_array_pub.publish(self.paths)
         print("Published paths")
+
+        plt.show()
 
         # rospy.loginfo("Publishing AgentPathArray")
         # self.path_array_pub.publish(self.paths)

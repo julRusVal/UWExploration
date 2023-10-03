@@ -3,6 +3,7 @@ import rospy
 from subprocess import call, Popen
 import numpy as np
 import rospkg
+import math
 
 class AUVSpawner():
     def __init__(self):
@@ -20,12 +21,13 @@ class AUVSpawner():
         for i in range(self.num_auvs):
             rospy.loginfo(str("Spawning AUV: "+ str(i)))
             namespace = self.vehicle_model + '_' + str(i)
-            y = i*self.spawn_sep
+            x = i*self.spawn_sep
             proc = Popen(["roslaunch", self.launch_file, 
                           "mode:=" + self.mode,
                           "dataset:=" + self.dataset,
                           "namespace:=" + namespace,
-                          "y:=" + str(y),
+                          "x:=" + str(x), #This and yaw below are for the initial pose, such that the auvs are spawned along the x-axis heading looking along the y-axis
+                          "yaw:=" + str(math.pi/2),
                           ])
             
             # rospy.sleep(3)
