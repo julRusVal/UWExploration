@@ -55,7 +55,7 @@ class PathRelay():
         transform_stamped = TransformStamped()
         transform_stamped.header.stamp = rospy.Time.now()
         transform_stamped.header.frame_id = "map" 
-        transform_stamped.child_frame_id = f"{self.vehicle_model}_{agent_id}"
+        transform_stamped.child_frame_id = f"{self.vehicle_model}_{agent_id}/base_link"
 
         # Set the translation and rotation based on the input pose
         transform_stamped.transform.translation.x = pose.position.x
