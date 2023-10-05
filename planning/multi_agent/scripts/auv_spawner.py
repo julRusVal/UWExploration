@@ -5,6 +5,9 @@ import numpy as np
 import rospkg
 import math
 import pdb
+from multi_agent.msg import AgentPath, AgentPathArray
+import tf
+
 
 class AUVSpawner():
     def __init__(self):
@@ -15,6 +18,18 @@ class AUVSpawner():
         self.spawn_sep = rospy.get_param('spawn_separation',10)
         rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~auv_launch_file',rospack.get_path('auv_model') + '/launch/auv_environment.launch')
+
+        self.pattern_generator = rospy.get_param('pattern_generation','true')
+
+        #Publishers and subscribers used for pattern generation
+        self.path_array_topic = rospy.get_param('path_array_topic', '/multi_agent/path_array')
+        self.spawn_pos_path_array_topic = rospy.get_param('path_array_spawn_pos_topic', '/multi_agent/spawn_pos/path_array')
+
+        self.path_array_pub = rospy.Publisher(self.path_array_topic, AgentPathArray, queue_size=1)
+        self.spawn_pos_paths_sub = rospy.Subscriber(self.spawn_pos_path_array_topic, AgentPathArray, self.callback)
+
+        # self.paths = AgentPathArray()
+
         
 
         rospy.loginfo(str("Preparing to spawn '%s' AUVs..." % str(self.num_auvs)))
@@ -25,30 +40,57 @@ class AUVSpawner():
         # spawn_points = np.linspace(0, self.num_auvs*self.spawn_sep, elements, endpoint=True)
         # print(spawn_points)
         
-        for i in range(self.num_auvs):
-            rospy.loginfo(str("Spawning AUV: "+ str(i)))
-            namespace = self.vehicle_model + '_' + str(i)
-            
-            #TODO: 
-            #1. Spawn auvs in correct position and orientation for the first wps they'll be given (i.e. the first wps in the mission plan) 
-            #2. Make turns tighter, such that auvs don't make large loops when turning
-            
+        if not self.pattern_generator: #Spawn auvs in a line only if pattern generation is disabled, eg not using lawn mower pattern
+            for i in range(self.num_auvs):
+                rospy.loginfo(str("Spawning AUV: "+ str(i)))
+                namespace = self.vehicle_model + '_' + str(i)
+                
+                #TODO: 
+                #1. OK Spawn auvs in correct position and orientation for the first wps they'll be given (i.e. the first wps in the mission plan) 
+                #2. Make turns tighter, such that auvs don't make large loops when turning
+
+                        
+                
 
 
-            x = i*self.spawn_sep
+                x = i*self.spawn_sep
+                yaw = math.pi/2
 
-            proc = Popen(["roslaunch", self.launch_file, 
-                          "mode:=" + self.mode,
-                          "dataset:=" + self.dataset,
-                          "namespace:=" + namespace,
-                          "x:=" + str(x), #This and yaw below are for the initial pose, such that the auvs are spawned along the x-axis heading looking along the y-axis
-                          "yaw:=" + str(math.pi/2),
-                          ])
-            
+                self.spawn_auv(x,0,0,0,0,yaw,namespace)
+                
             # rospy.sleep(3)
 
         rospy.spin()
 
+    def callback(self,msg):
+        for AgentPath_instance in msg.path_array:
+            agent_path = AgentPath_instance.path
+            agent_id = AgentPath_instance.agent_id
+            start_pose = agent_path.poses[0].pose
+            roll,pitch,yaw = tf.transformations.euler_from_quaternion([start_pose.orientation.x,start_pose.orientation.y,start_pose.orientation.z,start_pose.orientation.w])
+            x,y,z = start_pose.position.x, start_pose.position.y, start_pose.position.z
+            namespace = self.vehicle_model + '_' + str(agent_id)
+            self.spawn_auv(x,y,z,roll,pitch,yaw,namespace)
+        t = rospy.Time.now()
+        while rospy.Time.now() - t < rospy.Duration(30): #NOTE: Ugly way to wait for auvs to spawn and all launch files to finish, but it works. TODO: Make a helper function to check if all auvs have spawned, then publish paths
+            pass
+        self.path_array_pub.publish(msg)
+            
+            
+
+    def spawn_auv(self,x,y,z,roll,pitch,yaw,namespace):
+        proc = Popen(["roslaunch", self.launch_file, 
+                            "mode:=" + self.mode,
+                            "dataset:=" + self.dataset,
+                            "namespace:=" + namespace,
+                            "x:=" + str(x), #This and yaw below are for the initial pose, such that the auvs are spawned along the x-axis heading looking along the y-axis
+                            "y:=" + str(y),
+                            "z:=" + str(z),
+                            "roll:=" + str(roll),
+                            "pitch:=" + str(pitch),
+                            "yaw:=" + str(yaw),
+                            ])
+        rospy.loginfo(str("Spawned AUV: "+ str(namespace)) + str(" at x: " + str(x) + " y: " + str(y) + " z: " + str(z) + " roll: " + str(roll) + " pitch: " + str(pitch) + " yaw: " + str(yaw)))
 if __name__ == '__main__':
 
     rospy.init_node('auv_spawner')

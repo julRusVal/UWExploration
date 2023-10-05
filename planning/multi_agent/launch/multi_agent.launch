@@ -2,6 +2,7 @@
 <launch>
     <!-- Common args for multiple nodes -->
     <arg name="path_array_topic" default="/multi_agent/path_array"/>
+    <arg name="path_array_spawn_pos_topic" default="/multi_agent/spawn_pos/path_array"/>
     <!-- Choose number of AUVs to spawn -->
     <arg name="num_auvs" default="1"/> 
     <arg name="vehicle_model" default="hugin"/>
@@ -51,6 +52,7 @@
     <param name="num_auvs" value="$(arg num_auvs)"/>
     <param name="vehicle_model" value="$(arg vehicle_model)"/> 
     <param name="path_array_topic" value="$(arg path_array_topic)"/>
+    <param name="path_array_spawn_pos_topic" value="$(arg path_array_spawn_pos_topic)"/>
     <param name="spawn_separation" value="$(arg spawn_separation)"/>
     <param name="pattern_generation" value="$(arg pattern_generation)"/> 
 

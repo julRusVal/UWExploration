@@ -26,8 +26,8 @@ class PatternGenerator():
         self.paths_sub = rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_cb)
         self.goal = None
 
-        self.path_array_topic = rospy.get_param('path_array_topic', '/multi_agent/path_array')
-        self.path_array_pub = rospy.Publisher(self.path_array_topic, AgentPathArray, queue_size=1)
+        self.spawn_pos_path_array_topic = rospy.get_param('path_array_spawn_pos_topic', '/multi_agent/spawn_pos/path_array')
+        self.spawn_pos_path_array_pub = rospy.Publisher(self.spawn_pos_path_array_topic, AgentPathArray, queue_size=1)
         self.paths = AgentPathArray()
 
         self.spawn_separation = rospy.get_param('spawn_separation', 10)
@@ -61,16 +61,21 @@ class PatternGenerator():
     def distance_hugin_0_to_goal(self, goal):
         """Calculate the distance from Hugin 0 to the goal, using the tf tree"""
         try:
-            # Lookup the transform from hugin_0/base_link to map frame
-            transform = self.tf_buffer.lookup_transform("map", "hugin_0/base_link", rospy.Time.now(), rospy.Duration(1.0))
+            # # Lookup the transform from hugin_0/base_link to map frame
+            # transform = self.tf_buffer.lookup_transform("map", "hugin_0/base_link", rospy.Time.now(), rospy.Duration(1.0))
 
-            # Transform the goal pose into the base_link frame
-            transformed_goal = do_transform_pose(goal, transform)
+            # # Transform the goal pose into the base_link frame
+            # transformed_goal = do_transform_pose(goal, transform)
 
-            # Calculate the absolute distance
-            distance = ((transformed_goal.pose.position.x ** 2) +
-                        (transformed_goal.pose.position.y ** 2) +
-                        (transformed_goal.pose.position.z ** 2)) ** 0.5
+            # # Calculate the absolute distance
+            # distance = ((transformed_goal.pose.position.x ** 2) +
+            #             (transformed_goal.pose.position.y ** 2) +
+            #             (transformed_goal.pose.position.z ** 2)) ** 0.5
+
+            distance = ((goal.pose.position.x ** 2) +
+                        (goal.pose.position.y ** 2) +
+                        (goal.pose.position.z ** 2)) ** 0.5
+            
 
             return distance
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
@@ -127,12 +132,12 @@ class PatternGenerator():
             agent_path.path = path_msg
             self.paths.path_array.append(agent_path)
 
-            timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k')
+            # timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k') #Uncomment to plot the paths in separate window
 
         # Publish AgentPathArray containing all agent paths
         self.paths.header.stamp = rospy.Time.now()
         self.paths.header.frame_id = "map"  # Assuming the paths are in the map frame
-        self.path_array_pub.publish(self.paths)
+        self.spawn_pos_path_array_pub.publish(self.paths)
         print("Published paths")
 
         plt.show()
