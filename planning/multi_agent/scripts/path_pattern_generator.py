@@ -188,20 +188,23 @@ class PatternGenerator():
             path_msg.header.frame_id = "map"  # Assuming the waypoints are in the map frame
 
             # Create PoseStamped messages for each waypoint
-            for waypoint in timed_path.wps:
+            for wp_id, waypoint in enumerate(timed_path.wps):
+                if wp_id == 0:
+                    continue #Don't add the first two waypoints to the path, such that the auvs start in a stright path
                 pose_stamped = PoseStamped()
                 pose_stamped.header = path_msg.header
                 pose_stamped.pose.position.x = waypoint.pose[0]
                 pose_stamped.pose.position.y = waypoint.pose[1]
-                heading = waypoint.pose[2]
-                #Convert heading to quaternion and add to pose_stamped
+                if wp_id == 1:
+                    heading = np.pi/2 #All start looking forward
+                else:
+                    heading = waypoint.pose[2]
                 # Convert heading to quaternion
                 quaternion = tf.transformations.quaternion_from_euler(0, 0, heading)
 
                 # Add the quaternion to pose_stamped
                 pose_stamped.pose.orientation = Quaternion(*quaternion)
 
-            
                 path_msg.poses.append(pose_stamped)
 
             # Publish the Path message for this agent
@@ -235,13 +238,18 @@ class PatternGenerator():
         # Calculate the translation vector
         translation_x = self.bottom_left.pose.position.x - timed_paths_list[-1].wps[0].pose[0] #the order of the agent ids is reversed in the timed_paths_list, so take the last one to get the waypoints of the first auv
         translation_y = self.bottom_left.pose.position.y - timed_paths_list[-1].wps[0].pose[1]
-        print("!!!!!!",timed_paths_list[-1].wps[0].pose[0], timed_paths_list[-1].wps[0].pose[1])
 
         # Transform waypoints for agent 0
         for timed_path in timed_paths_list:
-            for waypoint in timed_path.wps:
+            for wp_id,waypoint in enumerate(timed_path.wps):
                 waypoint.pose[0] += translation_x
                 waypoint.pose[1] += translation_y
+                # #if the wp_id is 0 or 1, remove them from timed_path.wps
+                # if wp_id == 0 or wp_id == 1:
+                #     del timed_path.wps[wp_id]
+
+
+
 
         return timed_paths_list
 
