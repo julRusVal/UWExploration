@@ -46,7 +46,7 @@ class AUVSpawner():
                 namespace = self.vehicle_model + '_' + str(i)
                 
                 #TODO: 
-                #1. OK Spawn auvs in correct position and orientation for the first wps they'll be given (i.e. the first wps in the mission plan) 
+                #1. OK - Spawn auvs in correct position and orientation for the first wps they'll be given (i.e. the first wps in the mission plan) 
                 #2. Make turns tighter, such that auvs don't make large loops when turning
 
                         
@@ -71,9 +71,9 @@ class AUVSpawner():
             x,y,z = start_pose.position.x, start_pose.position.y, start_pose.position.z
             namespace = self.vehicle_model + '_' + str(agent_id)
             self.spawn_auv(x,y,z,roll,pitch,yaw,namespace)
-        t = rospy.Time.now()
-        while rospy.Time.now() - t < rospy.Duration(30): #NOTE: Ugly way to wait for auvs to spawn and all launch files to finish, but it works. TODO: Make a helper function to check if all auvs have spawned, then publish paths
-            pass
+        #wait for user to press enter before publishing paths
+        rospy.loginfo("Press Enter to publish paths...")
+        input()
         self.path_array_pub.publish(msg)
             
             
