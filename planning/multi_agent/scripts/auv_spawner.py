@@ -47,7 +47,10 @@ class AUVSpawner():
                 
                 #TODO: 
                 #1. OK - Spawn auvs in correct position and orientation for the first wps they'll be given (i.e. the first wps in the mission plan) 
-                #2. Make turns tighter, such that auvs don't make large loops when turning
+                #2. ONGOING - Make turns tighter, such that auvs don't make large loops when turning
+                #3. Update documentation in README including:
+                #  - How to use the pattern generator
+                #  - Dependencies to install (Özer's stuff)
 
                         
                 
