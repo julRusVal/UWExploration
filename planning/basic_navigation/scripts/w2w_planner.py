@@ -69,7 +69,14 @@ class W2WPathPlanner(object):
                 yaw_setpoint = sign * min(self.max_thrust, abs(alpha))
 
                 # Command velocities
-                self.motion_command(throttle_level, yaw_setpoint, 0.)
+                #TODO: Add turn_in_place bool in launch file as param
+                if np.isclose(yaw_setpoint,0,atol=np.radians(15)): #Within 5 degrees of goal
+                    self.motion_command(throttle_level, 0., 0.)
+                else:
+                    self.motion_command(0., yaw_setpoint, 0.)
+
+                #if not turn_in_place:
+                #    self.motion_command(throttle_level, yaw_setpoint, 0.)
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 rospy.logwarn("Transform to base frame not available yet")
