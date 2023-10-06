@@ -14,6 +14,10 @@ import matplotlib.pyplot as plt
 import tf.transformations
 from geometry_msgs.msg import Quaternion
 
+from visualization_msgs.msg import Marker, MarkerArray
+
+import copy
+
 class PatternGenerator():
     def __init__(self):
         # Initialize the TF2 buffer and listener
@@ -24,11 +28,15 @@ class PatternGenerator():
         self.vehicle_model = rospy.get_param('vehicle_model','hugin')
         
         self.paths_sub = rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_cb)
-        self.goal = None
+        # self.goal = None
+        self.bottom_left = None
+        self.top_right = None
 
         self.spawn_pos_path_array_topic = rospy.get_param('path_array_spawn_pos_topic', '/multi_agent/spawn_pos/path_array')
         self.spawn_pos_path_array_pub = rospy.Publisher(self.spawn_pos_path_array_topic, AgentPathArray, queue_size=1)
         self.paths = AgentPathArray()
+
+        self.survey_marker_pub = rospy.Publisher('/multi_agent/survey_area', MarkerArray, queue_size=1)
 
         self.spawn_separation = rospy.get_param('spawn_separation', 10)
         #Özer lawn mower params
@@ -53,10 +61,62 @@ class PatternGenerator():
         rospy.spin()
 
     def goal_cb(self, msg):
-        rospy.loginfo("Received goal")
-        self.rect_height = self.distance_hugin_0_to_goal(msg)
-        print("rect_height: ", self.rect_height)
-        self.generate_lawn_mower_pattern()
+        # rospy.loginfo("Received goal")
+        # self.rect_height = self.distance_hugin_0_to_goal(msg)
+        # print("rect_height: ", self.rect_height)
+        # self.generate_lawn_mower_pattern()
+        if self.bottom_left is None:
+            self.bottom_left = msg.pose
+            print(msg)
+            rospy.loginfo("Received bottom left corner")
+        elif self.top_right is None:
+            self.top_right = msg.pose
+            rospy.loginfo("Received top right corner")
+            self.publish_survey_area()
+        else:
+            rospy.loginfo("Survey area already defined!")
+    
+    def publish_survey_area(self):
+        """Publishes a marker representing the survey area"""
+        # Create marker array
+        marker_array = MarkerArray()
+
+        marker_left = Marker()
+
+        marker_left.header.frame_id = "map"
+        marker_left.header.stamp = rospy.Time.now()
+
+        # set shape, Arrow: 0; Cube: 1 ; Sphere: 2 ; Cylinder: 3
+        marker_left.type = 2
+        marker_left.id = 0
+
+        # Set the scale of the marker
+        marker_left.scale.x = 5.0
+        marker_left.scale.y = 5.0
+        marker_left.scale.z = 5.0
+
+        # Set the color
+        marker_left.color.r = 0.0
+        marker_left.color.g = 0.0
+        marker_left.color.b = 1.0
+        marker_left.color.a = 1.0
+
+        # Set the pose of the marker
+        marker_left.pose = self.bottom_left
+
+        #deep copy the marker and modify it
+        marker_right = copy.deepcopy(marker_left)
+        marker_right.id = 1
+        marker_right.pose = self.top_right
+
+        
+
+        # Add the markers to the marker array
+        marker_array.markers.append(marker_left)
+        marker_array.markers.append(marker_right)
+
+        # Publish the marker array
+        self.survey_marker_pub.publish(marker_array)
 
     
     def distance_hugin_0_to_goal(self, goal):
