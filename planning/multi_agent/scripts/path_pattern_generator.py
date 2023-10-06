@@ -5,7 +5,7 @@ import numpy as np
 import rospkg
 from multi_agent.msg import AgentPath, AgentPathArray
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped, Pose, Point
 from coop_cov import mission_plan
 import tf2_ros
 from tf2_geometry_msgs import do_transform_pose
@@ -66,57 +66,62 @@ class PatternGenerator():
         # print("rect_height: ", self.rect_height)
         # self.generate_lawn_mower_pattern()
         if self.bottom_left is None:
-            self.bottom_left = msg.pose
+            self.bottom_left = msg
             print(msg)
             rospy.loginfo("Received bottom left corner")
         elif self.top_right is None:
-            self.top_right = msg.pose
+            self.top_right = msg
             rospy.loginfo("Received top right corner")
             self.publish_survey_area()
         else:
             rospy.loginfo("Survey area already defined!")
     
     def publish_survey_area(self):
-        """Publishes a marker representing the survey area"""
+        """Publishes a marker representing the survey area as a rectangle"""
         # Create marker array
         marker_array = MarkerArray()
 
-        marker_left = Marker()
+        # Create a line strip marker for the rectangle
+        marker_rect = Marker()
+        marker_rect.header.frame_id = "map"
+        marker_rect.header.stamp = rospy.Time.now()
+        marker_rect.type = Marker.LINE_STRIP
+        marker_rect.id = 0
+        marker_rect.pose.orientation = Quaternion(0, 0, 0, 1)  # Set the quaternion for orientation
 
-        marker_left.header.frame_id = "map"
-        marker_left.header.stamp = rospy.Time.now()
+        # Set the scale of the marker (line width)
+        marker_rect.scale.x = 0.2  # You can adjust this value
 
-        # set shape, Arrow: 0; Cube: 1 ; Sphere: 2 ; Cylinder: 3
-        marker_left.type = 2
-        marker_left.id = 0
+        # Set the color (blue, fully opaque)
+        marker_rect.color.r = 0.0
+        marker_rect.color.g = 0.0
+        marker_rect.color.b = 1.0
+        marker_rect.color.a = 1.0
 
-        # Set the scale of the marker
-        marker_left.scale.x = 5.0
-        marker_left.scale.y = 5.0
-        marker_left.scale.z = 5.0
+        # Add points to the line strip marker to define the rectangle
+        # Assuming that bottom_left and top_right are PoseStamped objects
+        points = [
+                self.bottom_left.pose.position,
+                Point(self.top_right.pose.position.x, self.bottom_left.pose.position.y, 0.0),
+                self.top_right.pose.position,
+                Point(self.bottom_left.pose.position.x, self.top_right.pose.position.y, 0.0),
+                self.bottom_left.pose.position  # Closing the loop
+                ]
 
-        # Set the color
-        marker_left.color.r = 0.0
-        marker_left.color.g = 0.0
-        marker_left.color.b = 1.0
-        marker_left.color.a = 1.0
+        # Append points to the marker
+        for point in points:
+            marker_point = Point()
+            marker_point.x = point.x
+            marker_point.y = point.y
+            marker_point.z = point.z
+            marker_rect.points.append(marker_point)
 
-        # Set the pose of the marker
-        marker_left.pose = self.bottom_left
-
-        #deep copy the marker and modify it
-        marker_right = copy.deepcopy(marker_left)
-        marker_right.id = 1
-        marker_right.pose = self.top_right
-
-        
-
-        # Add the markers to the marker array
-        marker_array.markers.append(marker_left)
-        marker_array.markers.append(marker_right)
+        # Add the rectangle marker to the marker array
+        marker_array.markers.append(marker_rect)
 
         # Publish the marker array
         self.survey_marker_pub.publish(marker_array)
+
 
     
     def distance_hugin_0_to_goal(self, goal):
