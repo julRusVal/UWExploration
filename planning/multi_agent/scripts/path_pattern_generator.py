@@ -67,12 +67,12 @@ class PatternGenerator():
         # self.generate_lawn_mower_pattern()
         if self.bottom_left is None:
             self.bottom_left = msg
-            print(msg)
             rospy.loginfo("Received bottom left corner")
         elif self.top_right is None:
             self.top_right = msg
             rospy.loginfo("Received top right corner")
             self.publish_survey_area()
+            self.generate_lawn_mower_pattern()
         else:
             rospy.loginfo("Survey area already defined!")
     
@@ -90,7 +90,7 @@ class PatternGenerator():
         marker_rect.pose.orientation = Quaternion(0, 0, 0, 1)  # Set the quaternion for orientation
 
         # Set the scale of the marker (line width)
-        marker_rect.scale.x = 0.2  # You can adjust this value
+        marker_rect.scale.x = 1.0  # You can adjust this value
 
         # Set the color (blue, fully opaque)
         marker_rect.color.r = 0.0
@@ -147,8 +147,17 @@ class PatternGenerator():
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.logerr("TF transform error: %s", str(e))
             return None
+    
+    def calc_rect_height_N_width(self):
+        """Calculate the height and width of the rectangle"""
+        # Calculate the height of the rectangle
+        self.rect_height = abs(self.bottom_left.pose.position.y - self.top_right.pose.position.y)
+
+        # Calculate the width of the rectangle
+        self.rect_width = abs(self.bottom_left.pose.position.x - self.top_right.pose.position.x)
 
     def generate_lawn_mower_pattern(self):
+        self.calc_rect_height_N_width()
         #Generate a lawn mower pattern
         timed_paths_list = mission_plan.plan_simple_lawnmower(
         num_agents=self.num_agents,
@@ -169,6 +178,9 @@ class PatternGenerator():
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
 
+        
+        # Transform waypoints for agent 0
+        timed_paths_list = self.transform_waypoints(timed_paths_list)
         # Publish waypoints as Path messages for each AUV
         for agent_idx, timed_path in enumerate(timed_paths_list):
             path_msg = Path()
@@ -213,6 +225,25 @@ class PatternGenerator():
         #Reset
         self.paths = AgentPathArray()
         self.goal = None
+
+    def transform_waypoints(self, timed_paths_list):
+        # Check if self.bottom_left is defined
+        if self.bottom_left is None:
+            rospy.logwarn("Bottom left corner is not defined.")
+            return timed_paths_list  # Return the original list
+
+        # Calculate the translation vector
+        translation_x = self.bottom_left.pose.position.x - timed_paths_list[-1].wps[0].pose[0] #the order of the agent ids is reversed in the timed_paths_list, so take the last one to get the waypoints of the first auv
+        translation_y = self.bottom_left.pose.position.y - timed_paths_list[-1].wps[0].pose[1]
+        print("!!!!!!",timed_paths_list[-1].wps[0].pose[0], timed_paths_list[-1].wps[0].pose[1])
+
+        # Transform waypoints for agent 0
+        for timed_path in timed_paths_list:
+            for waypoint in timed_path.wps:
+                waypoint.pose[0] += translation_x
+                waypoint.pose[1] += translation_y
+
+        return timed_paths_list
 
     
 
