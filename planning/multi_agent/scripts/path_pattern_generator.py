@@ -33,21 +33,22 @@ class PatternGenerator():
         self.spawn_separation = rospy.get_param('spawn_separation', 10)
         #Özer lawn mower params
         self.num_agents = self.num_auvs
-        self.swath = rospy.get_param('swath', 50)
+        self.swath = rospy.get_param('~swath', 50)
 
         self.rect_width = self.num_agents*self.spawn_separation
         self.rect_height = None #Get from desired end point
 
         #Doesn't matter since we don't care about time domain
-        self.speed = rospy.get_param('speed', 1.0)
-        self.straight_slack = rospy.get_param('straight_slack', 1.0)
-        self.overlap_between_rows = rospy.get_param('overlap_between_rows', 0.0)
-        self.overlap_between_lanes = rospy.get_param('overlap_between_lanes', 0.0)
-        self.double_sided = rospy.get_param('double_sided', False)
+        self.speed = rospy.get_param('~speed', 1.0)
 
-        self.center_x = rospy.get_param('center_x', False)
-        self.center_y = rospy.get_param('center_y', False)
-        self.exiting_line = rospy.get_param('exiting_line', True)
+        self.straight_slack = rospy.get_param('~straight_slack', 1.0)
+        self.overlap_between_rows = rospy.get_param('~overlap_between_rows', 0.0)
+        self.overlap_between_lanes = rospy.get_param('~overlap_between_lanes', 0.0)
+        self.double_sided = rospy.get_param('~double_sided', False)
+
+        self.center_x = rospy.get_param('~center_x', False)
+        self.center_y = rospy.get_param('~center_y', False)
+        self.exiting_line = rospy.get_param('~exiting_line', True)
         
         rospy.spin()
 
@@ -132,7 +133,7 @@ class PatternGenerator():
             agent_path.path = path_msg
             self.paths.path_array.append(agent_path)
 
-            # timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k') #Uncomment to plot the paths in separate window
+            timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k') #Uncomment to plot the paths in separate window
 
         # Publish AgentPathArray containing all agent paths
         self.paths.header.stamp = rospy.Time.now()
