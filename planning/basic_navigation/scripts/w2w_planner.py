@@ -58,25 +58,20 @@ class W2WPathPlanner(object):
                     self.base_frame, goal_point)
                 
                 #Compute throttle error
-                # throttle_level = min(self.max_throttle, np.linalg.norm(
-                #     np.array([goal_point_local.point.x + goal_point_local.point.y])))
+                throttle_level = min(self.max_throttle, np.linalg.norm(
+                    np.array([goal_point_local.point.x + goal_point_local.point.y])))
                 # Nacho: no real need to adjust the throttle 
-                throttle_level = self.max_throttle
+                # Koray: That's true for single agent missions, but for multi-agent missions it's important that an agent far away from its goal will speed up to "catch up" with it's neighbour.
+                # It's also important to we don't throttle too hard when we're close to a wp, but need to yaw a lot. Throttling too much in this situation will result in large circles around wps, which can 
+                # delay an agent in relation to its neighbours.
+
+                # throttle_level = self.max_throttle
                 # Compute thrust error
                 alpha = math.atan2(goal_point_local.point.y,
                                 goal_point_local.point.x)
                 sign = np.copysign(1, alpha)
                 yaw_setpoint = sign * min(self.max_thrust, abs(alpha))
-
-                # Command velocities
-                #TODO: Add turn_in_place bool in launch file as param
-                if np.isclose(yaw_setpoint,0,atol=np.radians(15)): #Within 5 degrees of goal
-                    self.motion_command(throttle_level, 0., 0.)
-                else:
-                    self.motion_command(0., yaw_setpoint, 0.)
-
-                #if not turn_in_place:
-                #    self.motion_command(throttle_level, yaw_setpoint, 0.)
+                self.motion_command(throttle_level, yaw_setpoint, 0.)
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 rospy.logwarn("Transform to base frame not available yet")
