@@ -103,4 +103,9 @@
         </group>
     </group>
 
+    <!-- Start rviz message display service  -->
+
+    <node type="display_message_service.py" pkg="rviz_visualization" name="display_rviz_message_service" output="screen">
+    </node>
+
 </launch>

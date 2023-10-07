@@ -16,6 +16,10 @@ from geometry_msgs.msg import Quaternion
 
 from visualization_msgs.msg import Marker, MarkerArray
 
+from rviz_visualization.srv import DisplayRvizMessage, DisplayRvizMessageRequest
+
+from std_msgs.msg import String
+
 import copy
 
 class PatternGenerator():
@@ -37,6 +41,9 @@ class PatternGenerator():
         self.paths = AgentPathArray()
 
         self.survey_marker_pub = rospy.Publisher('/multi_agent/survey_area', MarkerArray, queue_size=1)
+        # self.message_pub = rospy.Publisher('/rviz_message', MarkerArray, queue_size=1)
+        self.message_srv = rospy.ServiceProxy('/display_rviz_message', DisplayRvizMessage)
+        rospy.wait_for_service('/display_rviz_message',timeout=5)
 
         self.spawn_separation = rospy.get_param('spawn_separation', 10)
         #Özer lawn mower params
@@ -57,8 +64,20 @@ class PatternGenerator():
         self.center_x = rospy.get_param('~center_x', False)
         self.center_y = rospy.get_param('~center_y', False)
         self.exiting_line = rospy.get_param('~exiting_line', True)
+
+        self.message_timer = rospy.Timer(rospy.Duration(0.1), self.message_timer_cb)
         
         rospy.spin()
+
+
+    def message_timer_cb(self, event):
+        if self.bottom_left is None:
+            self.display_message_in_rviz("Choose bottom left corner using 2D Nav Goal tool...")
+        elif self.top_right is None:
+            self.display_message_in_rviz("Choose top right corner using 2D Nav Goal tool...")
+        else:
+            self.display_message_in_rviz("")
+            self.message_timer.shutdown()
 
     def goal_cb(self, msg):
         # rospy.loginfo("Received goal")
@@ -68,6 +87,7 @@ class PatternGenerator():
         if self.bottom_left is None:
             self.bottom_left = msg
             rospy.loginfo("Received bottom left corner")
+
         elif self.top_right is None:
             self.top_right = msg
             rospy.loginfo("Received top right corner")
@@ -121,6 +141,35 @@ class PatternGenerator():
 
         # Publish the marker array
         self.survey_marker_pub.publish(marker_array)
+    
+    def display_message_in_rviz(self, message):
+        self.message_srv(DisplayRvizMessageRequest(String(message)))
+
+    # def display_message_in_rviz(self, message):
+    #     """Publishes a message to rviz"""
+    #     # Create marker array
+    #     marker_array = MarkerArray()
+
+    #     # Create a line strip marker for the rectangle
+    #     marker_text = Marker()
+    #     marker_text.header.frame_id = "map"
+    #     marker_text.header.stamp = rospy.Time.now()
+    #     marker_text.type = Marker.TEXT_VIEW_FACING
+    #     marker_text.id = 0
+    #     marker_text.pose.orientation = Quaternion(0, 0, 0, 1)
+    #     marker_text.pose.position = Point(0, 0, 0)  # Set the position of the marker
+    #     marker_text.scale.z = 10.0  # Set the scale of the marker (text height)
+    #     marker_text.color.r = 1.0  # Set the color (blue, fully opaque)
+    #     marker_text.color.g = 1.0
+    #     marker_text.color.b = 1.0
+    #     marker_text.color.a = 1.0
+    #     marker_text.text = message  # Set the text of the marker
+
+    #     # Add the marker to the marker array
+    #     marker_array.markers.append(marker_text)
+
+    #     # Publish the marker array
+    #     self.message_pub.publish(marker_array)
 
 
     

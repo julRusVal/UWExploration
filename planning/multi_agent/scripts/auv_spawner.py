@@ -7,6 +7,9 @@ import math
 import pdb
 from multi_agent.msg import AgentPath, AgentPathArray
 import tf
+from rviz_visualization.srv import DisplayRvizMessage, DisplayRvizMessageRequest
+from std_msgs.msg import String
+
 
 
 class AUVSpawner():
@@ -27,6 +30,9 @@ class AUVSpawner():
 
         self.path_array_pub = rospy.Publisher(self.path_array_topic, AgentPathArray, queue_size=1)
         self.spawn_pos_paths_sub = rospy.Subscriber(self.spawn_pos_path_array_topic, AgentPathArray, self.callback)
+
+        self.message_srv = rospy.ServiceProxy('/display_rviz_message', DisplayRvizMessage)
+        rospy.wait_for_service('/display_rviz_message',timeout=5)
 
         # self.paths = AgentPathArray()
 
@@ -78,9 +84,17 @@ class AUVSpawner():
             namespace = self.vehicle_model + '_' + str(agent_id)
             self.spawn_auv(x,y,z,roll,pitch,yaw,namespace)
         #wait for user to press enter before publishing paths
+        self.display_message_in_rviz("Press 'Enter' in terminal to start survey, once all AUVs are spawned...")
         rospy.loginfo("Press Enter to publish paths...")
         input()
         self.path_array_pub.publish(msg)
+        self.display_message_in_rviz("Survey started!")
+        self.display_message_in_rviz("")
+
+
+
+    def display_message_in_rviz(self, message):
+        self.message_srv(DisplayRvizMessageRequest(String(message)))
             
             
 
