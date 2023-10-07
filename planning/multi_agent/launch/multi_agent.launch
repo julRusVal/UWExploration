@@ -34,13 +34,13 @@
     <arg name="node_name_pattern" default="path_pattern_generator_node"/>
     <arg name="swath" default="50"/>
     <arg name="speed" default="1.0"/>
-    <arg name="straight_slack" default="1.0"/>
+    <arg name="straight_slack" default="0.0"/>
     <arg name="overlap_between_rows" default="0.0"/>
     <arg name="overlap_between_lanes" default="0.0"/>
     <arg name="double_sided" default="false"/>
     <arg name="center_x" default="false"/>
     <arg name="center_y" default="false"/>
-    <arg name="exiting_line" default="true"/>
+    <arg name="exiting_line" default="false"/>
     <arg name="pattern_generation" default="true"/>
 
 
