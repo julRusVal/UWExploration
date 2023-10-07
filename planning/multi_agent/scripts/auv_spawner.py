@@ -51,6 +51,7 @@ class AUVSpawner():
                 #3. Update documentation in README including:
                 #  - How to use the pattern generator
                 #  - Dependencies to install (Özer's stuff)
+                #4. Display text in rviz
 
                         
                 
