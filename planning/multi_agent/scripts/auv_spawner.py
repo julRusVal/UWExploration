@@ -57,7 +57,7 @@ class AUVSpawner():
                 #3. Update documentation in README including:
                 #  - How to use the pattern generator
                 #  - Dependencies to install (Özer's stuff)
-                #4. Display text in rviz
+                #4. OK Display text in rviz
                 #5. Add Integral part to w2w_planner
 
                         
