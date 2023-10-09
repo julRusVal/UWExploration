@@ -13,6 +13,8 @@ import rospy
 import tf
 from std_msgs.msg import Float64, Header, Bool
 import math
+import dubins
+import pdb
 
 
 class W2WPathPlanner(object):
@@ -53,9 +55,48 @@ class W2WPathPlanner(object):
             goal_point.point.x = self.nav_goal.position.x
             goal_point.point.y = self.nav_goal.position.y
             goal_point.point.z = self.nav_goal.position.z
+
+            # goal_pose = PoseStamped()
+            # goal_pose.header.frame_id = self.nav_goal_frame
+            # goal_pose.header.stamp = rospy.Time(0)
+            # goal_pose.pose.position = self.nav_goal.position
+            # goal_pose.pose.orientation = self.nav_goal.orientation
+
+            
+
             try:
                 goal_point_local = self.listener.transformPoint(
                     self.base_frame, goal_point)
+                #-----------------------------------------------------------
+                
+                # goal_pose_local = self.listener.transformPose(
+                #     self.base_frame, goal_pose)
+                
+                # # #plot goal point vs base frame
+                # # plt.figure()
+                # # plt.plot(goal_pose_local.point.x, goal_pose_local.point.y, 'ro')
+                # # plt.plot(0,0,'bo')
+                # # plt.axis('equal')
+                # # plt.show()
+
+                
+                # #dubins tests
+                # q0 = (0,0,0)
+                # goal_heading = tf.transformations.euler_from_quaternion([goal_pose_local.pose.orientation.x,goal_pose_local.pose.orientation.y,goal_pose_local.pose.orientation.z,goal_pose_local.pose.orientation.w])[2]
+                # q1 = (goal_pose_local.pose.position.x, goal_pose_local.pose.position.y, goal_heading)
+                # turning_radius = 1.0
+                # step_size = 0.5
+
+                # path = dubins.shortest_path(q0, q1, turning_radius)
+                # configurations, _ = path.sample_many(step_size)
+                # # Plot
+                # configurations_array = np.array(configurations)
+                # if len(configurations_array) > 0:
+                #     plt.figure()
+                #     plt.plot(configurations_array[:,0], configurations_array[:,1])
+                #     plt.axis('equal')
+                #     plt.show()
+                #-----------------------------------------------------------
                 
                 #Compute throttle error
                 throttle_level = min(self.max_throttle, np.linalg.norm(
