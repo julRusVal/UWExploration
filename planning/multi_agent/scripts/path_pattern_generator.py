@@ -285,8 +285,12 @@ class PatternGenerator():
             return timed_paths_list  # Return the original list
 
         # Calculate the translation vector
-        translation_x = self.bottom_left.pose.position.x - timed_paths_list[-1].wps[0].pose[0] #the order of the agent ids is reversed in the timed_paths_list, so take the last one to get the waypoints of the first auv
-        translation_y = self.bottom_left.pose.position.y - timed_paths_list[-1].wps[0].pose[1]
+        if self.num_auvs % 2 == 0:
+            left_most_index = 0
+        else:
+            left_most_index = 1
+        translation_x = self.bottom_left.pose.position.x - timed_paths_list[-1].wps[left_most_index].pose[0] #the order of the agent ids is reversed in the timed_paths_list, so take the last one to get the waypoints of the first auv
+        translation_y = self.bottom_left.pose.position.y - timed_paths_list[-1].wps[left_most_index].pose[1]
 
         # Transform waypoints for agent 0
         for timed_path in timed_paths_list:
