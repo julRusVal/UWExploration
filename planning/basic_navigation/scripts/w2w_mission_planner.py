@@ -142,8 +142,7 @@ class W2WMissionPlanner(object):
                 self.dubins_pub.publish(dubins_path)
 
                 #TODO: 
-                #1. The wps sent to w2w_planner are supposed to be base_link, but they are strange. Plotting the dubins_path, seems to go from map frame
-                #2. When sending the wps, it's sending too many to w2w_planner. It moves to each one that are super close, make it smoother
+                #1.TUNE PID controller and see if that solves the weird behaviours
                 
                 for i,wp in enumerate(dubins_path.poses):
                     print("Sending wp %d of %d" % (i+1,len(dubins_path.poses)))
