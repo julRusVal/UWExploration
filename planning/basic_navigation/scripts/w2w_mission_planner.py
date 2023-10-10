@@ -101,12 +101,15 @@ class W2WMissionPlanner(object):
                 q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
                 goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
                 q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
-                turning_radius = 5.0
-                step_size = 1.0
+                turning_radius = 10.0
+                step_size = 0.5
 
                 path = dubins.shortest_path(q0, q1, turning_radius)
                 configurations, _ = path.sample_many(step_size)
-                configurations = self.filter_dubins_path(configurations)
+                #sub sample configurations
+                # configurations = configurations[::10]
+                # pdb.set_trace()
+                # configurations = self.filter_dubins_path(configurations)
                 # pdb.set_trace()
                 # # Plot
                 # configurations_array = np.array(configurations)
@@ -139,7 +142,7 @@ class W2WMissionPlanner(object):
                 
                 for i,wp in enumerate(dubins_path.poses):
                     print("Sending wp %d of %d" % (i+1,len(dubins_path.poses)))
-                    print(wp)
+                    # print(wp)
                     goal = MoveBaseGoal(wp)
                     goal.target_pose.header.frame_id = self.map_frame
                     self.ac.send_goal(goal)
@@ -163,7 +166,11 @@ class W2WMissionPlanner(object):
         waypoints only before each left turn, right turn, or going 
         straight, you'll need to post-process the generated path to 
         filter out unnecessary waypoints. """
-        filtered_configurations = [configurations[0]]  # Add the start point
+        
+        filtered_configurations = []  
+
+        # filtered_configurations.append(configurations[0]) # Add the start point
+
         for i in range(1, len(configurations) - 1):
             prev_configuration = configurations[i - 1]
             current_configuration = configurations[i]
@@ -173,7 +180,7 @@ class W2WMissionPlanner(object):
             delta_heading = current_configuration[2] - prev_configuration[2]
 
             # Check if the waypoint is before a turn or on a straight segment
-            if abs(delta_heading) > np.deg2rad(1):  # You can adjust this threshold
+            if abs(delta_heading) > np.deg2rad(15):  # You can adjust this threshold
                 filtered_configurations.append(current_configuration)
 
         filtered_configurations.append(configurations[-1])  # Add the goal point
