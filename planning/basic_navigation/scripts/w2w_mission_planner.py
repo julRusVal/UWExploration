@@ -13,6 +13,7 @@ from std_msgs.msg import Float64, Header, Bool
 import math
 import dubins
 import pdb
+import copy
 
 
 
@@ -68,14 +69,17 @@ class W2WMissionPlanner(object):
                 #Create dubins path
                 #-----------------------------------------------------------
 
-                goal_pose = PoseStamped()
-                goal_pose.header.frame_id = wp.header.frame_id
-                goal_pose.header.stamp = rospy.Time(0)
-                goal_pose.pose.position = wp.pose.position
-                goal_pose.pose.orientation = wp.pose.orientation
+                # goal_pose = PoseStamped()
+                # goal_pose.header.frame_id = wp.header.frame_id
+                # goal_pose.header.stamp = rospy.Time.now()
+                # goal_pose.pose.position = wp.pose.position
+                # goal_pose.pose.orientation = wp.pose.orientation
 
-                goal_pose_local = self.listener.transformPose(
-                    self.base_frame, goal_pose)
+                goal_pose = copy.deepcopy(wp)
+                goal_pose.header.stamp = rospy.Time(0)
+
+                # goal_pose_local = self.listener.transformPose(
+                #     self.base_frame, goal_pose)
                 
                 # #plot goal point vs base frame
                 # plt.figure()
@@ -84,17 +88,26 @@ class W2WMissionPlanner(object):
                 # plt.axis('equal')
                 # plt.show()
 
+                robot_pose_local = PoseStamped()
+                robot_pose_local.header.frame_id = self.base_frame
+                robot_pose_local.header.stamp = rospy.Time(0)
+
+                robot_pose = self.listener.transformPose( #we need to send all wp's in map frame in order to be able to check if wp is reached correctly. Otherwise we would never stop (due to how we check if reached). Also it's cheaper to transform once for each robot rather than trasnforming for all wps in the dubins path
+                    self.map_frame, robot_pose_local)
+
                 
                 #dubins tests
-                q0 = (0,0,0)
-                goal_heading = tf.transformations.euler_from_quaternion([goal_pose_local.pose.orientation.x,goal_pose_local.pose.orientation.y,goal_pose_local.pose.orientation.z,goal_pose_local.pose.orientation.w])[2]
-                q1 = (goal_pose_local.pose.position.x, goal_pose_local.pose.position.y, goal_heading)
+                robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]
+                q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
+                goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
+                q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
                 turning_radius = 5.0
                 step_size = 1.0
 
                 path = dubins.shortest_path(q0, q1, turning_radius)
                 configurations, _ = path.sample_many(step_size)
-
+                configurations = self.filter_dubins_path(configurations)
+                # pdb.set_trace()
                 # # Plot
                 # configurations_array = np.array(configurations)
                 # if len(configurations_array) > 0:
@@ -103,11 +116,11 @@ class W2WMissionPlanner(object):
                 #     plt.axis('equal')
                 #     plt.show()
                 dubins_path = Path()
-                dubins_path.header.frame_id = self.base_frame
+                dubins_path.header.frame_id = self.map_frame
                 dubins_path.header.stamp = rospy.Time(0)
                 for sub_wp in configurations:
                     wp = PoseStamped()
-                    wp.header.frame_id = self.base_frame
+                    wp.header.frame_id = self.map_frame
                     wp.header.stamp = rospy.Time(0)
                     wp.pose.position.x = sub_wp[0]
                     wp.pose.position.y = sub_wp[1]
@@ -115,6 +128,7 @@ class W2WMissionPlanner(object):
                     quaternion = tf.transformations.quaternion_from_euler(0, 0, sub_wp[2])
                     wp.pose.orientation = Quaternion(*quaternion)
                     # self.latest_path.poses.insert(0, wp)
+
                     dubins_path.poses.append(wp)
                 
                 self.dubins_pub.publish(dubins_path)
@@ -123,7 +137,9 @@ class W2WMissionPlanner(object):
                 #1. The wps sent to w2w_planner are supposed to be base_link, but they are strange. Plotting the dubins_path, seems to go from map frame
                 #2. When sending the wps, it's sending too many to w2w_planner. It moves to each one that are super close, make it smoother
                 
-                for wp in dubins_path.poses:
+                for i,wp in enumerate(dubins_path.poses):
+                    print("Sending wp %d of %d" % (i+1,len(dubins_path.poses)))
+                    print(wp)
                     goal = MoveBaseGoal(wp)
                     goal.target_pose.header.frame_id = self.map_frame
                     self.ac.send_goal(goal)
@@ -141,7 +157,27 @@ class W2WMissionPlanner(object):
 
             elif not self.latest_path.poses:
                 rospy.loginfo_once("Mission finished")
-            
+
+    def filter_dubins_path(self, configurations):
+        """If you want to reduce the number of waypoints and have 
+        waypoints only before each left turn, right turn, or going 
+        straight, you'll need to post-process the generated path to 
+        filter out unnecessary waypoints. """
+        filtered_configurations = [configurations[0]]  # Add the start point
+        for i in range(1, len(configurations) - 1):
+            prev_configuration = configurations[i - 1]
+            current_configuration = configurations[i]
+            next_configuration = configurations[i + 1]
+
+            # Calculate the change in heading from the previous waypoint to the current one
+            delta_heading = current_configuration[2] - prev_configuration[2]
+
+            # Check if the waypoint is before a turn or on a straight segment
+            if abs(delta_heading) > np.deg2rad(1):  # You can adjust this threshold
+                filtered_configurations.append(current_configuration)
+
+        filtered_configurations.append(configurations[-1])  # Add the goal point
+        return filtered_configurations
 
     def start_relocalize(self, bool_msg):
         self.relocalizing = bool_msg.data

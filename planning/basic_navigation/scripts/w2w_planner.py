@@ -67,6 +67,8 @@ class W2WPathPlanner(object):
             try:
                 goal_point_local = self.listener.transformPoint(
                     self.base_frame, goal_point)
+                
+
                 #-----------------------------------------------------------
                 
                 # goal_pose_local = self.listener.transformPose(
