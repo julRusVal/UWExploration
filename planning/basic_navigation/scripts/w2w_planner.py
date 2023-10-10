@@ -141,10 +141,10 @@ class W2WPathPlanner(object):
         throttle.data = throttle_level
         thrust.data = thruster_angle
         incl.data = inclination_angle
-        self.thruster_pub.publish(thrust)
+        self.thruster_pub.publish(thrust) #yaw angular acceleration
         self.inclination_pub.publish(incl)
-        self.throttle_pub.publish(throttle)
-
+        self.throttle_pub.publish(throttle) #linear velocity
+        #when pitch is zero, this is a differential drive robot
 
     def timer_callback(self, event):
         if self.nav_goal is None:
