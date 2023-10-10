@@ -101,11 +101,16 @@ class W2WMissionPlanner(object):
                 q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
                 goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
                 q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
-                turning_radius = 10.0
+                turning_radius = 5
                 step_size = 0.5
 
                 path = dubins.shortest_path(q0, q1, turning_radius)
                 configurations, _ = path.sample_many(step_size)
+                del configurations[0:3] #remove first wp since it's the robot pose
+                #List all available methods for the path object
+                # print(dir(path))
+
+                # pdb.set_trace()
                 #sub sample configurations
                 # configurations = configurations[::10]
                 # pdb.set_trace()
@@ -180,7 +185,7 @@ class W2WMissionPlanner(object):
             delta_heading = current_configuration[2] - prev_configuration[2]
 
             # Check if the waypoint is before a turn or on a straight segment
-            if abs(delta_heading) > np.deg2rad(15):  # You can adjust this threshold
+            if abs(delta_heading) > np.deg2rad(2):  # You can adjust this threshold
                 filtered_configurations.append(current_configuration)
 
         filtered_configurations.append(configurations[-1])  # Add the goal point
