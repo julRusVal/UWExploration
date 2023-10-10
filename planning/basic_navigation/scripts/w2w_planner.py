@@ -101,8 +101,23 @@ class W2WPathPlanner(object):
                 #-----------------------------------------------------------
                 
                 #Compute throttle error
-                throttle_level = min(self.max_throttle, np.linalg.norm(
-                    np.array([goal_point_local.point.x + goal_point_local.point.y])))
+                # throttle_level = min(self.max_throttle, np.linalg.norm(
+                #     np.array([goal_point_local.point.x + goal_point_local.point.y])))
+                
+                throttle_error = np.linalg.norm(np.array([goal_point_local.point.x + goal_point_local.point.y]))
+                thrust_error = math.atan2(goal_point_local.point.y,goal_point_local.point.x)
+
+                if self.t:
+                    dt = (rospy.Time.now() - self.t).to_sec()
+                    print("dt: ", dt)
+                    self.int_throttle_error += throttle_error * dt
+                    self.int_thrust_error += thrust_error * dt
+                    der_throttle_error = (throttle_error - self.prev_throttle_error) / dt
+                    der_thrust_error = (thrust_error - self.prev_thrust_error) / dt
+                else:
+                    der_throttle_error = 0
+                    der_thrust_error = 0
+                
                 # Nacho: no real need to adjust the throttle 
                 # Koray: That's true for single agent missions, but for multi-agent missions it's important that an agent far away from its goal will speed up to "catch up" with it's neighbour.
                 # It's also important to we don't throttle too hard when we're close to a wp, but need to yaw a lot. Throttling too much in this situation will result in large circles around wps, which can 
@@ -110,11 +125,21 @@ class W2WPathPlanner(object):
 
                 # throttle_level = self.max_throttle
                 # Compute thrust error
-                alpha = math.atan2(goal_point_local.point.y,
-                                goal_point_local.point.x)
-                sign = np.copysign(1, alpha)
-                yaw_setpoint = sign * min(self.max_thrust, abs(alpha))
+                # alpha = math.atan2(goal_point_local.point.y,
+                #                 goal_point_local.point.x)
+                sign = np.copysign(1, thrust_error)
+                yaw_setpoint = (self.P_thrust * thrust_error + 
+                                self.I_thrust * self.int_thrust_error +
+                                self.D_thrust * der_thrust_error)
+                throttle_level = (self.P_throttle * throttle_error + 
+                                  self.I_throttle * self.int_throttle_error +
+                                  self.D_throttle * der_throttle_error)
+                
+                yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
+                throttle_level = min(self.max_throttle, throttle_level)
+
                 self.motion_command(throttle_level, yaw_setpoint, 0.)
+                self.t = rospy.Time.now()
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 rospy.logwarn("Transform to base frame not available yet")
@@ -130,6 +155,7 @@ class W2WPathPlanner(object):
         # Stop thruster
         self.motion_command(0.,0.,0.)
         rospy.loginfo('%s: Succeeded' % self._action_name)
+        self._reset_controller_params()
         self._as.set_succeeded(self._result)
 
     def motion_command(self, throttle_level, thruster_angle, inclination_angle):
@@ -166,6 +192,13 @@ class W2WPathPlanner(object):
         if np.linalg.norm(start_pos - end_pos) < self.goal_tolerance:
             # Goal reached
             self.nav_goal = None
+    
+    def _reset_controller_params(self):
+        self.t = None
+        self.int_throttle_error = 0
+        self.int_thrust_error = 0
+        self.prev_throttle_error = 0
+        self.prev_thrust_error = 0
 
 
     def __init__(self, name):
@@ -181,6 +214,19 @@ class W2WPathPlanner(object):
         self.thruster_top = rospy.get_param('~thruster_cmd', '/thruster')
         self.inclination_top = rospy.get_param('~inclination_cmd', '/inclination')
         self.as_name = rospy.get_param('~path_planner_as', 'path_planner')
+        
+        self.P_throttle = rospy.get_param('~P_throttle', 2.0)
+        self.I_throttle = rospy.get_param('~I_throttle', 0.5)
+        self.D_throttle = rospy.get_param('~D_throttle', 0.1)
+        self.P_thrust = rospy.get_param('~P_thrust', 2.0)
+        self.I_thrust = rospy.get_param('~I_thrust', 0.5)
+        self.D_thrust = rospy.get_param('~D_thrust', 1)
+
+        self.t = None
+        self.int_throttle_error = 0
+        self.int_thrust_error = 0
+        self.prev_throttle_error = 0
+        self.prev_thrust_error = 0
 
         self.nav_goal = None
 
