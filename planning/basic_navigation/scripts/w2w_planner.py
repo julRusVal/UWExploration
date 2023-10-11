@@ -109,7 +109,7 @@ class W2WPathPlanner(object):
 
                 if self.t:
                     dt = (rospy.Time.now() - self.t).to_sec()
-                    print("dt: ", dt)
+                    # print("dt: ", dt)
                     self.int_throttle_error += throttle_error * dt
                     self.int_thrust_error += thrust_error * dt
                     der_throttle_error = (throttle_error - self.prev_throttle_error) / dt
@@ -131,9 +131,10 @@ class W2WPathPlanner(object):
                 yaw_setpoint = (self.P_thrust * thrust_error + 
                                 self.I_thrust * self.int_thrust_error +
                                 self.D_thrust * der_thrust_error)
-                throttle_level = (self.P_throttle * throttle_error + 
-                                  self.I_throttle * self.int_throttle_error +
-                                  self.D_throttle * der_throttle_error)
+                # throttle_level = (self.P_throttle * throttle_error + 
+                #                   self.I_throttle * self.int_throttle_error +
+                #                   self.D_throttle * der_throttle_error)
+                throttle_level = self.max_throttle
                 
                 yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
                 throttle_level = min(self.max_throttle, throttle_level)
@@ -189,6 +190,7 @@ class W2WPathPlanner(object):
             [self.nav_goal.position.x, self.nav_goal.position.y, self.nav_goal.position.z])
 
         rospy.logdebug("diff " + str(np.linalg.norm(start_pos - end_pos)))
+        print("diff " + str(np.linalg.norm(start_pos - end_pos)))
         if np.linalg.norm(start_pos - end_pos) < self.goal_tolerance:
             # Goal reached
             self.nav_goal = None
@@ -215,12 +217,12 @@ class W2WPathPlanner(object):
         self.inclination_top = rospy.get_param('~inclination_cmd', '/inclination')
         self.as_name = rospy.get_param('~path_planner_as', 'path_planner')
         
-        self.P_throttle = rospy.get_param('~P_throttle', 2.0)
-        self.I_throttle = rospy.get_param('~I_throttle', 0.5)
-        self.D_throttle = rospy.get_param('~D_throttle', 0.1)
-        self.P_thrust = rospy.get_param('~P_thrust', 2.0)
-        self.I_thrust = rospy.get_param('~I_thrust', 0.5)
-        self.D_thrust = rospy.get_param('~D_thrust', 1)
+        self.P_throttle = rospy.get_param('~P_throttle', 5.0)
+        self.I_throttle = rospy.get_param('~I_throttle', 0.0)
+        self.D_throttle = rospy.get_param('~D_throttle', 0.0)
+        self.P_thrust = rospy.get_param('~P_thrust', 1.0)
+        self.I_thrust = rospy.get_param('~I_thrust', 0.0)
+        self.D_thrust = rospy.get_param('~D_thrust', 0.0)
 
         self.t = None
         self.int_throttle_error = 0

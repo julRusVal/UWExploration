@@ -14,6 +14,7 @@ import math
 import dubins
 import pdb
 import copy
+# import smarc_dubins
 
 
 
@@ -102,7 +103,7 @@ class W2WMissionPlanner(object):
                 goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
                 q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
                 turning_radius = 5
-                step_size = 0.5
+                step_size = 5
 
                 path = dubins.shortest_path(q0, q1, turning_radius)
                 configurations, _ = path.sample_many(step_size)
