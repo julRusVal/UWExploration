@@ -14,8 +14,8 @@ from enum import Enum
 import rospy
 # import bb_enums
 from tf.transformations import quaternion_from_euler
-from smarc_bt.msg import GotoWaypoint
-import mission_plan
+# from smarc_bt.msg import GotoWaypoint
+# import mission_plan
 
 class TurnType(Enum):
     LSL = 1
@@ -308,125 +308,125 @@ def sample_between_wps(wp_from, wp_to, turn_radius, step):
     return path[1:-1]
 
 
-def create_dubins_path(vehicle,
-                       waypoints,
-                       step,
-                       turning_radius):
-    """
-    Read the waypoints of a missionplan and sample dubins waypoints for it
-    :param vehicle: The vehicle object. Used if the first waypoint has a heading
-    :param step: How many meters to leave between each sampled point on the dubins path
-    :param turning_radius: Turning radius in meters of the vehicle.
-    :return [waypoints...]: List of MissionPlan.Waypoint objects.
-    """
-    def heading_to_yaw(a):
-        return (90-a)%360
-    def yaw_to_heading(b):
-        return (-(b-90))%360
+# def create_dubins_path(vehicle,
+#                        waypoints,
+#                        step,
+#                        turning_radius):
+#     """
+#     Read the waypoints of a missionplan and sample dubins waypoints for it
+#     :param vehicle: The vehicle object. Used if the first waypoint has a heading
+#     :param step: How many meters to leave between each sampled point on the dubins path
+#     :param turning_radius: Turning radius in meters of the vehicle.
+#     :return [waypoints...]: List of MissionPlan.Waypoint objects.
+#     """
+#     def heading_to_yaw(a):
+#         return (90-a)%360
+#     def yaw_to_heading(b):
+#         return (-(b-90))%360
 
-    RADTODEG = 360 / (math.pi * 2)
-    def directed_angle(v1,v2):
-        """
-        returns angle in a directed fashion, from v1 to v2, v1+angle = v2
-        negative value means v2 is closer if v1 rotates cw
-        """
-        x1,x2 = v1[0],v2[0]
-        y1,y2 = v1[1],v2[1]
+#     RADTODEG = 360 / (math.pi * 2)
+#     def directed_angle(v1,v2):
+#         """
+#         returns angle in a directed fashion, from v1 to v2, v1+angle = v2
+#         negative value means v2 is closer if v1 rotates cw
+#         """
+#         x1,x2 = v1[0],v2[0]
+#         y1,y2 = v1[1],v2[1]
 
-        dot = x1*x2 + y1*y2      # dot product
-        det = x1*y2 - y1*x2      # determinant
-        angle_diff = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
+#         dot = x1*x2 + y1*y2      # dot product
+#         det = x1*y2 - y1*x2      # determinant
+#         angle_diff = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
 
-        return angle_diff
+#         return angle_diff
 
-    dubins_wp = []
-    # for each user-given WP, we want to compute
-    # a sample path between such that the path leads into the
-    # next WP in the heading that it wants
-    for wp_i in range(len(waypoints)):
-        wp_current = waypoints[wp_i]
+#     dubins_wp = []
+#     # for each user-given WP, we want to compute
+#     # a sample path between such that the path leads into the
+#     # next WP in the heading that it wants
+#     for wp_i in range(len(waypoints)):
+#         wp_current = waypoints[wp_i]
 
-        # so this WP wants a specific heading on arrival
-        # then we need to dubins from the previous one
-        if wp_i == 0:
-            # if this is the first planned WP
-            # previous WP is the current pose of the vehicle
-            d_wp_prev = Waypoint(vehicle.position_utm[0],
-                                vehicle.position_utm[1],
-                                heading_to_yaw(vehicle.heading))
-        else:
-            wp_prev = waypoints[wp_i-1]
-            d_wp_prev = Waypoint(wp_prev.wp.pose.pose.position.x,
-                                 wp_prev.wp.pose.pose.position.y,
-                                 heading_to_yaw(wp_prev.wp.arrival_heading))
+#         # so this WP wants a specific heading on arrival
+#         # then we need to dubins from the previous one
+#         if wp_i == 0:
+#             # if this is the first planned WP
+#             # previous WP is the current pose of the vehicle
+#             d_wp_prev = Waypoint(vehicle.position_utm[0],
+#                                 vehicle.position_utm[1],
+#                                 heading_to_yaw(vehicle.heading))
+#         else:
+#             wp_prev = waypoints[wp_i-1]
+#             d_wp_prev = Waypoint(wp_prev.wp.pose.pose.position.x,
+#                                  wp_prev.wp.pose.pose.position.y,
+#                                  heading_to_yaw(wp_prev.wp.arrival_heading))
 
-        x = wp_current.wp.pose.pose.position.x
-        y = wp_current.wp.pose.pose.position.y
-        if not wp_current.wp.use_heading:
-            # this WP doesnt care about the heading
-            # so we calculate the heading according to
-            # the next wp if it exists, previous wp if it doesnt
-            if wp_i == len(waypoints)-1:
-                # last WP, use the prev_wp for the heading
-                px = d_wp_prev.x
-                py = d_wp_prev.y
-                a = directed_angle((1,0), (x-px, y-py)) * RADTODEG
-            else:
-                # there should be a next wp
-                wp_next = waypoints[wp_i+1]
-                nx = wp_next.wp.pose.pose.position.x
-                ny = wp_next.wp.pose.pose.position.y
-                a = directed_angle((1,0), (nx-x, ny-y)) * RADTODEG
-            # we set the arrival heading here so that the same heading is
-            # used again for the next wp's paths if needed
-            wp_current.wp.arrival_heading = yaw_to_heading(a)
+#         x = wp_current.wp.pose.pose.position.x
+#         y = wp_current.wp.pose.pose.position.y
+#         if not wp_current.wp.use_heading:
+#             # this WP doesnt care about the heading
+#             # so we calculate the heading according to
+#             # the next wp if it exists, previous wp if it doesnt
+#             if wp_i == len(waypoints)-1:
+#                 # last WP, use the prev_wp for the heading
+#                 px = d_wp_prev.x
+#                 py = d_wp_prev.y
+#                 a = directed_angle((1,0), (x-px, y-py)) * RADTODEG
+#             else:
+#                 # there should be a next wp
+#                 wp_next = waypoints[wp_i+1]
+#                 nx = wp_next.wp.pose.pose.position.x
+#                 ny = wp_next.wp.pose.pose.position.y
+#                 a = directed_angle((1,0), (nx-x, ny-y)) * RADTODEG
+#             # we set the arrival heading here so that the same heading is
+#             # used again for the next wp's paths if needed
+#             wp_current.wp.arrival_heading = yaw_to_heading(a)
 
-        d_wp_current = Waypoint(x,y,heading_to_yaw(wp_current.wp.arrival_heading))
+#         d_wp_current = Waypoint(x,y,heading_to_yaw(wp_current.wp.arrival_heading))
 
-        print("Dubins from {} to {}".format(d_wp_prev, d_wp_current))
+#         print("Dubins from {} to {}".format(d_wp_prev, d_wp_current))
 
-        # now we have the simple waypoints so we can sample between them
-        # this path does not include the original wps
-        path = sample_between_wps(d_wp_prev,
-                                  d_wp_current,
-                                  turning_radius,
-                                  step)
+#         # now we have the simple waypoints so we can sample between them
+#         # this path does not include the original wps
+#         path = sample_between_wps(d_wp_prev,
+#                                   d_wp_current,
+#                                   turning_radius,
+#                                   step)
 
-        # and then we add these to the final list of waypoints
-        for i,p in enumerate(path):
-            # the ones we generated here are too simple
-            # the mission plan requires detailed WPs like the ones in the input
-            goto_wp = GotoWaypoint()
-            # the x,y of the sampled stuff comes from the plan
-            goto_wp.pose.pose.position.x = p[0]
-            goto_wp.pose.pose.position.y = p[1]
-            goto_wp.pose.header.frame_id = wp_current.wp.pose.header.frame_id
-            # the goal tolerance of the intermittent points should be a little less
-            # than the distance between each point
-            goto_wp.goal_tolerance = step*0.8
-            # the speed and similar props come from the target WP
-            goto_wp.z_control_mode = wp_current.wp.z_control_mode
-            goto_wp.travel_altitude = wp_current.wp.travel_altitude
-            goto_wp.travel_depth = wp_current.wp.travel_depth
-            goto_wp.speed_control_mode = wp_current.wp.speed_control_mode
-            goto_wp.travel_rpm = wp_current.wp.travel_rpm
-            goto_wp.travel_speed = wp_current.wp.travel_speed
-            # latlon we will ask the WP object to fill in later
-            # heading from the interpolated point
-            goto_wp.arrival_heading = p[2]
-            # name based on the target wp
-            goto_wp.name = "{}_{}".format(wp_current.wp.name, i)
+#         # and then we add these to the final list of waypoints
+#         for i,p in enumerate(path):
+#             # the ones we generated here are too simple
+#             # the mission plan requires detailed WPs like the ones in the input
+#             goto_wp = GotoWaypoint()
+#             # the x,y of the sampled stuff comes from the plan
+#             goto_wp.pose.pose.position.x = p[0]
+#             goto_wp.pose.pose.position.y = p[1]
+#             goto_wp.pose.header.frame_id = wp_current.wp.pose.header.frame_id
+#             # the goal tolerance of the intermittent points should be a little less
+#             # than the distance between each point
+#             goto_wp.goal_tolerance = step*0.8
+#             # the speed and similar props come from the target WP
+#             goto_wp.z_control_mode = wp_current.wp.z_control_mode
+#             goto_wp.travel_altitude = wp_current.wp.travel_altitude
+#             goto_wp.travel_depth = wp_current.wp.travel_depth
+#             goto_wp.speed_control_mode = wp_current.wp.speed_control_mode
+#             goto_wp.travel_rpm = wp_current.wp.travel_rpm
+#             goto_wp.travel_speed = wp_current.wp.travel_speed
+#             # latlon we will ask the WP object to fill in later
+#             # heading from the interpolated point
+#             goto_wp.arrival_heading = p[2]
+#             # name based on the target wp
+#             goto_wp.name = "{}_{}".format(wp_current.wp.name, i)
 
             
-            wp = mission_plan.Waypoint(goto_waypoint= goto_wp,
-                                       source="dubins")
-            dubins_wp.append(wp)
+#             wp = mission_plan.Waypoint(goto_waypoint= goto_wp,
+#                                        source="dubins")
+#             dubins_wp.append(wp)
 
-        # and finally add the current WP after having added the method to get to it
-        dubins_wp.append(wp_current)
+#         # and finally add the current WP after having added the method to get to it
+#         dubins_wp.append(wp_current)
 
-    # and finally finally we have a list of WPs with interpolated and planned WPs in between
-    return dubins_wp
+#     # and finally finally we have a list of WPs with interpolated and planned WPs in between
+#     return dubins_wp
 
 
             
@@ -595,7 +595,7 @@ def create_dubins_path(vehicle,
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    plt.ion()
+    # plt.ion()
 
     wps = [
         Waypoint(0, 0, 90),
@@ -603,8 +603,12 @@ if __name__ == "__main__":
         Waypoint(15,9, 0),
         Waypoint(0, 5, 90),
     ]
+    fig = plt.figure()
     for i in range(len(wps)-1):
         traj = sample_between_wps(wps[i], wps[i+1], 5, 0.5)
+        print(traj)
         plt.plot(traj[:,0], traj[:,1])
+    plt.show()
 
+    print("sssss")
 
