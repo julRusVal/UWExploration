@@ -12,6 +12,11 @@
     <arg name="max_thrust" default="0.3"/>
     <arg name="waypoint_follower_type" default="simple"/>
 
+    <arg name="dubins_turning_radius" default="5"/>
+	<arg name="dubins_step_size" default="0.5"/>
+	<arg name="goal_tolerance" default="5.0"/>
+
+
 
 
 	<group ns="navigation">
@@ -26,12 +31,14 @@
 					<param name="relocalize_topic"  value="/$(arg namespace)/pause_planner"/>
 					<param name="base_frame"  value="$(arg namespace)/base_link" />
         			<param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
+					<param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
+					<param name="dubins_step_size" value="$(arg dubins_step_size)"/>
 
 
 				</node>
 
 				<node type="w2w_planner.py" pkg="basic_navigation" name="path_planner" output="screen">
-					<param name="goal_tolerance"  value="5.0" />
+					<param name="goal_tolerance"  value="$(arg goal_tolerance)" />
 					<param name="max_throttle"  value="$(arg max_throttle)" />
 					<param name="max_thrust"  value="$(arg max_thrust)" />
 					<param name="odom_frame"  value="$(arg namespace)/odom" />

@@ -20,9 +20,12 @@
     <!-- Choose manual control or waypoint following -->
     <arg name="manual_control" default="false"/>
     <arg name="node_name_navigation" default="auv_navigation_node"/>
-    <arg name="max_thrust" default="1.0"/>
+    <arg name="max_thrust" default="5.0"/>
     <!-- Acceptable types below: 'dubins','dubins_smarc','simple' -->
     <arg name="waypoint_follower_type" default="dubins_smarc"/>
+    <arg name="dubins_turning_radius" default="5"/>
+	<arg name="dubins_step_size" default="0.5"/>
+	<arg name="goal_tolerance" default="1.0"/>
 
 
 
@@ -58,6 +61,7 @@
     <param name="path_array_spawn_pos_topic" value="$(arg path_array_spawn_pos_topic)"/>
     <param name="spawn_separation" value="$(arg spawn_separation)"/>
     <param name="pattern_generation" value="$(arg pattern_generation)"/> 
+    <param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
 
 
 
@@ -77,6 +81,9 @@
         <param name="manual_control" value="$(arg manual_control)"/> 
         <param name="max_thrust" value="$(arg max_thrust)"/>
         <param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
+        <!-- <param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/> -->
+        <param name="dubins_step_size" value="$(arg dubins_step_size)"/>
+        <param name="goal_tolerance" value="$(arg goal_tolerance)"/>
         
     </node>
 

@@ -66,6 +66,8 @@ class PatternGenerator():
         self.exiting_line = rospy.get_param('~exiting_line', True)
 
         self.message_timer = rospy.Timer(rospy.Duration(0.1), self.message_timer_cb)
+
+        self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
         
         rospy.spin()
 
@@ -238,16 +240,17 @@ class PatternGenerator():
 
             # Create PoseStamped messages for each waypoint
             for wp_id, waypoint in enumerate(timed_path.wps):
-                if wp_id == 0:
-                    continue #Don't add the first two waypoints to the path, such that the auvs start in a stright path
+                # if wp_id == 0:
+                #     continue #Don't add the first two waypoints to the path, such that the auvs start in a stright path
                 pose_stamped = PoseStamped()
                 pose_stamped.header = path_msg.header
                 pose_stamped.pose.position.x = waypoint.pose[0]
                 pose_stamped.pose.position.y = waypoint.pose[1]
-                if wp_id == 1:
-                    heading = np.pi/2 #All start looking forward
-                else:
-                    heading = waypoint.pose[2]
+                # if wp_id == 1:
+                #     heading = np.pi/2 #All start looking forward
+                # else:
+                #     heading = waypoint.pose[2]
+                heading = waypoint.pose[2]
                 # Convert heading to quaternion
                 quaternion = tf.transformations.quaternion_from_euler(0, 0, heading)
 
@@ -300,14 +303,25 @@ class PatternGenerator():
                 # #if the wp_id is 0 or 1, remove them from timed_path.wps
                 # if wp_id == 0 or wp_id == 1:
                 #     del timed_path.wps[wp_id]
-
-
-
-
         return timed_paths_list
-
     
+    # def exclude_wps_within_turning_radius(self, timed_path):
+    #     """This method removes all waypoints that are within the turning radius of the start and end point of the path"""
+    #     def _remove_wps_close_to(wp,distance,path):
+    #         """This method removes all waypoints that are within distance of wp from path"""
+    #         for wp_id, waypoint in enumerate(path.wps):
+    #             if np.linalg.norm(np.array(wp.pose[:2]) - np.array(waypoint.pose[:2])) < distance:
+    #                 del path.wps[wp_id]
+    #         #NOTE(Koray): Here you can optimize by breaking the loop once you've found the first wp that is within distance of wp, but since we also want to compare to the last wp you need more code to make it happen.
+    #         #               I prefer to have short code, this doesn't run with high frequency anyway.
+    #         return path
 
+    #     wp_start = timed_path.wps[0]
+    #     wp_end = timed_path.wps[-1]
+    #     timed_path = _remove_wps_close_to(wp_start,self.dubins_turning_radius,timed_path)
+    #     timed_path = _remove_wps_close_to(wp_end,self.dubins_turning_radius,timed_path)
+    #     return timed_path
+    
 
 if __name__ == '__main__':
 

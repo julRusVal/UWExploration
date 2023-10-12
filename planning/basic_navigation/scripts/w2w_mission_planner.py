@@ -39,7 +39,6 @@ class W2WMissionPlanner(object):
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius', 5)
 
 
-
         # The waypoints as a path
         rospy.Subscriber(self.path_topic, Path, self.path_cb, queue_size=1)
         self.latest_path = Path()
@@ -62,6 +61,8 @@ class W2WMissionPlanner(object):
         self.listener = tf.TransformListener()
         self.dubins_pub = rospy.Publisher('dubins_path', Path, queue_size=1)
 
+        self.wp_old = None
+
         while not rospy.is_shutdown():
             
             if self.latest_path.poses and not self.relocalizing:
@@ -79,9 +80,15 @@ class W2WMissionPlanner(object):
 
                 robot_pose = self.listener.transformPose( #we need to send all wp's in map frame in order to be able to check if wp is reached correctly. Otherwise we would never stop (due to how we check if reached). Also it's cheaper to transform once for each robot rather than trasnforming for all wps in the dubins path
                     self.map_frame, robot_pose_local)
+                
+                
 
                 #Create dubins path
                 if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'dubins_smarc':
+                    if self.wp_old is None:
+                        self.wp_old = robot_pose
+                
+                    wps = self.generate_two_artificial_wps()
                     #-----------------------------------------------------------
                     # goal_pose = copy.deepcopy(wp)
                     # goal_pose.header.stamp = rospy.Time(0)
@@ -104,38 +111,39 @@ class W2WMissionPlanner(object):
                     # path = dubins.shortest_path(q0, q1, turning_radius)
                     # configurations, _ = path.sample_many(step_size)
                     # del configurations[0:3] #remove first wp since it's the robot pose
-                    if self.wp_follower_type == 'dubins':
-                        configurations = self.generate_dubins_path(goal_pose,robot_pose)
-                    elif self.wp_follower_type == 'dubins_smarc':
-                        configurations = self.generate_dubins_smarc_path(goal_pose,robot_pose)
-                
-                    dubins_path = Path()
-                    dubins_path.header.frame_id = self.map_frame
-                    dubins_path.header.stamp = rospy.Time(0)
-
-                    for sub_wp in configurations:
-                        wp = PoseStamped()
-                        wp.header.frame_id = self.map_frame
-                        wp.header.stamp = rospy.Time(0)
-                        wp.pose.position.x = sub_wp[0]
-                        wp.pose.position.y = sub_wp[1]
-                        wp.pose.position.z = 0
-                        quaternion = tf.transformations.quaternion_from_euler(0, 0, sub_wp[2])
-                        wp.pose.orientation = Quaternion(*quaternion)
-                        # self.latest_path.poses.insert(0, wp)
-
-                        dubins_path.poses.append(wp)
+                    for wp in wps:
+                        if self.wp_follower_type == 'dubins':
+                            configurations = self.generate_dubins_path(goal_pose,robot_pose)
+                        elif self.wp_follower_type == 'dubins_smarc':
+                            configurations = self.generate_dubins_smarc_path(goal_pose,robot_pose)
                     
-                    self.dubins_pub.publish(dubins_path)
-                    
-                    for i,wp in enumerate(dubins_path.poses):
-                        print("Sending wp %d of %d" % (i+1,len(dubins_path.poses)))
-                        # print(wp)
-                        goal = MoveBaseGoal(wp)
-                        goal.target_pose.header.frame_id = self.map_frame
-                        self.ac.send_goal(goal)
-                        self.ac.wait_for_result()
-                        rospy.loginfo("WP reached, moving on to next one")
+                        dubins_path = Path()
+                        dubins_path.header.frame_id = self.map_frame
+                        dubins_path.header.stamp = rospy.Time(0)
+
+                        for sub_wp in configurations:
+                            wp = PoseStamped()
+                            wp.header.frame_id = self.map_frame
+                            wp.header.stamp = rospy.Time(0)
+                            wp.pose.position.x = sub_wp[0]
+                            wp.pose.position.y = sub_wp[1]
+                            wp.pose.position.z = 0
+                            quaternion = tf.transformations.quaternion_from_euler(0, 0, sub_wp[2])
+                            wp.pose.orientation = Quaternion(*quaternion)
+                            # self.latest_path.poses.insert(0, wp)
+
+                            dubins_path.poses.append(wp)
+                        
+                        self.dubins_pub.publish(dubins_path)
+                        
+                        for i,wp in enumerate(dubins_path.poses):
+                            print("Sending wp %d of %d" % (i+1,len(dubins_path.poses)))
+                            # print(wp)
+                            goal = MoveBaseGoal(wp)
+                            goal.target_pose.header.frame_id = self.map_frame
+                            self.ac.send_goal(goal)
+                            self.ac.wait_for_result()
+                            rospy.loginfo("WP reached, moving on to next one")
                     #-----------------------------------------------------------
 
                 elif self.wp_follower_type == 'simple':
@@ -193,6 +201,9 @@ class W2WMissionPlanner(object):
         #convert traj from 2D array with N rows and 3 columns to 1D array containing N 3D tuples
         configurations = [tuple(x) for x in traj]
         return configurations
+
+    def generate_two_artificial_wps(self,wp):
+        heading = tf.transformations.euler_from_quaternion([self.wp_old.pose.orientation.x,self.wp_old.pose.orientation.y,self.wp_old.pose.orientation.z,self.wp_old.pose.orientation.w])[2]
 
 
 if __name__ == '__main__':

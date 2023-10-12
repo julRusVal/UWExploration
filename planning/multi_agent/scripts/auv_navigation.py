@@ -13,6 +13,11 @@ class AUVNavigation():
         self.launch_file = rospy.get_param('~navigation_launch_file',rospack.get_path('basic_navigation') + '/launch/basic_mission.launch')
         self.max_thrust = rospy.get_param('~max_thrust', 1e6)
         self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'dubins_smarc')
+        self.dubins_step_size = rospy.get_param('~dubins_step_size', 0.5)
+        self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
+        self.goal_tolerance = rospy.get_param('~goal_tolerance', 1.)
+
+        
 
         rospy.loginfo("Enabling AUV navigation...")
 
@@ -20,10 +25,13 @@ class AUVNavigation():
             rospy.loginfo(str("Enabling navigation for auv: "+ str(i)))
             namespace = self.vehicle_model + '_' + str(i)
             proc = Popen(["roslaunch", self.launch_file, 
-                          "manual_control:=" + str(self.manual_control),
-                          "namespace:=" + namespace,
-                          "max_thrust:=" + str(self.max_thrust),
-                          "waypoint_follower_type:=" + str(self.wp_follower_type),
+                            "manual_control:=" + str(self.manual_control),
+                            "namespace:=" + namespace,
+                            "max_thrust:=" + str(self.max_thrust),
+                            "waypoint_follower_type:=" + str(self.wp_follower_type),
+                            "dubins_step_size:=" + str(self.dubins_step_size),
+                            "dubins_turning_radius:=" + str(self.dubins_turning_radius),
+                            "goal_tolerance:=" + str(self.goal_tolerance)
                           ])
             
             # rospy.sleep(3)

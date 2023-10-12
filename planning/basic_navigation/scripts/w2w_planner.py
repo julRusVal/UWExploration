@@ -205,7 +205,7 @@ class W2WPathPlanner(object):
     def __init__(self, name):
         self._action_name = name
 
-        self.goal_tolerance = rospy.get_param('~goal_tolerance', 5.)
+        self.goal_tolerance = rospy.get_param('~goal_tolerance', 1.)
         self.max_throttle = rospy.get_param('~max_throttle', 2.)
         self.max_thrust = rospy.get_param('~max_thrust', 0.5)
         self.map_frame = rospy.get_param('~map_frame', 'map') 
@@ -220,8 +220,8 @@ class W2WPathPlanner(object):
         self.I_throttle = rospy.get_param('~I_throttle', 0.0)
         self.D_throttle = rospy.get_param('~D_throttle', 0.0)
         self.P_thrust = rospy.get_param('~P_thrust', 1.0)
-        self.I_thrust = rospy.get_param('~I_thrust', 0.0)
-        self.D_thrust = rospy.get_param('~D_thrust', 0.0)
+        self.I_thrust = rospy.get_param('~I_thrust', 1.0)
+        self.D_thrust = rospy.get_param('~D_thrust', 0.8)
 
         self.t = None
         self.int_throttle_error = 0
