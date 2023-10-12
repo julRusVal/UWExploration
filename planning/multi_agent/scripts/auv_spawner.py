@@ -78,7 +78,7 @@ class AUVSpawner():
             agent_path = AgentPath_instance.path
             agent_id = AgentPath_instance.agent_id
             start_pose = agent_path.poses[0].pose
-            startup_distance = 5 #meters #this allows the auvs to start up a bit before the first waypoint, which avoids uneccessary startup movements to reach first wp
+            startup_distance = 0 #meters #this allows the auvs to start up a bit before the first waypoint, which avoids uneccessary startup movements to reach first wp
             roll,pitch,yaw = tf.transformations.euler_from_quaternion([start_pose.orientation.x,start_pose.orientation.y,start_pose.orientation.z,start_pose.orientation.w])
             x,y,z = start_pose.position.x, start_pose.position.y-startup_distance, start_pose.position.z
             namespace = self.vehicle_model + '_' + str(agent_id)
