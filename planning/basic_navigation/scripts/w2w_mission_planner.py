@@ -15,6 +15,7 @@ import dubins
 import pdb
 import copy
 import dubins_smarc
+from visualization_msgs.msg import Marker, MarkerArray
 
 
 
@@ -63,6 +64,9 @@ class W2WMissionPlanner(object):
 
         self.wp_old = None
 
+        self.point_marker_pub = rospy.Publisher('/multi_agent/artificial_wps', MarkerArray, queue_size=1)
+
+
         while not rospy.is_shutdown():
             
             if self.latest_path.poses and not self.relocalizing:
@@ -88,7 +92,11 @@ class W2WMissionPlanner(object):
                     if self.wp_old is None:
                         self.wp_old = robot_pose
                 
-                    wps = self.generate_two_artificial_wps()
+                    wps = self.generate_two_artificial_wps(wp)
+                    if wps is None:
+                        continue
+                    self.wp_old = wp
+                    self.publish_points_to_rviz(wps)
                     #-----------------------------------------------------------
                     # goal_pose = copy.deepcopy(wp)
                     # goal_pose.header.stamp = rospy.Time(0)
@@ -203,7 +211,65 @@ class W2WMissionPlanner(object):
         return configurations
 
     def generate_two_artificial_wps(self,wp):
-        heading = tf.transformations.euler_from_quaternion([self.wp_old.pose.orientation.x,self.wp_old.pose.orientation.y,self.wp_old.pose.orientation.z,self.wp_old.pose.orientation.w])[2]
+        wp_start = np.array([self.wp_old.pose.position.x, self.wp_old.pose.position.y])
+        wp_end = np.array([wp.pose.position.x, wp.pose.position.y])
+
+        # wp1_norm = np.sqrt(self.dubins_turning_radius**2/(wp_start[0]**2+wp_start[1]**2)) + 1
+        # wp2_norm = 1 - np.sqrt(self.dubins_turning_radius**2/(wp_end[0]**2+wp_end[1]**2))
+
+        # wp1 = copy.deepcopy(self.wp_old)
+        # wp1.pose.position.x *= wp1_norm
+        # wp1.pose.position.y *= wp1_norm
+        # wp1.pose.orientation = self.wp_old.pose.orientation
+        
+        # wp2 = copy.deepcopy(wp)
+        # wp2.pose.position.x *= wp2_norm
+        # wp2.pose.position.y *= wp2_norm
+        # wp2.pose.orientation = self.wp_old.pose.orientation
+
+        norm = np.linalg.norm(wp_end-wp_start)
+        xs=np.linspace(wp_start[0],wp_end[0],int(norm/self.dubins_turning_radius))
+        ys=np.linspace(wp_start[1],wp_end[1],int(norm/self.dubins_turning_radius))
+        print("xs: ", xs)
+        print("ys: ", ys)
+        if len(xs) == 0:
+            return None
+        wp1_vec = np.array([xs[1],ys[1]])
+        wp2_vec = np.array([xs[-2],ys[-2]])
+
+        wp1 = copy.deepcopy(wp)
+        wp1.pose.position.x = wp1_vec[0]
+        wp1.pose.position.y = wp1_vec[1]
+        wp1.pose.orientation = self.wp_old.pose.orientation #Correct heading
+        
+        wp2 = copy.deepcopy(wp)
+        wp2.pose.position.x = wp2_vec[0]
+        wp2.pose.position.y = wp2_vec[1]
+        wp2.pose.orientation = self.wp_old.pose.orientation
+
+        return [wp1,wp2]
+
+    def publish_points_to_rviz(self,points_array):
+        marker_array = MarkerArray()
+        for i,point in enumerate(points_array):
+            marker = Marker()
+            marker.header.frame_id = self.map_frame
+            marker.type = marker.SPHERE
+            marker.action = marker.ADD
+            marker.id = i
+            marker.scale.x = 5
+            marker.scale.y = 5
+            marker.scale.z = 5
+            marker.color.a = 1.0
+            marker.color.r = 1.0
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            marker.pose.orientation.w = 1.0
+            marker.pose.position.x = point.pose.position.x
+            marker.pose.position.y = point.pose.position.y
+            marker.pose.position.z = point.pose.position.z
+            marker_array.markers.append(marker)
+        self.point_marker_pub.publish(marker_array)
 
 
 if __name__ == '__main__':
