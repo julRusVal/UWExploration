@@ -63,13 +63,17 @@ class W2WMissionPlanner(object):
         self.dubins_pub = rospy.Publisher('dubins_path', Path, queue_size=1)
 
         self.wp_old = None
+        self.wp_artificial_old = None
 
         self.point_marker_pub = rospy.Publisher('/multi_agent/artificial_wps', MarkerArray, queue_size=1)
+
+        self.wp_counter = 0
 
 
         while not rospy.is_shutdown():
             
             if self.latest_path.poses and not self.relocalizing:
+                self.wp_counter += 1
                 # Get next waypoint in path
                 rospy.loginfo("Sending WP")
                 wp = self.latest_path.poses[0]
@@ -91,6 +95,7 @@ class W2WMissionPlanner(object):
                 if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'dubins_smarc':
                     if self.wp_old is None:
                         self.wp_old = robot_pose
+                        self.wp_artificial_old = robot_pose
                 
                     wps = self.generate_two_artificial_wps(wp)
                     if wps is None:
@@ -121,9 +126,10 @@ class W2WMissionPlanner(object):
                     # del configurations[0:3] #remove first wp since it's the robot pose
                     for wp in wps:
                         if self.wp_follower_type == 'dubins':
-                            configurations = self.generate_dubins_path(goal_pose,robot_pose)
+                            configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
                         elif self.wp_follower_type == 'dubins_smarc':
-                            configurations = self.generate_dubins_smarc_path(goal_pose,robot_pose)
+                            configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
+                        self.wp_artificial_old = wp
                     
                         dubins_path = Path()
                         dubins_path.header.frame_id = self.map_frame
@@ -152,6 +158,7 @@ class W2WMissionPlanner(object):
                             self.ac.send_goal(goal)
                             self.ac.wait_for_result()
                             rospy.loginfo("WP reached, moving on to next one")
+                        # rospy.sleep(10)
                     #-----------------------------------------------------------
 
                 elif self.wp_follower_type == 'simple':
@@ -169,6 +176,9 @@ class W2WMissionPlanner(object):
                     self.ac.send_goal(goal)
                     self.ac.wait_for_result()
                     rospy.loginfo("WP reached, moving on to next one")
+                else:
+                    rospy.logerr("Unknown waypoint follower type: %s", self.wp_follower_type)
+                    raise ValueError("Unknown waypoint follower type: %s", self.wp_follower_type)
 
             elif not self.latest_path.poses:
                 rospy.loginfo_once("Mission finished")
@@ -228,25 +238,34 @@ class W2WMissionPlanner(object):
         # wp2.pose.orientation = self.wp_old.pose.orientation
 
         norm = np.linalg.norm(wp_end-wp_start)
-        xs=np.linspace(wp_start[0],wp_end[0],int(norm/self.dubins_turning_radius))
-        ys=np.linspace(wp_start[1],wp_end[1],int(norm/self.dubins_turning_radius))
-        print("xs: ", xs)
-        print("ys: ", ys)
+        num_wps = int(norm/(self.dubins_turning_radius))
+        xs=np.linspace(wp_start[0],wp_end[0],num_wps)
+        ys=np.linspace(wp_start[1],wp_end[1],num_wps)
         if len(xs) == 0:
             return None
         wp1_vec = np.array([xs[1],ys[1]])
         wp2_vec = np.array([xs[-2],ys[-2]])
 
+        if wp2_vec[0] > wp1_vec[0]:
+            heading = 0
+        elif wp2_vec[0] < wp1_vec[0]:
+            heading = math.pi
+        elif wp2_vec[1] > wp1_vec[1]:
+            heading = math.pi/2
+        elif wp2_vec[1] < wp1_vec[1]: #Won't really happen since we're always going forwards
+            heading = -math.pi/2
+
+        quaternion = tf.transformations.quaternion_from_euler(0, 0, heading)
+
         wp1 = copy.deepcopy(wp)
         wp1.pose.position.x = wp1_vec[0]
         wp1.pose.position.y = wp1_vec[1]
-        wp1.pose.orientation = self.wp_old.pose.orientation #Correct heading
+        wp1.pose.orientation = Quaternion(*quaternion)
         
         wp2 = copy.deepcopy(wp)
         wp2.pose.position.x = wp2_vec[0]
         wp2.pose.position.y = wp2_vec[1]
-        wp2.pose.orientation = self.wp_old.pose.orientation
-
+        wp2.pose.orientation = Quaternion(*quaternion)
         return [wp1,wp2]
 
     def publish_points_to_rviz(self,points_array):

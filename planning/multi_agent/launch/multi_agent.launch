@@ -22,7 +22,7 @@
     <arg name="node_name_navigation" default="auv_navigation_node"/>
     <arg name="max_thrust" default="5.0"/>
     <!-- Acceptable types below: 'dubins','dubins_smarc','simple' -->
-    <arg name="waypoint_follower_type" default="dubins_smarc"/>
+    <arg name="waypoint_follower_type" default="dubins"/>
     <arg name="dubins_turning_radius" default="5"/>
 	<arg name="dubins_step_size" default="0.5"/>
 	<arg name="goal_tolerance" default="1.0"/>
