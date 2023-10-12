@@ -593,22 +593,22 @@ def sample_between_wps(wp_from, wp_to, turn_radius, step):
 
 
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    # plt.ion()
+# if __name__ == "__main__":
+#     import matplotlib.pyplot as plt
+#     # plt.ion()
 
-    wps = [
-        Waypoint(0, 0, 90),
-        Waypoint(7, 7, 1),
-        Waypoint(15,9, 0),
-        Waypoint(0, 5, 90),
-    ]
-    fig = plt.figure()
-    for i in range(len(wps)-1):
-        traj = sample_between_wps(wps[i], wps[i+1], 5, 0.5)
-        print(traj)
-        plt.plot(traj[:,0], traj[:,1])
-    plt.show()
+#     wps = [
+#         Waypoint(0, 0, 90),
+#         Waypoint(7, 7, 1),
+#         Waypoint(15,9, 0),
+#         Waypoint(0, 5, 90),
+#     ]
+#     fig = plt.figure()
+#     for i in range(len(wps)-1):
+#         traj = sample_between_wps(wps[i], wps[i+1], 5, 0.5)
+#         print(traj)
+#         plt.plot(traj[:,0], traj[:,1])
+#     plt.show()
 
-    print("sssss")
+#     print("sssss")
 

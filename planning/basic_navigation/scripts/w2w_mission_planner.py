@@ -14,7 +14,7 @@ import math
 import dubins
 import pdb
 import copy
-# import dubins_smarc
+import dubins_smarc
 
 
 
@@ -35,6 +35,8 @@ class W2WMissionPlanner(object):
         self.relocalize_topic = rospy.get_param('~relocalize_topic')
         self.base_frame = rospy.get_param('~base_frame', 'base_link')
         self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'dubins_smarc')
+        self.dubins_step_size = rospy.get_param('~dubins_step_size', 0.5)
+        self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius', 5)
 
 
 
@@ -105,8 +107,7 @@ class W2WMissionPlanner(object):
                     if self.wp_follower_type == 'dubins':
                         configurations = self.generate_dubins_path(goal_pose,robot_pose)
                     elif self.wp_follower_type == 'dubins_smarc':
-                        # configurations = self.generate_dubins_smarc_path(goal_pose,robot_pose)
-                        pass
+                        configurations = self.generate_dubins_smarc_path(goal_pose,robot_pose)
                 
                     dubins_path = Path()
                     dubins_path.header.frame_id = self.map_frame
@@ -174,15 +175,24 @@ class W2WMissionPlanner(object):
         q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
         goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
         q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
-        turning_radius = 15
-        step_size = 0.5
+        turning_radius = self.dubins_turning_radius
+        step_size = self.dubins_step_size
 
         path = dubins.shortest_path(q0, q1, turning_radius)
         configurations, _ = path.sample_many(step_size)
         return configurations
 
-    def generate_dubins_smarc_path(self):
-        pass
+    def generate_dubins_smarc_path(self,goal_pose,robot_pose):
+        wp_start = dubins_smarc.Waypoint(robot_pose.pose.position.x, robot_pose.pose.position.y, tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2])
+        wp_end = dubins_smarc.Waypoint(goal_pose.pose.position.x, goal_pose.pose.position.y, tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2])
+
+        turning_radius = self.dubins_turning_radius
+        step_size = self.dubins_step_size
+
+        traj = dubins_smarc.sample_between_wps(wp_start, wp_end, turning_radius, step_size)
+        #convert traj from 2D array with N rows and 3 columns to 1D array containing N 3D tuples
+        configurations = [tuple(x) for x in traj]
+        return configurations
 
 
 if __name__ == '__main__':
