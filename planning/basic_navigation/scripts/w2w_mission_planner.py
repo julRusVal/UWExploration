@@ -14,7 +14,7 @@ import math
 import dubins
 import pdb
 import copy
-# import smarc_dubins
+# import dubins_smarc
 
 
 
@@ -34,6 +34,8 @@ class W2WMissionPlanner(object):
         self.map_frame = rospy.get_param('~map_frame', 'map')
         self.relocalize_topic = rospy.get_param('~relocalize_topic')
         self.base_frame = rospy.get_param('~base_frame', 'base_link')
+        self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'dubins_smarc')
+
 
 
         # The waypoints as a path
@@ -58,7 +60,6 @@ class W2WMissionPlanner(object):
         self.listener = tf.TransformListener()
         self.dubins_pub = rospy.Publisher('dubins_path', Path, queue_size=1)
 
-
         while not rospy.is_shutdown():
             
             if self.latest_path.poses and not self.relocalizing:
@@ -67,27 +68,8 @@ class W2WMissionPlanner(object):
                 wp = self.latest_path.poses[0]
                 del self.latest_path.poses[0]
 
-                #Create dubins path
-                #-----------------------------------------------------------
-
-                # goal_pose = PoseStamped()
-                # goal_pose.header.frame_id = wp.header.frame_id
-                # goal_pose.header.stamp = rospy.Time.now()
-                # goal_pose.pose.position = wp.pose.position
-                # goal_pose.pose.orientation = wp.pose.orientation
-
                 goal_pose = copy.deepcopy(wp)
                 goal_pose.header.stamp = rospy.Time(0)
-
-                # goal_pose_local = self.listener.transformPose(
-                #     self.base_frame, goal_pose)
-                
-                # #plot goal point vs base frame
-                # plt.figure()
-                # plt.plot(goal_pose_local.point.x, goal_pose_local.point.y, 'ro')
-                # plt.plot(0,0,'bo')
-                # plt.axis('equal')
-                # plt.show()
 
                 robot_pose_local = PoseStamped()
                 robot_pose_local.header.frame_id = self.base_frame
@@ -96,100 +78,83 @@ class W2WMissionPlanner(object):
                 robot_pose = self.listener.transformPose( #we need to send all wp's in map frame in order to be able to check if wp is reached correctly. Otherwise we would never stop (due to how we check if reached). Also it's cheaper to transform once for each robot rather than trasnforming for all wps in the dubins path
                     self.map_frame, robot_pose_local)
 
+                #Create dubins path
+                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'dubins_smarc':
+                    #-----------------------------------------------------------
+                    # goal_pose = copy.deepcopy(wp)
+                    # goal_pose.header.stamp = rospy.Time(0)
+
+                    # robot_pose_local = PoseStamped()
+                    # robot_pose_local.header.frame_id = self.base_frame
+                    # robot_pose_local.header.stamp = rospy.Time(0)
+
+                    # robot_pose = self.listener.transformPose( #we need to send all wp's in map frame in order to be able to check if wp is reached correctly. Otherwise we would never stop (due to how we check if reached). Also it's cheaper to transform once for each robot rather than trasnforming for all wps in the dubins path
+                    #     self.map_frame, robot_pose_local)
+
+                    #dubins tests
+                    # robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]
+                    # q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
+                    # goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
+                    # q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
+                    # turning_radius = 15
+                    # step_size = 0.5
+
+                    # path = dubins.shortest_path(q0, q1, turning_radius)
+                    # configurations, _ = path.sample_many(step_size)
+                    # del configurations[0:3] #remove first wp since it's the robot pose
+                    if self.wp_follower_type == 'dubins':
+                        configurations = self.generate_dubins_path(goal_pose,robot_pose)
+                    elif self.wp_follower_type == 'dubins_smarc':
+                        # configurations = self.generate_dubins_smarc_path(goal_pose,robot_pose)
+                        pass
                 
-                #dubins tests
-                robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]
-                q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
-                goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
-                q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
-                turning_radius = 15
-                step_size = 0.5
+                    dubins_path = Path()
+                    dubins_path.header.frame_id = self.map_frame
+                    dubins_path.header.stamp = rospy.Time(0)
 
-                path = dubins.shortest_path(q0, q1, turning_radius)
-                configurations, _ = path.sample_many(step_size)
-                del configurations[0:3] #remove first wp since it's the robot pose
-                #List all available methods for the path object
-                # print(dir(path))
+                    for sub_wp in configurations:
+                        wp = PoseStamped()
+                        wp.header.frame_id = self.map_frame
+                        wp.header.stamp = rospy.Time(0)
+                        wp.pose.position.x = sub_wp[0]
+                        wp.pose.position.y = sub_wp[1]
+                        wp.pose.position.z = 0
+                        quaternion = tf.transformations.quaternion_from_euler(0, 0, sub_wp[2])
+                        wp.pose.orientation = Quaternion(*quaternion)
+                        # self.latest_path.poses.insert(0, wp)
 
-                # pdb.set_trace()
-                #sub sample configurations
-                # configurations = configurations[::10]
-                # pdb.set_trace()
-                # configurations = self.filter_dubins_path(configurations)
-                # pdb.set_trace()
-                # # Plot
-                # configurations_array = np.array(configurations)
-                # if len(configurations_array) > 0:
-                #     plt.figure()
-                #     plt.plot(configurations_array[:,0], configurations_array[:,1])
-                #     plt.axis('equal')
-                #     plt.show()
-                dubins_path = Path()
-                dubins_path.header.frame_id = self.map_frame
-                dubins_path.header.stamp = rospy.Time(0)
-                for sub_wp in configurations:
-                    wp = PoseStamped()
-                    wp.header.frame_id = self.map_frame
-                    wp.header.stamp = rospy.Time(0)
-                    wp.pose.position.x = sub_wp[0]
-                    wp.pose.position.y = sub_wp[1]
-                    wp.pose.position.z = 0
-                    quaternion = tf.transformations.quaternion_from_euler(0, 0, sub_wp[2])
-                    wp.pose.orientation = Quaternion(*quaternion)
-                    # self.latest_path.poses.insert(0, wp)
+                        dubins_path.poses.append(wp)
+                    
+                    self.dubins_pub.publish(dubins_path)
+                    
+                    for i,wp in enumerate(dubins_path.poses):
+                        print("Sending wp %d of %d" % (i+1,len(dubins_path.poses)))
+                        # print(wp)
+                        goal = MoveBaseGoal(wp)
+                        goal.target_pose.header.frame_id = self.map_frame
+                        self.ac.send_goal(goal)
+                        self.ac.wait_for_result()
+                        rospy.loginfo("WP reached, moving on to next one")
+                    #-----------------------------------------------------------
 
+                elif self.wp_follower_type == 'simple':
+                    #Publish path to rviz
+                    dubins_path = Path()
+                    dubins_path.header.frame_id = self.map_frame
+                    dubins_path.header.stamp = rospy.Time(0)
+                    dubins_path.poses.append(robot_pose)
                     dubins_path.poses.append(wp)
-                
-                self.dubins_pub.publish(dubins_path)
+                    self.dubins_pub.publish(dubins_path)
 
-                #TODO: 
-                #1.TUNE PID controller and see if that solves the weird behaviours
-                
-                for i,wp in enumerate(dubins_path.poses):
-                    print("Sending wp %d of %d" % (i+1,len(dubins_path.poses)))
-                    # print(wp)
+                    # TODO: normalize quaternions here according to rviz warning?
                     goal = MoveBaseGoal(wp)
                     goal.target_pose.header.frame_id = self.map_frame
                     self.ac.send_goal(goal)
                     self.ac.wait_for_result()
                     rospy.loginfo("WP reached, moving on to next one")
-                #-----------------------------------------------------------
-
-
-                # TODO: normalize quaternions here according to rviz warning?
-                # goal = MoveBaseGoal(wp)
-                # goal.target_pose.header.frame_id = self.map_frame
-                # self.ac.send_goal(goal)
-                # self.ac.wait_for_result()
-                # rospy.loginfo("WP reached, moving on to next one")
 
             elif not self.latest_path.poses:
                 rospy.loginfo_once("Mission finished")
-
-    def filter_dubins_path(self, configurations):
-        """If you want to reduce the number of waypoints and have 
-        waypoints only before each left turn, right turn, or going 
-        straight, you'll need to post-process the generated path to 
-        filter out unnecessary waypoints. """
-        
-        filtered_configurations = []  
-
-        # filtered_configurations.append(configurations[0]) # Add the start point
-
-        for i in range(1, len(configurations) - 1):
-            prev_configuration = configurations[i - 1]
-            current_configuration = configurations[i]
-            next_configuration = configurations[i + 1]
-
-            # Calculate the change in heading from the previous waypoint to the current one
-            delta_heading = current_configuration[2] - prev_configuration[2]
-
-            # Check if the waypoint is before a turn or on a straight segment
-            if abs(delta_heading) > np.deg2rad(2):  # You can adjust this threshold
-                filtered_configurations.append(current_configuration)
-
-        filtered_configurations.append(configurations[-1])  # Add the goal point
-        return filtered_configurations
 
     def start_relocalize(self, bool_msg):
         self.relocalizing = bool_msg.data
@@ -203,6 +168,21 @@ class W2WMissionPlanner(object):
         # Waypoints for LC from the backseat driver
         rospy.loginfo("LC wp received")
         self.latest_path.poses.insert(0, wp_msg)
+    
+    def generate_dubins_path(self,goal_pose,robot_pose):
+        robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]
+        q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
+        goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
+        q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
+        turning_radius = 15
+        step_size = 0.5
+
+        path = dubins.shortest_path(q0, q1, turning_radius)
+        configurations, _ = path.sample_many(step_size)
+        return configurations
+
+    def generate_dubins_smarc_path(self):
+        pass
 
 
 if __name__ == '__main__':

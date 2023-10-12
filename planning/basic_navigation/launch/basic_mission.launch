@@ -10,6 +10,8 @@
 
     <arg name="max_throttle" default="4.0"/>
     <arg name="max_thrust" default="0.3"/>
+    <arg name="waypoint_follower_type" default="simple"/>
+
 
 
 	<group ns="navigation">
@@ -23,6 +25,8 @@
 					<param name="wp_topic"  value="/navigation/lc_wp" />
 					<param name="relocalize_topic"  value="/$(arg namespace)/pause_planner"/>
 					<param name="base_frame"  value="$(arg namespace)/base_link" />
+        			<param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
+
 
 				</node>
 

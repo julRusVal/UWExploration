@@ -21,6 +21,9 @@
     <arg name="manual_control" default="false"/>
     <arg name="node_name_navigation" default="auv_navigation_node"/>
     <arg name="max_thrust" default="1.0"/>
+    <!-- Acceptable types below: 'dubins','dubins_smarc','simple' -->
+    <arg name="waypoint_follower_type" default="dubins_smarc"/>
+
 
 
     <!-- Specific args for path relayer -->
@@ -73,6 +76,7 @@
         
         <param name="manual_control" value="$(arg manual_control)"/> 
         <param name="max_thrust" value="$(arg max_thrust)"/>
+        <param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
         
     </node>
 

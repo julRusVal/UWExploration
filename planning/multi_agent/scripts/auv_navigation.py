@@ -12,6 +12,7 @@ class AUVNavigation():
         rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~navigation_launch_file',rospack.get_path('basic_navigation') + '/launch/basic_mission.launch')
         self.max_thrust = rospy.get_param('~max_thrust', 1e6)
+        self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'dubins_smarc')
 
         rospy.loginfo("Enabling AUV navigation...")
 
@@ -22,6 +23,7 @@ class AUVNavigation():
                           "manual_control:=" + str(self.manual_control),
                           "namespace:=" + namespace,
                           "max_thrust:=" + str(self.max_thrust),
+                          "waypoint_follower_type:=" + str(self.wp_follower_type),
                           ])
             
             # rospy.sleep(3)
