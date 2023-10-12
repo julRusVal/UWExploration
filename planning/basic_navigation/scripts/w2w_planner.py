@@ -216,7 +216,7 @@ class W2WPathPlanner(object):
         self.inclination_top = rospy.get_param('~inclination_cmd', '/inclination')
         self.as_name = rospy.get_param('~path_planner_as', 'path_planner')
         
-        self.P_throttle = rospy.get_param('~P_throttle', 5.0)
+        self.P_throttle = rospy.get_param('~P_throttle', 1.0)
         self.I_throttle = rospy.get_param('~I_throttle', 0.0)
         self.D_throttle = rospy.get_param('~D_throttle', 0.0)
         self.P_thrust = rospy.get_param('~P_thrust', 1.0)
@@ -232,7 +232,7 @@ class W2WPathPlanner(object):
         self.nav_goal = None
 
         self.listener = tf.TransformListener()
-        rospy.Timer(rospy.Duration(1/10), self.timer_callback)
+        rospy.Timer(rospy.Duration(1/40), self.timer_callback)
 
         self.throttle_pub = rospy.Publisher(self.throttle_top, Float64, queue_size=1)
         self.thruster_pub = rospy.Publisher(self.thruster_top, Float64, queue_size=1)

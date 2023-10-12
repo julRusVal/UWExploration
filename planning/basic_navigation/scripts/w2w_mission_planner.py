@@ -130,6 +130,8 @@ class W2WMissionPlanner(object):
                         elif self.wp_follower_type == 'dubins_smarc':
                             configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
                         self.wp_artificial_old = wp
+
+                        configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
                     
                         dubins_path = Path()
                         dubins_path.header.frame_id = self.map_frame
@@ -289,6 +291,26 @@ class W2WMissionPlanner(object):
             marker.pose.position.z = point.pose.position.z
             marker_array.markers.append(marker)
         self.point_marker_pub.publish(marker_array)
+    
+    def filter_dubins_path(self, configurations):
+        """If you want to reduce the number of waypoints and have 
+        waypoints only before each left turn, right turn, or going 
+        straight, you'll need to post-process the generated path to 
+        filter out unnecessary waypoints. """
+        
+        filtered_configurations = []  
+        # filtered_configurations.append(configurations[0]) # Add the start point
+        for i in range(1, len(configurations) - 1):
+            prev_configuration = configurations[i - 1]
+            current_configuration = configurations[i]
+            next_configuration = configurations[i + 1]
+            # Calculate the change in heading from the previous waypoint to the current one
+            delta_heading = current_configuration[2] - prev_configuration[2]
+            # Check if the waypoint is before a turn or on a straight segment
+            if abs(delta_heading) > np.deg2rad(1):  # You can adjust this threshold
+                filtered_configurations.append(current_configuration)
+        filtered_configurations.append(configurations[-1])  # Add the goal point
+        return filtered_configurations
 
 
 if __name__ == '__main__':
