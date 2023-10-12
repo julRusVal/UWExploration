@@ -131,12 +131,12 @@ class W2WPathPlanner(object):
                 yaw_setpoint = (self.P_thrust * thrust_error + 
                                 self.I_thrust * self.int_thrust_error +
                                 self.D_thrust * der_thrust_error)
-                # throttle_level = (self.P_throttle * throttle_error + 
-                #                   self.I_throttle * self.int_throttle_error +
-                #                   self.D_throttle * der_throttle_error)
-                throttle_level = self.max_throttle
-                
+                throttle_level = (self.P_throttle * throttle_error + 
+                                  self.I_throttle * self.int_throttle_error +
+                                  self.D_throttle * der_throttle_error)
+                # throttle_level = self.max_throttle
                 yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
+               
                 throttle_level = min(self.max_throttle, throttle_level)
 
                 self.motion_command(throttle_level, yaw_setpoint, 0.)
@@ -190,7 +190,6 @@ class W2WPathPlanner(object):
             [self.nav_goal.position.x, self.nav_goal.position.y, self.nav_goal.position.z])
 
         rospy.logdebug("diff " + str(np.linalg.norm(start_pos - end_pos)))
-        print("diff " + str(np.linalg.norm(start_pos - end_pos)))
         if np.linalg.norm(start_pos - end_pos) < self.goal_tolerance:
             # Goal reached
             self.nav_goal = None
@@ -233,7 +232,7 @@ class W2WPathPlanner(object):
         self.nav_goal = None
 
         self.listener = tf.TransformListener()
-        rospy.Timer(rospy.Duration(2), self.timer_callback)
+        rospy.Timer(rospy.Duration(1/10), self.timer_callback)
 
         self.throttle_pub = rospy.Publisher(self.throttle_top, Float64, queue_size=1)
         self.thruster_pub = rospy.Publisher(self.thruster_top, Float64, queue_size=1)
