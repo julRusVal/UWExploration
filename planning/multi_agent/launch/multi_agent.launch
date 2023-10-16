@@ -21,7 +21,7 @@
     <arg name="manual_control" default="false"/>
     <arg name="node_name_navigation" default="auv_navigation_node"/>
     <arg name="max_thrust" default="5.0"/>
-    <arg name="max_throttle" default="1.0"/>
+    <arg name="max_throttle" default="10.0"/>
     <!-- Acceptable types below: 'dubins','dubins_smarc','simple' -->
     <arg name="waypoint_follower_type" default="dubins"/>
     <arg name="dubins_turning_radius" default="5"/>

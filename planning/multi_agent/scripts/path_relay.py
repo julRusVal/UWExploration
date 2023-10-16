@@ -41,7 +41,7 @@ class PathRelay():
                 #     start_pose = agent_path.poses[0].pose
                 #     self.teleport_agent_to_pose(agent_id, start_pose)
                 self.pub_dict[agent_id].publish(agent_path)
-                rospy.loginfo(str("Published path for agent: " + str(agent_id)))
+                rospy.loginfo(str("Published lawn mover path for agent: " + str(agent_id)))
                 rate.sleep()
         
 
