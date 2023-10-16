@@ -142,7 +142,7 @@ class W2WPathPlanner(object):
                
                 throttle_level = min(self.max_throttle, throttle_level)
 
-
+                #Time boosting 
                 if len(self.delta_t_array) > 0:
                     delta_t_ij = self.delta_t_array.pop(0)
                     if delta_t_ij:
@@ -152,6 +152,11 @@ class W2WPathPlanner(object):
                         boost = 1.0
                         delta_t_ik = time.time() - self.t_start
                         throttle_level = min(v for v in [3*self.max_throttle,(delta_t_ij/(delta_t_ij-delta_t_ik)-1)*boost] if v > 0)
+                #TODO:
+                #1. Create common time tags for all agents in pattern generator, they all should have common time tags 
+                #2. Use these common time tags to boost the throttle of agents that are behind in the pattern
+                #3. Edit aux launch file to generate cool lookingmaps in rviz
+                #4. Start looking into PF
                     
 
 
