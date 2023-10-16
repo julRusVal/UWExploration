@@ -9,7 +9,7 @@ from move_base_msgs.msg import MoveBaseFeedback, MoveBaseResult, MoveBaseAction,
 import actionlib
 import rospy
 import tf
-from std_msgs.msg import Float64, Header, Bool
+from std_msgs.msg import Float64, Header, Bool, Time
 import math
 import dubins
 import pdb
@@ -39,6 +39,7 @@ class W2WMissionPlanner(object):
         self.dubins_step_size = rospy.get_param('~dubins_step_size', 0.5)
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius', 5)
         self.namespace = rospy.get_param('~namespace', 'hugin')
+        self.max_throttle = rospy.get_param('~max_throttle', 4)
 
 
         # The waypoints as a path
@@ -67,6 +68,7 @@ class W2WMissionPlanner(object):
         self.wp_artificial_old = None
 
         self.point_marker_pub = rospy.Publisher('artificial_wps', MarkerArray, queue_size=1)
+        self.delta_t_pub = rospy.Publisher('delta_t', Time, queue_size=1)
 
         self.wp_counter = 0
 
@@ -103,6 +105,10 @@ class W2WMissionPlanner(object):
                         continue
                     self.wp_old = wp
                     self.publish_points_to_rviz(wps)
+                    # delta_t = self.calc_optimal_delta_t(wps[0],wps[1])
+                    # if delta_t is not None:
+                    #     self.delta_t_pub.publish(delta_t)
+
                     #-----------------------------------------------------------
                     # goal_pose = copy.deepcopy(wp)
                     # goal_pose.header.stamp = rospy.Time(0)
@@ -125,14 +131,20 @@ class W2WMissionPlanner(object):
                     # path = dubins.shortest_path(q0, q1, turning_radius)
                     # configurations, _ = path.sample_many(step_size)
                     # del configurations[0:3] #remove first wp since it's the robot pose
-                    for wp in wps:
+                    for i,wp in enumerate(wps):
+                        if i==1:
+                            print("sending delta t for time boost")
+                            delta_t = self.calc_optimal_delta_t(wps[0],wps[1])
+                            if delta_t is not None:
+                                self.delta_t_pub.publish(delta_t)
+
                         if self.wp_follower_type == 'dubins':
                             configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
                         elif self.wp_follower_type == 'dubins_smarc':
                             configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
                         self.wp_artificial_old = wp
 
-                        # configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
+                        configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
                     
                         dubins_path = Path()
                         dubins_path.header.frame_id = self.map_frame
@@ -314,6 +326,16 @@ class W2WMissionPlanner(object):
         filtered_configurations.append(configurations[-1])  # Add the goal point
         return filtered_configurations
 
+    def calc_optimal_delta_t(self,wp1,wp2):
+        """Calculate the optimal delta_t if moving in straight line between two waypoints and using max velocity"""
+        delta_s = np.linalg.norm(np.array([wp2.pose.position.x,wp2.pose.position.y])-np.array([wp1.pose.position.x,wp1.pose.position.y]))
+        if wp1.pose.orientation == wp2.pose.orientation:
+            #only return delta_t if we're moving in a straight line
+            delta_t = Time()
+            delta_t.data.secs = int(delta_s/self.max_throttle)
+            return delta_t
+        else:
+            return None
 
 if __name__ == '__main__':
 

@@ -34,6 +34,8 @@
 					<param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
 					<param name="dubins_step_size" value="$(arg dubins_step_size)"/>
 					<param name="namespace" value="$(arg namespace)"/>
+					<param name="max_throttle"  value="$(arg max_throttle)" />
+
 
 
 				</node>

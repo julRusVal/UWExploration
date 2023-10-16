@@ -15,7 +15,8 @@ from std_msgs.msg import Float64, Header, Bool
 import math
 import dubins
 import pdb
-
+from std_msgs.msg import Time
+import time
 
 class W2WPathPlanner(object):
 
@@ -107,6 +108,8 @@ class W2WPathPlanner(object):
                 throttle_error = np.linalg.norm(np.array([goal_point_local.point.x + goal_point_local.point.y]))
                 thrust_error = math.atan2(goal_point_local.point.y,goal_point_local.point.x)
 
+                
+
                 if self.t:
                     dt = (rospy.Time.now() - self.t).to_sec()
                     # print("dt: ", dt)
@@ -139,6 +142,19 @@ class W2WPathPlanner(object):
                
                 throttle_level = min(self.max_throttle, throttle_level)
 
+
+                if len(self.delta_t_array) > 0:
+                    delta_t_ij = self.delta_t_array.pop(0)
+                    if delta_t_ij:
+                        print("time boosting")
+                        if self.t_start is None:
+                            self.t_start = time.time()
+                        boost = 1.0
+                        delta_t_ik = time.time() - self.t_start
+                        throttle_level = min(v for v in [3*self.max_throttle,(delta_t_ij/(delta_t_ij-delta_t_ik)-1)*boost] if v > 0)
+                    
+
+
                 self.motion_command(throttle_level, yaw_setpoint, 0.)
                 self.t = rospy.Time.now()
 
@@ -156,7 +172,7 @@ class W2WPathPlanner(object):
         # Stop thruster
         self.motion_command(0.,0.,0.)
         rospy.loginfo('%s: Succeeded' % self._action_name)
-        self._reset_controller_params()
+        self._reset_params()
         self._as.set_succeeded(self._result)
 
     def motion_command(self, throttle_level, thruster_angle, inclination_angle):
@@ -193,13 +209,17 @@ class W2WPathPlanner(object):
         if np.linalg.norm(start_pos - end_pos) < self.goal_tolerance:
             # Goal reached
             self.nav_goal = None
+
+    def delta_t_cb(self, msg):
+        self.delta_t_array.append(msg.data.secs)
     
-    def _reset_controller_params(self):
+    def _reset_params(self):
         self.t = None
         self.int_throttle_error = 0
         self.int_thrust_error = 0
         self.prev_throttle_error = 0
         self.prev_thrust_error = 0
+        self.t_start = None
 
 
     def __init__(self, name):
@@ -231,12 +251,16 @@ class W2WPathPlanner(object):
 
         self.nav_goal = None
 
+        self.delta_t_array = []
+        self.t_start = None
+
         self.listener = tf.TransformListener()
         rospy.Timer(rospy.Duration(1/20), self.timer_callback)
 
         self.throttle_pub = rospy.Publisher(self.throttle_top, Float64, queue_size=1)
         self.thruster_pub = rospy.Publisher(self.thruster_top, Float64, queue_size=1)
         self.inclination_pub = rospy.Publisher(self.inclination_top, Float64, queue_size=1)
+        self.delta_t_sub = rospy.Subscriber('delta_t', Time, self.delta_t_cb)
 
         self._as = actionlib.SimpleActionServer(
             self.as_name, MoveBaseAction, execute_cb=self.execute_cb, auto_start=False)
