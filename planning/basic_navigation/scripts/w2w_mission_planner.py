@@ -38,6 +38,7 @@ class W2WMissionPlanner(object):
         self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'dubins_smarc')
         self.dubins_step_size = rospy.get_param('~dubins_step_size', 0.5)
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius', 5)
+        self.namespace = rospy.get_param('~namespace', 'hugin')
 
 
         # The waypoints as a path
@@ -65,7 +66,7 @@ class W2WMissionPlanner(object):
         self.wp_old = None
         self.wp_artificial_old = None
 
-        self.point_marker_pub = rospy.Publisher('/multi_agent/artificial_wps', MarkerArray, queue_size=1)
+        self.point_marker_pub = rospy.Publisher('artificial_wps', MarkerArray, queue_size=1)
 
         self.wp_counter = 0
 

@@ -33,6 +33,7 @@
         			<param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
 					<param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
 					<param name="dubins_step_size" value="$(arg dubins_step_size)"/>
+					<param name="namespace" value="$(arg namespace)"/>
 
 
 				</node>
