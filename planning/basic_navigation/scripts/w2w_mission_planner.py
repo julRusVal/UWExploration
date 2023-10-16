@@ -132,7 +132,7 @@ class W2WMissionPlanner(object):
                             configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
                         self.wp_artificial_old = wp
 
-                        configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
+                        # configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
                     
                         dubins_path = Path()
                         dubins_path.header.frame_id = self.map_frame
@@ -241,7 +241,8 @@ class W2WMissionPlanner(object):
         # wp2.pose.orientation = self.wp_old.pose.orientation
 
         norm = np.linalg.norm(wp_end-wp_start)
-        num_wps = int(norm/(self.dubins_turning_radius))
+        buffer = 0.5 #buffer in m, to avoid edge cases
+        num_wps = int(norm/(self.dubins_turning_radius + buffer))
         xs=np.linspace(wp_start[0],wp_end[0],num_wps)
         ys=np.linspace(wp_start[1],wp_end[1],num_wps)
         if len(xs) == 0:
