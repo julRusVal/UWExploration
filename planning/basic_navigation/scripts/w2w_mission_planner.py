@@ -222,7 +222,11 @@ class W2WMissionPlanner(object):
     
     def common_timestamps_cb(self, msg):
         rospy.loginfo("Received common timestamps from path pattern generator")
-        self.common_timestamps = list(msg.data[1:]) #remove the first one at 0 since it's the start time
+        data = np.array(msg.data[1:])
+        n_turns = len(data)
+        turn_duration = 10 #seconds
+        data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration
+        self.common_timestamps = list(data) #remove the first one at 0 since it's the start time
     
     def generate_dubins_path(self,goal_pose,robot_pose):
         robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]
@@ -266,7 +270,7 @@ class W2WMissionPlanner(object):
         # wp2.pose.orientation = self.wp_old.pose.orientation
 
         norm = np.linalg.norm(wp_end-wp_start)
-        buffer = 0.5 #buffer in m, to avoid edge cases
+        buffer = 3 #buffer in m, to avoid edge cases
         num_wps = int(norm/(self.dubins_turning_radius + buffer))
         xs=np.linspace(wp_start[0],wp_end[0],num_wps)
         ys=np.linspace(wp_start[1],wp_end[1],num_wps)
@@ -334,7 +338,7 @@ class W2WMissionPlanner(object):
             # Calculate the change in heading from the previous waypoint to the current one
             delta_heading = current_configuration[2] - prev_configuration[2]
             # Check if the waypoint is before a turn or on a straight segment
-            if abs(delta_heading) > np.deg2rad(1):  # You can adjust this threshold
+            if abs(delta_heading) > np.deg2rad(1) or not np.isclose(current_configuration[2]%(np.pi/2),0):  # You can adjust this threshold
                 filtered_configurations.append(current_configuration)
         filtered_configurations.append(configurations[-1])  # Add the goal point
         return filtered_configurations
