@@ -170,8 +170,9 @@ class W2WPathPlanner(object):
                     self.early = max(0,self.t_arrival-t)
 
                 #TODO:
-                #1. Create common time tags for all agents in pattern generator, they all should have common time tags 
+                #1. OK Create common time tags for all agents in pattern generator, they all should have common time tags 
                 #2. Use these common time tags to boost the throttle of agents that are behind in the pattern
+                    ## - Instead of proportional appriach, calc distance and needed velocity to catch up
                 #3. Edit aux launch file to generate cool lookingmaps in rviz
                 #4. Start looking into PF
                     
