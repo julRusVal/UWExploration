@@ -9,7 +9,7 @@ from move_base_msgs.msg import MoveBaseFeedback, MoveBaseResult, MoveBaseAction,
 import actionlib
 import rospy
 import tf
-from std_msgs.msg import Float64, Header, Bool, Time
+from std_msgs.msg import Float64, Header, Bool, Time, Int32MultiArray
 import math
 import dubins
 import pdb
@@ -54,6 +54,9 @@ class W2WMissionPlanner(object):
         rospy.Subscriber(self.relocalize_topic, Bool, self.start_relocalize, queue_size=1)
         self.relocalizing = False
 
+        rospy.Subscriber('/multi_agent/common_timestamps',Int32MultiArray,self.common_timestamps_cb,queue_size=1)
+        self.common_timestamps = None
+
         # The client to send each wp to the server
         self.ac = actionlib.SimpleActionClient(self.planner_as_name, MoveBaseAction)
         while not self.ac.wait_for_server(rospy.Duration(1)) and not rospy.is_shutdown():
@@ -69,6 +72,7 @@ class W2WMissionPlanner(object):
 
         self.point_marker_pub = rospy.Publisher('artificial_wps', MarkerArray, queue_size=1)
         self.delta_t_pub = rospy.Publisher('delta_t', Time, queue_size=1)
+        self.arrival_time_pub = rospy.Publisher('arrival_time', Time, queue_size=1)
 
         self.wp_counter = 0
 
@@ -133,10 +137,15 @@ class W2WMissionPlanner(object):
                     # del configurations[0:3] #remove first wp since it's the robot pose
                     for i,wp in enumerate(wps):
                         if i==1:
-                            print("sending delta t for time boost")
-                            delta_t = self.calc_optimal_delta_t(wps[0],wps[1])
-                            if delta_t is not None:
-                                self.delta_t_pub.publish(delta_t)
+                            # print("sending delta t for time boost")
+                            # delta_t = self.calc_optimal_delta_t(wps[0],wps[1])
+                            # if delta_t is not None:
+                            #     self.delta_t_pub.publish(delta_t)
+                            print("sending arrival time")
+                            print(self.common_timestamps)
+                            arrival_time = Time()
+                            arrival_time.data.secs = self.common_timestamps.pop(0)
+                            self.arrival_time_pub.publish(arrival_time)
 
                         if self.wp_follower_type == 'dubins':
                             configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
@@ -210,6 +219,10 @@ class W2WMissionPlanner(object):
         # Waypoints for LC from the backseat driver
         rospy.loginfo("LC wp received")
         self.latest_path.poses.insert(0, wp_msg)
+    
+    def common_timestamps_cb(self, msg):
+        rospy.loginfo("Received common timestamps from path pattern generator")
+        self.common_timestamps = list(msg.data[1:]) #remove the first one at 0 since it's the start time
     
     def generate_dubins_path(self,goal_pose,robot_pose):
         robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]

@@ -142,16 +142,28 @@ class W2WPathPlanner(object):
                
                 throttle_level = min(self.max_throttle, throttle_level)
 
-                #Time boosting 
-                if len(self.delta_t_array) > 0:
-                    delta_t_ij = self.delta_t_array.pop(0)
-                    if delta_t_ij:
-                        print("time boosting")
-                        if self.t_start is None:
-                            self.t_start = time.time()
-                        boost = 1.0
-                        delta_t_ik = time.time() - self.t_start
-                        throttle_level = min(v for v in [3*self.max_throttle,(delta_t_ij/(delta_t_ij-delta_t_ik)-1)*boost] if v > 0)
+                #Time boosting
+                # if len(self.delta_t_array) > 0:
+                #     delta_t_ij = self.delta_t_array.pop(0)
+                #     if delta_t_ij:
+                #         print("time boosting")
+                #         if self.t_start is None:
+                #             self.t_start = time.time()
+                #         boost = 1.0
+                #         delta_t_ik = time.time() - self.t_start
+                #         throttle_level = min(v for v in [3*self.max_throttle,(delta_t_ij/(delta_t_ij-delta_t_ik)-1)*boost] if v > 0)
+
+                if self.t_arrival:
+                    boost = 1.0
+                    if self.t_start is None:
+                        self.t_start = time.time()
+                    t = time.time()-self.t_start
+                    print("arrival time: ", self.t_arrival)
+                    print("current time: ", t)
+                    print("old arrival time: ", self.t_arrival_old)
+                    throttle_level = ((self.t_arrival-self.t_arrival_old)/(self.t_arrival-t)-1)*boost
+                    print("throttle level: ", throttle_level)
+
                 #TODO:
                 #1. Create common time tags for all agents in pattern generator, they all should have common time tags 
                 #2. Use these common time tags to boost the throttle of agents that are behind in the pattern
@@ -217,6 +229,9 @@ class W2WPathPlanner(object):
 
     def delta_t_cb(self, msg):
         self.delta_t_array.append(msg.data.secs)
+
+    def arrival_time_cb(self, msg):
+        self.t_arrival = msg.data.secs
     
     def _reset_params(self):
         self.t = None
@@ -224,7 +239,13 @@ class W2WPathPlanner(object):
         self.int_thrust_error = 0
         self.prev_throttle_error = 0
         self.prev_thrust_error = 0
-        self.t_start = None
+        # self.t_start = None
+        if self.t_arrival is not None:
+            self.t_arrival_old = self.t_arrival
+        else:
+            self.t_arrival_old = 0
+        self.t_arrival = None
+        
 
 
     def __init__(self, name):
@@ -258,6 +279,8 @@ class W2WPathPlanner(object):
 
         self.delta_t_array = []
         self.t_start = None
+        self.t_arrival = None
+        self.t_arrival_old = 0
 
         self.listener = tf.TransformListener()
         rospy.Timer(rospy.Duration(1/20), self.timer_callback)
@@ -266,6 +289,7 @@ class W2WPathPlanner(object):
         self.thruster_pub = rospy.Publisher(self.thruster_top, Float64, queue_size=1)
         self.inclination_pub = rospy.Publisher(self.inclination_top, Float64, queue_size=1)
         self.delta_t_sub = rospy.Subscriber('delta_t', Time, self.delta_t_cb)
+        self.arrival_time_sub = rospy.Subscriber('arrival_time', Time, self.arrival_time_cb)
 
         self._as = actionlib.SimpleActionServer(
             self.as_name, MoveBaseAction, execute_cb=self.execute_cb, auto_start=False)

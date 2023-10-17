@@ -18,7 +18,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 from rviz_visualization.srv import DisplayRvizMessage, DisplayRvizMessageRequest
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Time, Int32MultiArray
 
 import copy
 
@@ -68,6 +68,10 @@ class PatternGenerator():
         self.message_timer = rospy.Timer(rospy.Duration(0.1), self.message_timer_cb)
 
         self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
+
+        self.time_array = None
+        self.time_array_pub = rospy.Publisher('/multi_agent/common_timestamps', Int32MultiArray, queue_size=1)
+
         
         rospy.spin()
 
@@ -237,7 +241,7 @@ class PatternGenerator():
             path_msg = Path()
             path_msg.header.stamp = rospy.Time.now()
             path_msg.header.frame_id = "map"  # Assuming the waypoints are in the map frame
-
+            times = []
             # Create PoseStamped messages for each waypoint
             for wp_id, waypoint in enumerate(timed_path.wps):
                 # if wp_id == 0:
@@ -256,7 +260,7 @@ class PatternGenerator():
 
                 # Add the quaternion to pose_stamped
                 pose_stamped.pose.orientation = Quaternion(*quaternion)
-
+                times.append(int(np.rint(waypoint.time))) #Round to nearest second
                 path_msg.poses.append(pose_stamped)
 
             # Publish the Path message for this agent
@@ -264,6 +268,9 @@ class PatternGenerator():
             agent_path.agent_id = (self.num_agents-1) - agent_idx  # Reverse the order of the generated paths to match the order of the spawned AUVs
             agent_path.path = path_msg
             self.paths.path_array.append(agent_path)
+            if self.time_array is None:
+                self.time_array = times
+                self.time_array_pub.publish(Int32MultiArray(data=self.time_array))
 
             timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k') #Uncomment to plot the paths in separate window
 
