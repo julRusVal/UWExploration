@@ -161,8 +161,12 @@ class W2WPathPlanner(object):
                     print("arrival time: ", self.t_arrival)
                     print("current time: ", t)
                     print("old arrival time: ", self.t_arrival_old)
-                    throttle_level = ((self.t_arrival-self.t_arrival_old)/(self.t_arrival-t)-1)*boost
+                    time_boost = ((self.t_arrival-self.t_arrival_old)/(self.t_arrival-t)-1)*boost
+                    time_boost = max(time_boost,self.time_boost_old)
+                    throttle_level = max(throttle_level,time_boost)
+                    throttle_level = min(throttle_level,4*self.max_throttle)
                     print("throttle level: ", throttle_level)
+                    self.time_boost_old = time_boost
 
                 #TODO:
                 #1. Create common time tags for all agents in pattern generator, they all should have common time tags 
@@ -242,9 +246,8 @@ class W2WPathPlanner(object):
         # self.t_start = None
         if self.t_arrival is not None:
             self.t_arrival_old = self.t_arrival
-        else:
-            self.t_arrival_old = 0
         self.t_arrival = None
+        self.time_boost_old = 0
         
 
 
@@ -281,6 +284,7 @@ class W2WPathPlanner(object):
         self.t_start = None
         self.t_arrival = None
         self.t_arrival_old = 0
+        self.time_boost_old = 0
 
         self.listener = tf.TransformListener()
         rospy.Timer(rospy.Duration(1/20), self.timer_callback)
