@@ -167,6 +167,7 @@ class W2WPathPlanner(object):
                     throttle_level = min(throttle_level,4*self.max_throttle)
                     print("throttle level: ", throttle_level)
                     self.time_boost_old = time_boost
+                    self.early = max(0,self.t_arrival-t)
 
                 #TODO:
                 #1. Create common time tags for all agents in pattern generator, they all should have common time tags 
@@ -191,7 +192,11 @@ class W2WPathPlanner(object):
             r.sleep()
 
         # Stop thruster
-        self.motion_command(0.,0.,0.)
+        t = rospy.Time.now()
+        while rospy.Time.now() - t < rospy.Duration(self.early): #catch wait for remaining auvs, you're too early
+            self.motion_command(0.,0.,0.)
+            rospy.loginfo("waiting for remaining auvs to catch up")
+
         rospy.loginfo('%s: Succeeded' % self._action_name)
         self._reset_params()
         self._as.set_succeeded(self._result)
@@ -248,7 +253,7 @@ class W2WPathPlanner(object):
             self.t_arrival_old = self.t_arrival
         self.t_arrival = None
         self.time_boost_old = 0
-        
+        self.early = 0
 
 
     def __init__(self, name):
@@ -285,6 +290,7 @@ class W2WPathPlanner(object):
         self.t_arrival = None
         self.t_arrival_old = 0
         self.time_boost_old = 0
+        self.early = 0
 
         self.listener = tf.TransformListener()
         rospy.Timer(rospy.Duration(1/20), self.timer_callback)
