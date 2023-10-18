@@ -80,7 +80,6 @@ class W2WMissionPlanner(object):
         while not rospy.is_shutdown():
             
             if self.latest_path.poses and not self.relocalizing:
-                self.wp_counter += 1
                 # Get next waypoint in path
                 rospy.loginfo("Sending WP")
                 wp = self.latest_path.poses[0]
@@ -146,14 +145,18 @@ class W2WMissionPlanner(object):
                             arrival_time = Time()
                             arrival_time.data.secs = self.common_timestamps.pop(0)
                             self.arrival_time_pub.publish(arrival_time)
+                        
+                        if i==1 or self.wp_counter == 0:
+                            configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
 
-                        if self.wp_follower_type == 'dubins':
-                            configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
-                        elif self.wp_follower_type == 'dubins_smarc':
-                            configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
+                        else:
+                            if self.wp_follower_type == 'dubins':
+                                configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
+                            elif self.wp_follower_type == 'dubins_smarc':
+                                configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
                         self.wp_artificial_old = wp
 
-                        configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
+                        # configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
                     
                         dubins_path = Path()
                         dubins_path.header.frame_id = self.map_frame
@@ -182,6 +185,8 @@ class W2WMissionPlanner(object):
                             self.ac.send_goal(goal)
                             self.ac.wait_for_result()
                             rospy.loginfo("WP reached, moving on to next one")
+                            self.wp_counter += 1
+
                         # rospy.sleep(10)
                     #-----------------------------------------------------------
 
@@ -224,7 +229,7 @@ class W2WMissionPlanner(object):
         rospy.loginfo("Received common timestamps from path pattern generator")
         data = np.array(msg.data[1:])
         n_turns = len(data)
-        turn_duration = 10 #seconds
+        turn_duration = 7 #seconds
         data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration
         self.common_timestamps = list(data) #remove the first one at 0 since it's the start time
     
@@ -338,7 +343,7 @@ class W2WMissionPlanner(object):
             # Calculate the change in heading from the previous waypoint to the current one
             delta_heading = current_configuration[2] - prev_configuration[2]
             # Check if the waypoint is before a turn or on a straight segment
-            if abs(delta_heading) > np.deg2rad(1) or not np.isclose(current_configuration[2]%(np.pi/2),0):  # You can adjust this threshold
+            if abs(delta_heading) > np.deg2rad(2):# or not np.isclose(current_configuration[2]%(np.pi/2),0):  # You can adjust this threshold
                 filtered_configurations.append(current_configuration)
         filtered_configurations.append(configurations[-1])  # Add the goal point
         return filtered_configurations
