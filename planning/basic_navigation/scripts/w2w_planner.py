@@ -158,23 +158,28 @@ class W2WPathPlanner(object):
                     if self.t_start is None:
                         self.t_start = time.time()
                     t = time.time()-self.t_start
-                    print("arrival time: ", self.t_arrival)
-                    print("current time: ", t)
-                    print("old arrival time: ", self.t_arrival_old)
-                    time_boost = ((self.t_arrival-self.t_arrival_old)/(self.t_arrival-t)-1)*boost
-                    time_boost = max(time_boost,self.time_boost_old)
-                    throttle_level = max(throttle_level,time_boost)
-                    throttle_level = min(throttle_level,4*self.max_throttle)
-                    print("throttle level: ", throttle_level)
-                    self.time_boost_old = time_boost
-                    self.early = max(0,self.t_arrival-t)
+                    # print("arrival time: ", self.t_arrival)
+                    # print("current time: ", t)
+                    # print("old arrival time: ", self.t_arrival_old)
+                    # time_boost = ((self.t_arrival-self.t_arrival_old)/(self.t_arrival-t)-1)*boost
+                    # time_boost = max(time_boost,self.time_boost_old)
+                    # throttle_level = max(throttle_level,time_boost)
+                    # throttle_level = min(throttle_level,4*self.max_throttle)
+                    # print("throttle level: ", throttle_level)
+                    # self.time_boost_old = time_boost
+                    # self.early = max(0,self.t_arrival-t)
+                    delta_t = self.t_arrival-t
+                    distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
+                    throttle_level = distance/delta_t
+                    # print("throttle level: ", throttle_level)
 
                 #TODO:
                 #1. OK Create common time tags for all agents in pattern generator, they all should have common time tags 
                 #2. Use these common time tags to boost the throttle of agents that are behind in the pattern
                     ## - Instead of proportional appriach, calc distance and needed velocity to catch up
-                #3. Edit aux launch file to generate cool lookingmaps in rviz
-                #4. Start looking into PF
+                #3. Double check why Dubins planner sometimes generates the longer paths
+                #4. Edit aux launch file to generate cool lookingmaps in rviz
+                #5. Start looking into PF
                     
 
 
