@@ -185,7 +185,7 @@ class W2WMissionPlanner(object):
                             self.ac.send_goal(goal)
                             self.ac.wait_for_result()
                             rospy.loginfo("WP reached, moving on to next one")
-                            self.wp_counter += 1
+                    
 
                         # rospy.sleep(10)
                     #-----------------------------------------------------------
@@ -208,7 +208,7 @@ class W2WMissionPlanner(object):
                 else:
                     rospy.logerr("Unknown waypoint follower type: %s", self.wp_follower_type)
                     raise ValueError("Unknown waypoint follower type: %s", self.wp_follower_type)
-
+                self.wp_counter += 1
             elif not self.latest_path.poses:
                 rospy.loginfo_once("Mission finished")
 
@@ -230,7 +230,7 @@ class W2WMissionPlanner(object):
         data = np.array(msg.data[1:])
         n_turns = len(data)
         turn_duration = 7 #seconds
-        data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration
+        data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration #arange vector is [1 2 3 4 .... n_turns-1]
         self.common_timestamps = list(data) #remove the first one at 0 since it's the start time
     
     def generate_dubins_path(self,goal_pose,robot_pose):
@@ -275,7 +275,7 @@ class W2WMissionPlanner(object):
         # wp2.pose.orientation = self.wp_old.pose.orientation
 
         norm = np.linalg.norm(wp_end-wp_start)
-        buffer = 3 #buffer in m, to avoid edge cases
+        buffer = 0 #buffer in m, to avoid edge cases
         num_wps = int(norm/(self.dubins_turning_radius + buffer))
         xs=np.linspace(wp_start[0],wp_end[0],num_wps)
         ys=np.linspace(wp_start[1],wp_end[1],num_wps)
@@ -284,14 +284,19 @@ class W2WMissionPlanner(object):
         wp1_vec = np.array([xs[1],ys[1]])
         wp2_vec = np.array([xs[-2],ys[-2]])
 
-        if wp2_vec[0] > wp1_vec[0]:
-            heading = 0
-        elif wp2_vec[0] < wp1_vec[0]:
-            heading = math.pi
-        elif wp2_vec[1] > wp1_vec[1]:
-            heading = math.pi/2
-        elif wp2_vec[1] < wp1_vec[1]: #Won't really happen since we're always going forwards
-            heading = -math.pi/2
+        delta_x = wp2_vec[0] - wp1_vec[0]
+        delta_y = wp2_vec[1] - wp1_vec[1]
+
+        if abs(delta_x) > abs(delta_y):
+            if delta_x > 0:
+                heading = 0
+            elif delta_x < 0:
+                heading = math.pi
+        else:
+            if delta_y > 0:
+                heading = math.pi/2
+            elif delta_y < 0: #Won't really happen since we're always going forwards
+                heading = -math.pi/2
 
         quaternion = tf.transformations.quaternion_from_euler(0, 0, heading)
 
@@ -304,6 +309,10 @@ class W2WMissionPlanner(object):
         wp2.pose.position.x = wp2_vec[0]
         wp2.pose.position.y = wp2_vec[1]
         wp2.pose.orientation = Quaternion(*quaternion)
+        print("%s on wp %d" % (self.namespace,self.wp_counter+1))
+        print("artifical waypoints heading: %f deg" % np.rad2deg(heading) )
+        print("wp1 vec: %s" % wp1_vec)
+        print("wp2 vec: %s" % wp2_vec)
         return [wp1,wp2]
 
     def publish_points_to_rviz(self,points_array):
