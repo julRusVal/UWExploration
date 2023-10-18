@@ -174,10 +174,10 @@ class W2WPathPlanner(object):
                     # print("throttle level: ", throttle_level)
 
                 #TODO:
-                #1. OK Create common time tags for all agents in pattern generator, they all should have common time tags 
-                #2. Use these common time tags to boost the throttle of agents that are behind in the pattern
+                #1. OK - Create common time tags for all agents in pattern generator, they all should have common time tags 
+                #2. OK - Use these common time tags to boost the throttle of agents that are behind in the pattern
                     ## - Instead of proportional appriach, calc distance and needed velocity to catch up
-                #3. Double check why Dubins planner sometimes generates the longer paths
+                #3. OK - Double check why Dubins planner sometimes generates the longer paths
                 #4. Edit aux launch file to generate cool lookingmaps in rviz
                 #5. Start looking into PF
                     
