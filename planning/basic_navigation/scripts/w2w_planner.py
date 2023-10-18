@@ -57,11 +57,11 @@ class W2WPathPlanner(object):
             goal_point.point.y = self.nav_goal.position.y
             goal_point.point.z = self.nav_goal.position.z
 
-            # goal_pose = PoseStamped()
-            # goal_pose.header.frame_id = self.nav_goal_frame
-            # goal_pose.header.stamp = rospy.Time(0)
-            # goal_pose.pose.position = self.nav_goal.position
-            # goal_pose.pose.orientation = self.nav_goal.orientation
+            goal_pose = PoseStamped()
+            goal_pose.header.frame_id = self.nav_goal_frame
+            goal_pose.header.stamp = rospy.Time(0)
+            goal_pose.pose.position = self.nav_goal.position
+            goal_pose.pose.orientation = self.nav_goal.orientation
 
             
 
@@ -69,6 +69,8 @@ class W2WPathPlanner(object):
                 goal_point_local = self.listener.transformPoint(
                     self.base_frame, goal_point)
                 
+                goal_pose_local = self.listener.transformPose(
+                    self.base_frame, goal_pose)
 
                 #-----------------------------------------------------------
                 
@@ -104,11 +106,24 @@ class W2WPathPlanner(object):
                 #Compute throttle error
                 # throttle_level = min(self.max_throttle, np.linalg.norm(
                 #     np.array([goal_point_local.point.x + goal_point_local.point.y])))
-                
+                goal_heading = tf.transformations.euler_from_quaternion([goal_pose_local.pose.orientation.x,goal_pose_local.pose.orientation.y,goal_pose_local.pose.orientation.z,goal_pose_local.pose.orientation.w])[2]
                 throttle_error = np.linalg.norm(np.array([goal_point_local.point.x + goal_point_local.point.y]))
-                thrust_error = math.atan2(goal_point_local.point.y,goal_point_local.point.x)
+                thrust_error = math.atan2(goal_point_local.point.y,goal_point_local.point.x)# + goal_heading
 
-                
+                x = goal_point_local.point.x
+                y = goal_point_local.point.y
+                if self.on_circle is None:
+                    radius = self.dubins_turning_radius
+                    h = 0
+                    if y > 0:
+                        self.k = radius
+                    elif y < 0:
+                        self.k = -radius
+
+                    self.on_circle = self._point_on_circle(x,y,radius,h,self.k)
+                    print("on circle: ", self.on_circle)
+
+                #print("thrust error: ", np.rad2deg(thrust_error))
 
                 if self.t:
                     dt = (rospy.Time.now() - self.t).to_sec()
@@ -130,17 +145,24 @@ class W2WPathPlanner(object):
                 # Compute thrust error
                 # alpha = math.atan2(goal_point_local.point.y,
                 #                 goal_point_local.point.x)
-                sign = np.copysign(1, thrust_error)
-                yaw_setpoint = (self.P_thrust * thrust_error + 
-                                self.I_thrust * self.int_thrust_error +
-                                self.D_thrust * der_thrust_error)
-                throttle_level = (self.P_throttle * throttle_error + 
-                                  self.I_throttle * self.int_throttle_error +
-                                  self.D_throttle * der_throttle_error)
-                # throttle_level = self.max_throttle
-                yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
-               
-                throttle_level = min(self.max_throttle, throttle_level)
+                if not self.on_circle:
+                    yaw_setpoint = (self.P_thrust * thrust_error + 
+                                    self.I_thrust * self.int_thrust_error +
+                                    self.D_thrust * der_thrust_error)
+                    sign = np.copysign(1, thrust_error)
+                    yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
+                else:
+                    yaw_setpoint = np.copysign(self.max_thrust,self.k)
+                # throttle_level = (self.P_throttle * throttle_error + 
+                #                   self.I_throttle * self.int_throttle_error +
+                #                   self.D_throttle * der_throttle_error)
+                #throttle_level = min(self.max_throttle, throttle_level)
+
+                throttle_level = self.max_throttle
+                
+                # yaw_setpoint = self.max_thrust
+
+                
 
                 #Time boosting
                 # if len(self.delta_t_array) > 0:
@@ -153,25 +175,26 @@ class W2WPathPlanner(object):
                 #         delta_t_ik = time.time() - self.t_start
                 #         throttle_level = min(v for v in [3*self.max_throttle,(delta_t_ij/(delta_t_ij-delta_t_ik)-1)*boost] if v > 0)
 
-                if self.t_arrival:
-                    boost = 1.0
-                    if self.t_start is None:
-                        self.t_start = time.time()
-                    t = time.time()-self.t_start
-                    # print("arrival time: ", self.t_arrival)
-                    # print("current time: ", t)
-                    # print("old arrival time: ", self.t_arrival_old)
-                    # time_boost = ((self.t_arrival-self.t_arrival_old)/(self.t_arrival-t)-1)*boost
-                    # time_boost = max(time_boost,self.time_boost_old)
-                    # throttle_level = max(throttle_level,time_boost)
-                    # throttle_level = min(throttle_level,4*self.max_throttle)
-                    # print("throttle level: ", throttle_level)
-                    # self.time_boost_old = time_boost
-                    # self.early = max(0,self.t_arrival-t)
-                    delta_t = self.t_arrival-t
-                    distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
-                    throttle_level = distance/delta_t
-                    # print("throttle level: ", throttle_level)
+                if False:
+                    if self.t_arrival:
+                        boost = 1.0
+                        if self.t_start is None:
+                            self.t_start = time.time()
+                        t = time.time()-self.t_start
+                        # print("arrival time: ", self.t_arrival)
+                        # print("current time: ", t)
+                        # print("old arrival time: ", self.t_arrival_old)
+                        # time_boost = ((self.t_arrival-self.t_arrival_old)/(self.t_arrival-t)-1)*boost
+                        # time_boost = max(time_boost,self.time_boost_old)
+                        # throttle_level = max(throttle_level,time_boost)
+                        # throttle_level = min(throttle_level,4*self.max_throttle)
+                        # print("throttle level: ", throttle_level)
+                        # self.time_boost_old = time_boost
+                        # self.early = max(0,self.t_arrival-t)
+                        delta_t = self.t_arrival-t
+                        distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
+                        throttle_level = distance/delta_t
+                        # print("throttle level: ", throttle_level)
 
                 #TODO:
                 #1. OK - Create common time tags for all agents in pattern generator, they all should have common time tags 
@@ -232,13 +255,22 @@ class W2WPathPlanner(object):
                 self.nav_goal_frame, self.base_frame, rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return
+        
+        # nav_goal_map = PoseStamped()
+        # nav_goal_map.header.frame_id = self.nav_goal_frame
+        # nav_goal_map.header.stamp = rospy.Time(0)
+        # nav_goal_map.pose = self.nav_goal
+        # nav_goal_local = self.listener.transformPose(
+        #         self.base_frame, nav_goal_map)
+        # goal_heading_local = tf.transformations.euler_from_quaternion([nav_goal_local.pose.orientation.x,nav_goal_local.pose.orientation.y,nav_goal_local.pose.orientation.z,nav_goal_local.pose.orientation.w])[2]
 
         start_pos = np.array(trans)
         end_pos = np.array(
             [self.nav_goal.position.x, self.nav_goal.position.y, self.nav_goal.position.z])
 
         rospy.logdebug("diff " + str(np.linalg.norm(start_pos - end_pos)))
-        if np.linalg.norm(start_pos - end_pos) < self.goal_tolerance:
+        #rospy.loginfo("goal heading " + str(np.rad2deg(goal_heading_local)))
+        if np.linalg.norm(start_pos - end_pos) < self.goal_tolerance:# and np.isclose(goal_heading_local,0,atol=np.deg2rad(5)):
             # Goal reached
             self.nav_goal = None
 
@@ -260,7 +292,12 @@ class W2WPathPlanner(object):
         self.t_arrival = None
         self.time_boost_old = 0
         self.early = 0
-
+        self.on_circle = None
+        self.k = None
+    
+    def _point_on_circle(self, x, y,radius,h,k):
+        """Returns True if the point (x,y) lies on the circle centered at (h,k) with radius r"""
+        return np.isclose((x-h)**2 + (y-k)**2,radius**2,atol=1**2)
 
     def __init__(self, name):
         self._action_name = name
@@ -276,7 +313,7 @@ class W2WPathPlanner(object):
         self.inclination_top = rospy.get_param('~inclination_cmd', '/inclination')
         self.as_name = rospy.get_param('~path_planner_as', 'path_planner')
         
-        self.P_throttle = rospy.get_param('~P_throttle', 2.0)
+        self.P_throttle = rospy.get_param('~P_throttle', 1.0)
         self.I_throttle = rospy.get_param('~I_throttle', 0.0)
         self.D_throttle = rospy.get_param('~D_throttle', 0.0)
         self.P_thrust = rospy.get_param('~P_thrust', 1.0)
@@ -297,6 +334,11 @@ class W2WPathPlanner(object):
         self.t_arrival_old = 0
         self.time_boost_old = 0
         self.early = 0
+
+        self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius')
+        self.on_circle = None
+        self.k = None
+
 
         self.listener = tf.TransformListener()
         rospy.Timer(rospy.Duration(1/20), self.timer_callback)

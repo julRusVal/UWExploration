@@ -98,7 +98,7 @@ class W2WMissionPlanner(object):
                 
 
                 #Create dubins path
-                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'dubins_smarc':
+                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'dubins_smarc' or self.wp_follower_type == 'simple_artificial':
                     if self.wp_old is None:
                         self.wp_old = robot_pose
                         self.wp_artificial_old = robot_pose
@@ -107,6 +107,8 @@ class W2WMissionPlanner(object):
                     if wps is None:
                         continue
                     self.wp_old = wp
+                    # if self.wp_counter == 0:
+                    #     wps.pop(0)
                     self.publish_points_to_rviz(wps)
                     # delta_t = self.calc_optimal_delta_t(wps[0],wps[1])
                     # if delta_t is not None:
@@ -146,14 +148,15 @@ class W2WMissionPlanner(object):
                             arrival_time.data.secs = self.common_timestamps.pop(0)
                             self.arrival_time_pub.publish(arrival_time)
                         
-                        if i==1 or self.wp_counter == 0:
+                        if i==1 or self.wp_counter == 0 or self.wp_follower_type == 'simple_artificial':
                             configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
 
-                        else:
-                            if self.wp_follower_type == 'dubins':
-                                configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
-                            elif self.wp_follower_type == 'dubins_smarc':
-                                configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
+                        # else:
+                        #     if self.wp_follower_type == 'dubins':
+                        #         configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
+                        #     elif self.wp_follower_type == 'dubins_smarc':
+                        #         configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
+                            
                         self.wp_artificial_old = wp
 
                         # configurations = self.filter_dubins_path(configurations) #filter out unnecessary wps in straight lines
@@ -161,7 +164,7 @@ class W2WMissionPlanner(object):
                         dubins_path = Path()
                         dubins_path.header.frame_id = self.map_frame
                         dubins_path.header.stamp = rospy.Time(0)
-
+                        print("len configurations: %d" % len(configurations))
                         for sub_wp in configurations:
                             wp = PoseStamped()
                             wp.header.frame_id = self.map_frame
@@ -309,10 +312,10 @@ class W2WMissionPlanner(object):
         wp2.pose.position.x = wp2_vec[0]
         wp2.pose.position.y = wp2_vec[1]
         wp2.pose.orientation = Quaternion(*quaternion)
-        print("%s on wp %d" % (self.namespace,self.wp_counter+1))
-        print("artifical waypoints heading: %f deg" % np.rad2deg(heading) )
-        print("wp1 vec: %s" % wp1_vec)
-        print("wp2 vec: %s" % wp2_vec)
+        # print("%s on wp %d" % (self.namespace,self.wp_counter+1))
+        # print("artifical waypoints heading: %f deg" % np.rad2deg(heading) )
+        # print("wp1 vec: %s" % wp1_vec)
+        # print("wp2 vec: %s" % wp2_vec)
         return [wp1,wp2]
 
     def publish_points_to_rviz(self,points_array):

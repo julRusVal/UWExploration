@@ -51,6 +51,8 @@
 					<param name="thruster_cmd" value="/$(arg namespace)/thruster_cmd" />
 					<param name="inclination_cmd" value="/$(arg namespace)/inclination_cmd" />
 					<param name="path_planner_as"  value="path_planner" />
+					<param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
+
 				</node>
 
 				<!-- <node type="backseat_pf_driver.py" pkg="backseat_driver" name="backseat_driver" output="screen">
