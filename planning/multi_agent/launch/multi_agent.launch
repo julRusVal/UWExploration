@@ -54,6 +54,9 @@
     <arg name="pattern_generation" default="true"/>
 
 
+    <!-- Specific args for auxiliary nodes -->
+    <arg name="auxiliary_enabled" default="false"/>
+
 
 
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
@@ -125,4 +128,9 @@
     <node type="display_message_service.py" pkg="rviz_visualization" name="display_rviz_message_service" output="screen">
     </node>
 
+    <!-- Start auxiliary nodes  -->
+    <group if="$(arg auxiliary_enabled)">
+        <node type="auxiliary_map_and_sensors.py" pkg="multi_agent" name="auxiliary_node" output="screen">
+        </node>
+    </group>
 </launch>
