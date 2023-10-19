@@ -17,6 +17,7 @@ class AUVNavigation():
         self.dubins_step_size = rospy.get_param('~dubins_step_size', 0.5)
         self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
         self.goal_tolerance = rospy.get_param('~goal_tolerance', 1.)
+        self.time_sync = rospy.get_param('~time_sync', 'false')
 
         
 
@@ -33,7 +34,8 @@ class AUVNavigation():
                             "waypoint_follower_type:=" + str(self.wp_follower_type),
                             "dubins_step_size:=" + str(self.dubins_step_size),
                             "dubins_turning_radius:=" + str(self.dubins_turning_radius),
-                            "goal_tolerance:=" + str(self.goal_tolerance)
+                            "goal_tolerance:=" + str(self.goal_tolerance),
+                            "time_sync:=" + str(self.time_sync),
                           ])
             
             # rospy.sleep(3)

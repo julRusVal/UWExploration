@@ -35,7 +35,7 @@ class W2WMissionPlanner(object):
         self.map_frame = rospy.get_param('~map_frame', 'map')
         self.relocalize_topic = rospy.get_param('~relocalize_topic')
         self.base_frame = rospy.get_param('~base_frame', 'base_link')
-        self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'dubins_smarc')
+        self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'simple')
         self.dubins_step_size = rospy.get_param('~dubins_step_size', 0.5)
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius', 5)
         self.namespace = rospy.get_param('~namespace', 'hugin')
@@ -152,11 +152,11 @@ class W2WMissionPlanner(object):
                         if i==1 or self.wp_counter == 0 or self.wp_follower_type == 'simple_artificial':
                             configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
 
-                        # else:
-                        #     if self.wp_follower_type == 'dubins':
-                        #         configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
-                        #     elif self.wp_follower_type == 'dubins_smarc':
-                        #         configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
+                        
+                        if self.wp_follower_type == 'dubins':
+                            configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
+                        elif self.wp_follower_type == 'dubins_smarc':
+                            configurations = self.generate_dubins_smarc_path(wp,self.wp_artificial_old)
                             
                         self.wp_artificial_old = wp
 

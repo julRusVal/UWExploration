@@ -15,6 +15,8 @@
     <arg name="dubins_turning_radius" default="5"/>
 	<arg name="dubins_step_size" default="0.5"/>
 	<arg name="goal_tolerance" default="5.0"/>
+	<arg name="time_sync" default="false"/>
+
 
 
 
@@ -53,7 +55,10 @@
 					<param name="inclination_cmd" value="/$(arg namespace)/inclination_cmd" />
 					<param name="path_planner_as"  value="path_planner" />
 					<param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
+					<param name="time_sync" value="$(arg time_sync)"/>
+        			<param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
 
+					
 				</node>
 
 				<!-- <node type="backseat_pf_driver.py" pkg="backseat_driver" name="backseat_driver" output="screen">

@@ -26,8 +26,10 @@
     <!-- Acceptable types below: 'dubins','dubins_smarc','simple', 'simple_artificial' -->
     <arg name="waypoint_follower_type" default="simple_artificial"/>
     <arg name="dubins_turning_radius" default="3"/>
-	<arg name="dubins_step_size" default="3"/>
-	<arg name="goal_tolerance" default="3.0"/>
+	<arg name="dubins_step_size" default="0.5"/>
+	<arg name="goal_tolerance" default="1.0"/>
+	<arg name="time_sync" default="false"/>
+
 
 
 
@@ -87,6 +89,7 @@
         <!-- <param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/> -->
         <param name="dubins_step_size" value="$(arg dubins_step_size)"/>
         <param name="goal_tolerance" value="$(arg goal_tolerance)"/>
+        <param name="time_sync" value="$(arg time_sync)"/>
         
     </node>
 

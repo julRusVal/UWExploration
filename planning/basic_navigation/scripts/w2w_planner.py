@@ -98,7 +98,7 @@ class W2WPathPlanner(object):
                     der_throttle_error = 0
                     der_thrust_error = 0
                 
-                if not self.do_max_turn:
+                if not self.do_max_turn or self.wp_follower_type != 'simple_artificial':
                     self.goal_tolerance = self.goal_tolerance_original
                     yaw_setpoint = (self.P_thrust * thrust_error + 
                                     self.I_thrust * self.int_thrust_error +
@@ -114,15 +114,16 @@ class W2WPathPlanner(object):
                 #                   self.D_throttle * der_throttle_error)
         
                 throttle_level = self.max_throttle
-                
-                # if self.t_arrival: #if you have an arrival time, boost the throttle to guarantee you arrive on time
-                #     boost = 1.0
-                #     if self.t_start is None:
-                #         self.t_start = time.time()
-                #     t = time.time()-self.t_start
-                #     delta_t = self.t_arrival-t
-                #     distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
-                #     throttle_level = distance/delta_t
+
+                if self.time_sync:
+                    if self.t_arrival: #if you have an arrival time, boost the throttle to guarantee you arrive on time
+                        boost = 1.0
+                        if self.t_start is None:
+                            self.t_start = time.time()
+                        t = time.time()-self.t_start
+                        delta_t = self.t_arrival-t
+                        distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
+                        throttle_level = distance/delta_t
 
                 #TODO:
                 #1. OK - Create common time tags for all agents in pattern generator, they all should have common time tags 
@@ -244,12 +245,15 @@ class W2WPathPlanner(object):
         self.t_start = None
         self.t_arrival = None
         # self.t_arrival_old = 0
+        self.time_sync = rospy.get_param('~time_sync', 'false')
 
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius')
         self.do_max_turn = None
         self.k = None
-        self.goal_tolerance_max_turn = 1.03*self.goal_tolerance
+        self.goal_tolerance_max_turn = self.goal_tolerance+0.5
         self.goal_tolerance_original = self.goal_tolerance
+        self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'simple')
+        
 
 
         self.listener = tf.TransformListener()
