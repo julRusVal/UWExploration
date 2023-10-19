@@ -253,8 +253,6 @@ class W2WPathPlanner(object):
         self.goal_tolerance_max_turn = self.goal_tolerance+0.5
         self.goal_tolerance_original = self.goal_tolerance
         self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'simple')
-        
-
 
         self.listener = tf.TransformListener()
         rospy.Timer(rospy.Duration(1/20), self.timer_callback)
