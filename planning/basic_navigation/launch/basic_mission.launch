@@ -35,6 +35,7 @@
 					<param name="dubins_step_size" value="$(arg dubins_step_size)"/>
 					<param name="namespace" value="$(arg namespace)"/>
 					<param name="max_throttle"  value="$(arg max_throttle)" />
+					<param name="goal_tolerance"  value="$(arg goal_tolerance)" />
 
 
 

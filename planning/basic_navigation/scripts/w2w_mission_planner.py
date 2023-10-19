@@ -40,6 +40,7 @@ class W2WMissionPlanner(object):
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius', 5)
         self.namespace = rospy.get_param('~namespace', 'hugin')
         self.max_throttle = rospy.get_param('~max_throttle', 4)
+        self.goal_tolerance = rospy.get_param('~goal_tolerance', 0.5)
 
 
         # The waypoints as a path
@@ -107,8 +108,8 @@ class W2WMissionPlanner(object):
                     if wps is None:
                         continue
                     self.wp_old = wp
-                    # if self.wp_counter == 0:
-                    #     wps.pop(0)
+                    if self.wp_counter == 0: #remove the very first artifialc wp since it's straight infront turninigradius distance away (will give issues with the max_turn/on_circle check)
+                        wps.pop(0)
                     self.publish_points_to_rviz(wps)
                     # delta_t = self.calc_optimal_delta_t(wps[0],wps[1])
                     # if delta_t is not None:
@@ -232,7 +233,7 @@ class W2WMissionPlanner(object):
         rospy.loginfo("Received common timestamps from path pattern generator")
         data = np.array(msg.data[1:])
         n_turns = len(data)
-        turn_duration = 7 #seconds
+        turn_duration = 0 #seconds
         data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration #arange vector is [1 2 3 4 .... n_turns-1]
         self.common_timestamps = list(data) #remove the first one at 0 since it's the start time
     
@@ -326,9 +327,9 @@ class W2WMissionPlanner(object):
             marker.type = marker.SPHERE
             marker.action = marker.ADD
             marker.id = i
-            marker.scale.x = 5
-            marker.scale.y = 5
-            marker.scale.z = 5
+            marker.scale.x = self.goal_tolerance#5
+            marker.scale.y = self.goal_tolerance#5
+            marker.scale.z = self.goal_tolerance#5
             marker.color.a = 1.0
             marker.color.r = 1.0
             marker.color.g = 0.0
