@@ -129,8 +129,9 @@ class W2WPathPlanner(object):
                 #2. OK - Use these common time tags to boost the throttle of agents that are behind in the pattern
                     ## - Instead of proportional appriach, calc distance and needed velocity to catch up
                 #3. OK - Double check why Dubins planner sometimes generates the longer paths
-                #4. Edit aux launch file to generate cool lookingmaps in rviz
-                #5. Start looking into PF
+                #4. Add time sync as arg
+                #5. Edit aux launch file to generate cool lookingmaps in rviz
+                #6. Start looking into PF
                     
 
 
