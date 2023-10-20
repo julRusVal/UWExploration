@@ -84,7 +84,7 @@ class W2WPathPlanner(object):
                         self.k = -radius
                     
                     self.do_max_turn = self._point_on_circle(x,y,radius,h,self.k)
-                    print("Do max turn: ", self.do_max_turn)
+                    rospy.loginfo("Do max turn: %s", self.do_max_turn)
 
                 
                 if self.t:
@@ -122,6 +122,7 @@ class W2WPathPlanner(object):
                             self.t_start = time.time()
                         t = time.time()-self.t_start
                         delta_t = self.t_arrival-t
+                        rospy.loginfo("time left %f s", delta_t)
                         distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
                         throttle_level = distance/delta_t
 
@@ -133,7 +134,8 @@ class W2WPathPlanner(object):
                 #4. OK - Add time sync as arg
                 #5. OK - Edit aux launch file to generate cool lookingmaps in rviz
                 #6. Look into time sync some more
-                #6. Start looking into PF
+                #7. Start looking into PF
+                #8. Add dubins back
 
                     
 
@@ -175,6 +177,16 @@ class W2WPathPlanner(object):
         #when pitch is zero, this is a differential drive robot
 
     def timer_callback(self, event):
+        # if np.isclose((rospy.Time.now() - self.timer_t_old).to_nsec(), 1e9/self.timer_rate, atol=1e7):
+        #     self.timer_t_old = rospy.Time.now()
+        # diff = time.time()-int(time.time())
+        
+        # while not np.isclose(diff % 1/self.timer_rate, 0,atol=1e-1):
+        #     print(diff % 1/self.timer_rate)
+        #     diff = time.time()-int(time.time())
+        #     pass
+        # print("passed")
+
         if self.nav_goal is None:
             #rospy.loginfo_throttle(30, "Nav goal is None!")
             return
@@ -215,6 +227,15 @@ class W2WPathPlanner(object):
         return np.isclose(np.sqrt((x-h)**2 + (y-k)**2),radius,atol=self.goal_tolerance)
 
     def __init__(self, name):
+
+        self.timer_rate = 20 #Hz
+        t = time.time()
+        while not np.isclose((t-int(t)) % (1/self.timer_rate), 0,atol=1e-4):
+            t = time.time()
+        #     print("diff",t-int(t))
+        #     print((t-int(t)) % (1/self.timer_rate))
+        # print("passed")
+
         self._action_name = name
 
         self.goal_tolerance = rospy.get_param('~goal_tolerance', 1.)
@@ -257,7 +278,9 @@ class W2WPathPlanner(object):
         self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'simple')
 
         self.listener = tf.TransformListener()
-        rospy.Timer(rospy.Duration(1/20), self.timer_callback)
+        # self.timer_rate = 20 #Hz
+        self.timer_t_old = rospy.Time.now()
+        rospy.Timer(rospy.Duration(1/(self.timer_rate)), self.timer_callback)
 
         self.throttle_pub = rospy.Publisher(self.throttle_top, Float64, queue_size=1)
         self.thruster_pub = rospy.Publisher(self.thruster_top, Float64, queue_size=1)
@@ -271,7 +294,14 @@ class W2WPathPlanner(object):
         rospy.loginfo("Announced action server with name: %s", self.as_name)
 
         rospy.spin()
-
+        # rate = 20 #Hz
+        # t_old = rospy.Time.now()
+        # while not rospy.is_shutdown():
+        #     t = rospy.Time.now()
+        #     if np.isclose((t-t_old).to_nsec(), 1e9/rate, atol=1e7):
+        #         print("here")
+        #         self.timer_callback(None)
+        #         t_old = t
 
 if __name__ == '__main__':
 
