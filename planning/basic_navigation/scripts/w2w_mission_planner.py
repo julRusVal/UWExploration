@@ -11,7 +11,7 @@ import rospy
 import tf
 from std_msgs.msg import Float64, Header, Bool, Time, Int32MultiArray
 import math
-# import dubins
+import dubins
 import pdb
 import copy
 # import dubins_smarc
@@ -96,7 +96,7 @@ class W2WMissionPlanner(object):
                 
                 
 
-                if self.wp_follower_type == 'simple_artificial':
+                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'simple_artificial' :
                     if self.wp_old is None:
                         self.wp_old = robot_pose
                         self.wp_artificial_old = robot_pose
@@ -117,8 +117,16 @@ class W2WMissionPlanner(object):
                             arrival_time.data.secs = self.common_timestamps.pop(0)
                             self.arrival_time_pub.publish(arrival_time)
                         
-                        configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
-                            
+                        # configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
+                        
+                        if i==1 or self.wp_counter == 0 or self.wp_follower_type == 'simple_artificial':
+                            configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
+
+
+                        if self.wp_follower_type == 'dubins':
+                            configurations = self.generate_dubins_path(wp,self.wp_artificial_old)
+                            configurations = self.filter_dubins_path(configurations)
+
                         self.wp_artificial_old = wp
                     
                         path = Path()
@@ -136,7 +144,8 @@ class W2WMissionPlanner(object):
                             wp.pose.orientation = Quaternion(*quaternion)
 
                             path.poses.append(wp)
-                        
+                        self.path_pub.publish(path)
+
                         for i,wp in enumerate(path.poses):
                             print("Sending wp %d of %d" % (i+1,len(path.poses)))
                             goal = MoveBaseGoal(wp)
@@ -183,10 +192,37 @@ class W2WMissionPlanner(object):
     def common_timestamps_cb(self, msg):
         rospy.loginfo("Received common timestamps from path pattern generator")
         data = np.array(msg.data[1:])
+        #print(np.array(data)-np.concatenate(([0],data[:-1])))
+        # data /= self.max_throttle
+        print(data)
+        duration1 = data[0]
+        duration2 = data[1]-data[0]
+        #I want to create an np array where the first element is 0, and the rest are the sum of the previous element and the duration altering between duration1 and duration2
+        dataNew = np.cumsum(np.concatenate((np.tile([duration1,duration2],int(len(data)/2)),[duration1]))) #continue here: for some reason this array is correct, but the auvs still slow down....
+        print("newdata:",dataNew)
+        assert len(dataNew) == len(data)
+        data = dataNew
+        print(np.array(data)-np.concatenate(([0],data[:-1])))
+
         n_turns = len(data)
-        turn_duration = 0 #seconds
+        if self.wp_follower_type == 'dubins':
+            turn_duration = 4 #seconds
+        else:
+            turn_duration = -4 #seconds
         data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration #arange vector is [1 2 3 4 .... n_turns-1]
         self.common_timestamps = list(data) #remove the first one at 0 since it's the start time
+    
+    def generate_dubins_path(self,goal_pose,robot_pose):
+        robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]
+        q0 = (robot_pose.pose.position.x, robot_pose.pose.position.y, robot_heading)
+        goal_heading = tf.transformations.euler_from_quaternion([goal_pose.pose.orientation.x,goal_pose.pose.orientation.y,goal_pose.pose.orientation.z,goal_pose.pose.orientation.w])[2]
+        q1 = (goal_pose.pose.position.x, goal_pose.pose.position.y, goal_heading)
+        turning_radius = self.dubins_turning_radius
+        step_size = self.dubins_step_size
+
+        path = dubins.shortest_path(q0, q1, turning_radius)
+        configurations, _ = path.sample_many(step_size)
+        return configurations
 
     def generate_two_artificial_wps(self,wp):
         wp_start = np.array([self.wp_old.pose.position.x, self.wp_old.pose.position.y])
@@ -250,6 +286,26 @@ class W2WMissionPlanner(object):
             marker.pose.position.z = point.pose.position.z
             marker_array.markers.append(marker)
         self.point_marker_pub.publish(marker_array)
+    
+    def filter_dubins_path(self, configurations):
+        """If you want to reduce the number of waypoints and have 
+        waypoints only before each left turn, right turn, or going 
+        straight, you'll need to post-process the generated path to 
+        filter out unnecessary waypoints. """
+
+        filtered_configurations = []  
+        # filtered_configurations.append(configurations[0]) # Add the start point
+        for i in range(1, len(configurations) - 1):
+            prev_configuration = configurations[i - 1]
+            current_configuration = configurations[i]
+            next_configuration = configurations[i + 1]
+            # Calculate the change in heading from the previous waypoint to the current one
+            delta_heading = current_configuration[2] - prev_configuration[2]
+            # Check if the waypoint is before a turn or on a straight segment
+            if abs(delta_heading) > np.deg2rad(2):# or not np.isclose(current_configuration[2]%(np.pi/2),0):  # You can adjust this threshold
+                filtered_configurations.append(current_configuration)
+        filtered_configurations.append(configurations[-1])  # Add the goal point
+        return filtered_configurations
 
 if __name__ == '__main__':
 

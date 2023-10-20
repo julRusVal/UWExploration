@@ -98,22 +98,34 @@ class W2WPathPlanner(object):
                     der_throttle_error = 0
                     der_thrust_error = 0
                 
-                if not self.do_max_turn or self.wp_follower_type != 'simple_artificial':
+                # if not self.do_max_turn or self.wp_follower_type != 'simple_artificial':
+                #     self.goal_tolerance = self.goal_tolerance_original
+                #     yaw_setpoint = (self.P_thrust * thrust_error + 
+                #                     self.I_thrust * self.int_thrust_error +
+                #                     self.D_thrust * der_thrust_error)
+                #     sign = np.copysign(1, thrust_error)
+                #     yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
+
+                if self.do_max_turn and self.wp_follower_type == 'simple_artificial':
+                    self.goal_tolerance = self.goal_tolerance_max_turn
+                    yaw_setpoint = np.copysign(self.max_thrust,self.k) # Do a maximum turn
+                else:
                     self.goal_tolerance = self.goal_tolerance_original
                     yaw_setpoint = (self.P_thrust * thrust_error + 
                                     self.I_thrust * self.int_thrust_error +
                                     self.D_thrust * der_thrust_error)
                     sign = np.copysign(1, thrust_error)
                     yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
-                else:
-                    self.goal_tolerance = self.goal_tolerance_max_turn
-                    yaw_setpoint = np.copysign(self.max_thrust,self.k) # Do a maximum turn
                 
-                # throttle_level = (self.P_throttle * throttle_error + 
-                #                   self.I_throttle * self.int_throttle_error +
-                #                   self.D_throttle * der_throttle_error)
+                if self.wp_follower_type == 'simple_artificial':
+                    throttle_level = self.max_throttle
+                else:
+                    throttle_level = (self.P_throttle * throttle_error + 
+                                    self.I_throttle * self.int_throttle_error +
+                                    self.D_throttle * der_throttle_error)
+                    throttle_level = min(self.max_throttle, throttle_level)
         
-                throttle_level = self.max_throttle
+                # throttle_level = self.max_throttle
 
                 if self.time_sync:
                     if self.t_arrival: #if you have an arrival time, boost the throttle to guarantee you arrive on time
@@ -125,6 +137,7 @@ class W2WPathPlanner(object):
                         rospy.loginfo("time left %f s", delta_t)
                         distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
                         throttle_level = distance/delta_t
+                        rospy.loginfo("throttle level %f m/s", throttle_level)
 
                 #TODO:
                 #1. OK - Create common time tags for all agents in pattern generator, they all should have common time tags 
@@ -133,9 +146,11 @@ class W2WPathPlanner(object):
                 #3. OK - Double check why Dubins planner sometimes generates the longer paths
                 #4. OK - Add time sync as arg
                 #5. OK - Edit aux launch file to generate cool lookingmaps in rviz
-                #6. Look into time sync some more
-                #7. Start looking into PF
-                #8. Add dubins back
+                #6. Look into time sync some more, the arrays are weird... Se continue comment
+                #7. Ensure backwards compatibility with old launch files
+                #8. Start looking into PF
+                #9. OK - Add dubins back
+                
 
                     
 
