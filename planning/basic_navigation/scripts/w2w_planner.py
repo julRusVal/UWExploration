@@ -98,7 +98,7 @@ class W2WPathPlanner(object):
                     der_throttle_error = 0
                     der_thrust_error = 0
                 
-                # if not self.do_max_turn or self.wp_follower_type != 'simple_artificial':
+                # if not self.do_max_turn or self.wp_follower_type != 'simple_maxturn':
                 #     self.goal_tolerance = self.goal_tolerance_original
                 #     yaw_setpoint = (self.P_thrust * thrust_error + 
                 #                     self.I_thrust * self.int_thrust_error +
@@ -106,7 +106,7 @@ class W2WPathPlanner(object):
                 #     sign = np.copysign(1, thrust_error)
                 #     yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
 
-                if self.do_max_turn and self.wp_follower_type == 'simple_artificial':
+                if self.do_max_turn and self.wp_follower_type == 'simple_maxturn':
                     self.goal_tolerance = self.goal_tolerance_max_turn
                     yaw_setpoint = np.copysign(self.max_thrust,self.k) # Do a maximum turn
                 else:
@@ -117,7 +117,7 @@ class W2WPathPlanner(object):
                     sign = np.copysign(1, thrust_error)
                     yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
                 
-                if self.wp_follower_type == 'simple_artificial':
+                if self.wp_follower_type == 'simple_maxturn':
                     throttle_level = self.max_throttle
                 else:
                     throttle_level = (self.P_throttle * throttle_error + 
@@ -147,7 +147,7 @@ class W2WPathPlanner(object):
                 #4. OK - Add time sync as arg
                 #5. OK - Edit aux launch file to generate cool lookingmaps in rviz
                 #6. OK - Look into time sync some more, the arrays are weird... Se continue comment
-                #7. Ensure backwards compatibility with old launch files
+                #7. OK - Ensure backwards compatibility with old launch files
                 #8. Write documentation in README
                 #8. Start looking into PF
                 #9. OK - Add dubins back

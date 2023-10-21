@@ -109,25 +109,44 @@ roslaunch basic_navigation basic_mission.launch manual_control:=False namespace:
 And add and publish waypoints through RVIZ as in their tutorial.
 
 ### Multiple AUVs
+#### Relevant launch arguments
+- num_auvs: number of auvs to spawn
+- manual_control: if true, opens a pygame-window for each AUV to control it manually.
+- pattern_generation: if true, the user will be asked to define a survey area to generate a search pattern for. Else the AUVs will be spawned with uniform spacing.
+- rviz_helper: if true, enables the "2D Nav Goal" tool in rviz to set waypoint to which all spawned AUVs will navigate to.  
+- waypoint_follower_type: 
+  - {simple} is a simple waypoint follower that just goes to the next generated waypoint. 
+  - {simple_maxturn} is a simple waypoint follower for waypoints straight infron. If a waypoint is within the AUV's turning radius it will do a maximum turn. This ensures inside turns during lawn mower patterns
+  - {dubins} is a waypoint follower that uses Dubins paths to go to the next waypoint, filtering out straight paths, which will then be simple waypoint followed.
+- time_sync: if true, the auvs will be time synced, such that they all will reach the same waypoint at the same time. This is useful for multi-vehicle missions where the vehicles need to be at the same place at the same time.
+
 #### Manual navigation with multiple AUVs
 Example of multi-agent mission with 5 AUVs:
 
 ```
-roslaunch multi_agent multi_agent.launch num_auvs:=5 manual_control:=true
+roslaunch multi_agent multi_agent.launch num_auvs:=5 manual_control:=true pattern_generation:=false
 ```
-
-- num_auvs: number of auvs to spawn
-- manual_control: if true, opens a pygame-window for each AUV to control it manually.
 
 #### Waypoint navigation with multiple AUVs
 Example of multi-agent mission with 5 AUVs:
 
 ```
-roslaunch multi_agent multi_agent.launch num_auvs:=5 rviz_helper:=true
+roslaunch multi_agent multi_agent.launch num_auvs:=5 rviz_helper:=true pattern_generation:=false
 ```
 
-- num_auvs: number of auvs to spawn
-- rviz_helper: if true, enables the "2D Nav Goal" tool in rviz to set waypoint to which all spawned AUVs will navigate to.  
+#### Multi-agent mission with search pattern generation
+Example of multi-agent mission with 5 AUVs using simple_maxturn waypoint follower:
+
+```
+roslaunch multi_agent multi_agent.launch num_auvs:=5
+```
+
+#### Multi-agent mission with time sync
+Example of multi-agent mission with 5 AUVs using simple_maxturn waypoint follower and time sync:
+
+```
+roslaunch multi_agent multi_agent.launch num_auvs:=5 time_sync:=true
+```
 
 #### External launch files 
 Choosing either waypoint navigation or manual control above, also run:

@@ -96,7 +96,7 @@ class W2WMissionPlanner(object):
                 
                 
 
-                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'simple_artificial' :
+                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'simple_maxturn' :
                     if self.wp_old is None:
                         self.wp_old = robot_pose
                         self.wp_artificial_old = robot_pose
@@ -119,7 +119,7 @@ class W2WMissionPlanner(object):
                         
                         # configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
                         
-                        if i==1 or self.wp_counter == 0 or self.wp_follower_type == 'simple_artificial':
+                        if i==1 or self.wp_counter == 0 or self.wp_follower_type == 'simple_maxturn':
                             configurations = [(wp.pose.position.x,wp.pose.position.y,tf.transformations.euler_from_quaternion([wp.pose.orientation.x,wp.pose.orientation.y,wp.pose.orientation.z,wp.pose.orientation.w])[2])]
 
 

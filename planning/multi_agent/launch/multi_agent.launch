@@ -23,8 +23,8 @@
     <!-- max_thrust = 4 gives a turning radius of approx 2.5 m -->
     <arg name="max_thrust" default="3.0"/> 
     <arg name="max_throttle" default="10.0"/>
-    <!-- Acceptable types below: 'simple', 'simple_artificial' -->
-    <arg name="waypoint_follower_type" default="simple_artificial"/>
+    <!-- Acceptable types below: 'simple', 'simple_maxturn' -->
+    <arg name="waypoint_follower_type" default="simple_maxturn"/>
     <arg name="dubins_turning_radius" default="3"/>
 	<arg name="dubins_step_size" default="0.5"/>
 	<arg name="goal_tolerance" default="1.0"/>
