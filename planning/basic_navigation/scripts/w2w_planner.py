@@ -148,7 +148,9 @@ class W2WPathPlanner(object):
                 #5. OK - Edit aux launch file to generate cool lookingmaps in rviz
                 #6. OK - Look into time sync some more, the arrays are weird... Se continue comment
                 #7. OK - Ensure backwards compatibility with old launch files
-                #8. Write documentation in README
+                #8. OK - Write documentation in README
+                #9. Max turn weird circulating behavior, increase tolerance
+                #10. Time sync is not working, they're not catching up as expected
                 #8. Start looking into PF
                 #9. OK - Add dubins back
                 
@@ -288,7 +290,7 @@ class W2WPathPlanner(object):
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius')
         self.do_max_turn = None
         self.k = None
-        self.goal_tolerance_max_turn = self.goal_tolerance+0.5
+        self.goal_tolerance_max_turn = self.goal_tolerance+1
         self.goal_tolerance_original = self.goal_tolerance
         self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'simple')
 
