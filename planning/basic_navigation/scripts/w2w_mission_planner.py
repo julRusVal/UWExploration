@@ -110,7 +110,7 @@ class W2WMissionPlanner(object):
                     self.publish_points_to_rviz(wps)
                     
                     for i,wp in enumerate(wps):
-                        if i==1:
+                        if i==1 or self.wp_counter == 0:
                             print("sending arrival time")
                             print(self.common_timestamps)
                             arrival_time = Time()

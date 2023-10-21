@@ -134,10 +134,10 @@ class W2WPathPlanner(object):
                             self.t_start = time.time()
                         t = time.time()-self.t_start
                         delta_t = self.t_arrival-t
-                        rospy.loginfo("time left %f s", delta_t)
+                        # rospy.loginfo("time left %f s", delta_t)
                         distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
                         throttle_level = distance/delta_t
-                        rospy.loginfo("throttle level %f m/s", throttle_level)
+                        # rospy.loginfo("throttle level %f m/s", throttle_level)
 
                 #TODO:
                 #1. OK - Create common time tags for all agents in pattern generator, they all should have common time tags 
@@ -243,6 +243,9 @@ class W2WPathPlanner(object):
         """Returns True if the point (x,y) lies on the circle centered at (h,k) with radius r"""
         return np.isclose(np.sqrt((x-h)**2 + (y-k)**2),radius,atol=self.goal_tolerance)
 
+    def t_start_cb(self, msg):
+        self.t_start = msg.data.secs
+
     def __init__(self, name):
 
         self.timer_rate = 20 #Hz
@@ -282,6 +285,7 @@ class W2WPathPlanner(object):
         self.nav_goal = None
 
         #self.delta_t_array = []
+        rospy.Subscriber('/multi_agent/t_start', Time, self.t_start_cb)
         self.t_start = None
         self.t_arrival = None
         # self.t_arrival_old = 0
