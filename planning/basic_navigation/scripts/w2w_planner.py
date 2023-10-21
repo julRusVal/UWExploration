@@ -146,8 +146,9 @@ class W2WPathPlanner(object):
                 #3. OK - Double check why Dubins planner sometimes generates the longer paths
                 #4. OK - Add time sync as arg
                 #5. OK - Edit aux launch file to generate cool lookingmaps in rviz
-                #6. Look into time sync some more, the arrays are weird... Se continue comment
+                #6. OK - Look into time sync some more, the arrays are weird... Se continue comment
                 #7. Ensure backwards compatibility with old launch files
+                #8. Write documentation in README
                 #8. Start looking into PF
                 #9. OK - Add dubins back
                 

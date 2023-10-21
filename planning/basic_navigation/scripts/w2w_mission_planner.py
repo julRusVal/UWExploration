@@ -198,7 +198,7 @@ class W2WMissionPlanner(object):
         # duration1 = data[0]
         # duration2 = data[1]-data[0]
         #I want to create an np array where the first element is 0, and the rest are the sum of the previous element and the duration altering between duration1 and duration2
-        # dataNew = np.cumsum(np.concatenate((np.tile([duration1,duration2],int(len(data)/2)),[duration1]))) #continue here: for some reason this array is correct, but the auvs still slow down....
+        # dataNew = np.cumsum(np.concatenate((np.tile([duration1,duration2],int(len(data)/2)),[duration1]))) 
         # print("newdata:",dataNew)
         # assert len(dataNew) == len(data)
         # data = dataNew
