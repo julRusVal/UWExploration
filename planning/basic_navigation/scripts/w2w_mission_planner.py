@@ -192,23 +192,23 @@ class W2WMissionPlanner(object):
     def common_timestamps_cb(self, msg):
         rospy.loginfo("Received common timestamps from path pattern generator")
         data = np.array(msg.data[1:])
-        #print(np.array(data)-np.concatenate(([0],data[:-1])))
+        # print(np.array(data)-np.concatenate(([0],data[:-1])))
         # data /= self.max_throttle
-        print(data)
-        duration1 = data[0]
-        duration2 = data[1]-data[0]
+        # print(data)
+        # duration1 = data[0]
+        # duration2 = data[1]-data[0]
         #I want to create an np array where the first element is 0, and the rest are the sum of the previous element and the duration altering between duration1 and duration2
-        dataNew = np.cumsum(np.concatenate((np.tile([duration1,duration2],int(len(data)/2)),[duration1]))) #continue here: for some reason this array is correct, but the auvs still slow down....
-        print("newdata:",dataNew)
-        assert len(dataNew) == len(data)
-        data = dataNew
-        print(np.array(data)-np.concatenate(([0],data[:-1])))
+        # dataNew = np.cumsum(np.concatenate((np.tile([duration1,duration2],int(len(data)/2)),[duration1]))) #continue here: for some reason this array is correct, but the auvs still slow down....
+        # print("newdata:",dataNew)
+        # assert len(dataNew) == len(data)
+        # data = dataNew
+        # print(np.array(data)-np.concatenate(([0],data[:-1])))
 
         n_turns = len(data)
         if self.wp_follower_type == 'dubins':
             turn_duration = 4 #seconds
         else:
-            turn_duration = -4 #seconds
+            turn_duration = 2 #seconds
         data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration #arange vector is [1 2 3 4 .... n_turns-1]
         self.common_timestamps = list(data) #remove the first one at 0 since it's the start time
     

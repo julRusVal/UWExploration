@@ -232,7 +232,6 @@ class W2WPathPlanner(object):
         self.int_thrust_error = 0
         self.prev_throttle_error = 0
         self.prev_thrust_error = 0
-        self.t_start = None
         self.t_arrival = None
         self.do_max_turn = None
         self.k = None
