@@ -149,7 +149,7 @@ class W2WPathPlanner(object):
                 #6. OK - Look into time sync some more, the arrays are weird... Se continue comment
                 #7. OK - Ensure backwards compatibility with old launch files
                 #8. OK - Write documentation in README
-                #9. Max turn weird circulating behavior, increase tolerance
+                #9. OK - Max turn weird circulating behavior, increase tolerance
                 #10. Time sync is not working, they're not catching up as expected
                 #8. Start looking into PF
                 #9. OK - Add dubins back
