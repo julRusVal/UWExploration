@@ -119,6 +119,7 @@ And add and publish waypoints through RVIZ as in their tutorial.
   - {simple_maxturn} is a simple waypoint follower for waypoints straight infron. If a waypoint is within the AUV's turning radius it will do a maximum turn. This ensures inside turns during lawn mower patterns
   - {dubins} is a waypoint follower that uses Dubins paths to go to the next waypoint, filtering out straight paths, which will then be simple waypoint followed.
 - time_sync: if true, the auvs will be time synced, such that they all will reach the same waypoint at the same time. This is useful for multi-vehicle missions where the vehicles need to be at the same place at the same time.
+- auxiliary_enabled: if true, the ground truth map will be published as a pointcloud and each auv will have a collected submap which grows during the survey. This is useful for visualizing the survey in rviz.
 
 #### Manual navigation with multiple AUVs
 Example of multi-agent mission with 5 AUVs:
