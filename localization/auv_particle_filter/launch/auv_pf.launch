@@ -10,6 +10,8 @@
   <arg name="gp_type" default="svgp_di"/>
   <arg name="test" default="0"/>
   <arg name="res_folder" default="results"/>
+  <arg name="gp_meas_model" default="True"/>
+
 
   <!-- MBES sensor -->
 	<arg name="n_beams_mbes" default="80"/>	
@@ -66,7 +68,7 @@
         <param name="sound_velocity_prof" value="$(find uw_tests)/datasets/$(arg dataset)/svp.cereal" />       
         <param name="pf_stats_top" value="/stats/pf_data" />  
         <param name="pf_period" value="$(arg pf_period)"/>  
-        <param name="gp_meas_model" value="True"/>  <!-- GP or mesh map? -->
+        <param name="gp_meas_model" value="$(arg gp_meas_model)"/>  <!-- GP or mesh map? -->
         <param name="enable_pf_update" value="$(arg enable_pf_update)"/>  
 				<param name="enable_pf_update_topic"  value="/$(arg namespace)/enable_pf_mbes"/>
         <param name="survey_name" value="$(arg gp_type)"/>
