@@ -284,11 +284,16 @@ class auv_pf(object):
             if self.latest_mbes.header.stamp > self.prev_mbes.header.stamp:
                 # Measurement update if new one received
                 start = time.time()
-                weights = self.update(self.latest_mbes, self.odom_latest)
+                weights = self.update(self.latest_mbes, self.odom_latest) #STEP 2: calculate the importance weights {LINE 5 in table 4.3 page 98 in Probabilistic Robotics - Sebastian Thrun}
+                #TODO: here replace self.update with "self.update__multi_agent" to use a measurement model that takes into account the other AUVs instead of the MBES pings. After that, maybe fuse the two models? 
+                #NOTE: Questions to Nacho:
+                #1. Where's the SLAM in this? This is simply localization, right?
+                #2. Can you show and explain me a bit about the SVGP map? 
+                #3. How do you fuse the two models, ie. the mbes and the multi-agent weight updates? 
                 self.prev_mbes = self.latest_mbes
                 # print(time.time() - start)
                 # Particle resampling
-                self.resample(weights)
+                self.resample(weights) #STEP 3: resample the partiles, proportional to their weights {LINE 8-11 in table 4.3 page 98 in Probabilistic Robotics - Sebastian Thrun}
 
     def odom_callback(self, odom_msg):
         self.time = odom_msg.header.stamp.to_sec()
@@ -307,10 +312,16 @@ class auv_pf(object):
     def predict(self, odom_t):
         dt = self.time - self.old_time
         for i in range(0, self.pc):
-            self.particles[i].motion_pred(odom_t, dt)
+            self.particles[i].motion_pred(odom_t, dt) #STEP1: sample from the prior distribution {LINE 4 in table 4.3 page 98 in Probabilistic Robotics - Sebastian Thrun}
 
         # Predict DR
         self.dr_particle.motion_pred(odom_t, dt)
+    
+    def update__multi_agent(self):
+        #(w^i)_m = (prob seeing AUV j at measurement z of AUV i given current estimated DR pose of AUV i) for particle m
+        #z = (x,y,z,roll,pitch,yaw)_j at base_link i 
+        #implement a FLS measurement model for the multi-agent case
+        pass 
 
     
     def update(self, real_mbes, odom):
