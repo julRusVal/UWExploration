@@ -4,7 +4,7 @@ Collection of ROS packages for localization, map building and SLAM with autonomo
 
 ## Dependencies (tested on Ubuntu 20.04)
 * ROS Noetic
-* AUVLIB [here](https://github.com/nilsbore/auvlib)
+* AUVLIB [here](https://github.com/nilsbore/auvlib) (NOTE: if you're using a CONDA environment - deactivate it )
 
 ### Specific dependecies only for multi-agent missions
 It is recommended to place these is a common directory called 'custom_modules' outside your catkin workspace.
@@ -30,6 +30,11 @@ pip install gpytorch open3d
 ```
 If you want to try waypoint navigation for an AUV, clone this repo within your catkin workspace to plan missions in RVIZ
 * Waypoint_navigation_plugin [here](https://github.com/KumarRobotics/waypoint_navigation_plugin)
+
+### ROS specific dependencies
+```
+sudo apt-get install ros-noetic-move-base-msgs
+```
 
 ## Building
 This is a collection of ROS packages. Just clone the repo within your catking workspace and run
