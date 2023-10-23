@@ -6,6 +6,12 @@ Collection of ROS packages for localization, map building and SLAM with autonomo
 * ROS Noetic
 * AUVLIB [here](https://github.com/nilsbore/auvlib)
 
+### Specific dependecies only for multi-agent missions
+It is recommended to place these is a common directory called 'custom_modules' outside your catkin workspace.
+* coop_cov [here](https://github.com/kurreman/coop_cov)
+
+* toolbox [here](https://github.com/KKalem/toolbox)
+
 Only required if working with the **bathy_graph_slam** package (currently under development and ignored during building):
 * Bathymetric SLAM [here](https://github.com/ignaciotb/bathymetric_slam)
 * GTSAM [here](https://github.com/borglab/gtsam)
@@ -36,6 +42,8 @@ Finally, add the following lines to your ~/.bashrc file adapted to your own inst
 ```
 export PATH=$PATH:/path/to/folder/auvlib/install/share
 export PYTHONPATH=$PYTHONPATH:/path/to/folder/auvlib/install/lib
+export PYTHONPATH=$PYTHONPATH:/path/to/folder/custom_modules #to coop_cov and toolbox
+export PYTHONPATH=$PYTHONPATH:/path/to/folder/UWExploration/planning/multi_agent/scripts
 ```
 
 ## Troubleshooting
