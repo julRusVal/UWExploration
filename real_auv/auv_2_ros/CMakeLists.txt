@@ -86,6 +86,7 @@ find_package(BathyMaps REQUIRED)
  add_action_files(
    FILES
    MbesSim.action
+   FlsSim.action
  )
 
 ## Generate added messages and services with any dependencies listed here
@@ -129,11 +130,12 @@ find_package(BathyMaps REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mbes_model
-#  CATKIN_DEPENDS roscpp
+ CATKIN_DEPENDS actionlib_msgs
 #  	DEPENDS LibXTF
 #     INCLUDE_DIRS 
 #     LIBRARIES ${LibXTF_LIBRARIES}
 )
+
 
 ###########
 ## Build ##
