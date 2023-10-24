@@ -12,29 +12,40 @@ from tf.transformations import rotation_matrix
 
 from sensor_msgs.msg import PointCloud2, PointField
 from std_msgs.msg import Header
+from geometry_msgs.msg import Point
 from sensor_msgs import point_cloud2
 from scipy.ndimage import gaussian_filter1d
 
 # For sim mbes action client
 import actionlib
 from auv_2_ros.msg import FlsSimAction, FlsSimResult
+import tf2_ros
 
 #TODO:
 #1. auv_fls_model.py: action server that gives FLS reading upon request
 # - Make a bool such that FLS sends 	set_aborted() if it is not ready to send a ping. Ie, from mission planner we can publish ushc that when we know we wont
 #       have an auv infront of us, we can set the bool to false and the FLS will not send a ping. This to save computation. But for other cases, it's just always true.
+# - Static tf fls - base_link somewhere (see where mbes - base_link is)
 #2. auv_motion_simple.cpp: a single request at a given transform and time to the action server above #1
 #3. auv_motion_simple_node.cpp: a node that at a certain timer interval calls the single request #2 with this specific rate
 #4. Integrate into all launch files
 
-class mbes_model(object):
+class FLSModel(object):
 
     def __init__(self):
 
         # # Load mesh
         # svp_path = rospy.get_param('~sound_velocity_prof')
         # mesh_path = rospy.get_param('~mesh_path')
-        # self.mbes_angle = rospy.get_param("~mbes_open_angle", np.pi/180. * 60.)
+        self.fls_horizontal_angle = rospy.get_param("~fls_horizonntal_angle", np.deg2rad(135))
+        self.fls_vertical_angle = rospy.get_param("~fls_vertical_angle", np.deg2rad(60))
+        self.fls_max_range = rospy.get_param("~fls_max_range", 100) #meters
+        self.vehicle_model = rospy.get_param("~vehicle_model", "hugin")
+        self.num_auvs = rospy.get_param("~num_auvs", 1)
+        # Initialize the TF2 buffer and listener
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+
         # self.mbes_frame = rospy.get_param(
         #     '~mbes_link', 'mbes_link')  # mbes frame_id
 
@@ -61,70 +72,54 @@ class mbes_model(object):
         # # Action server for MBES pings sim (necessary to be able to use UFO maps as well)
         sim_fls_as = rospy.get_param('~fls_sim_as', '/fls_sim_server')
         server_mode = rospy.get_param("~server_mode", False)
-        self.as_ping = actionlib.SimpleActionServer(sim_fls_as, MbesSimAction,
+        self.as_ping = actionlib.SimpleActionServer(sim_fls_as, FlsSimAction,
                                                     execute_cb=self.fls_as_cb, auto_start=server_mode)
 
         rospy.spin()
 
 
-    # Action server to simulate MBES for the sim AUV
+    # Action server to simulate FLS for the sim AUV
     def fls_as_cb(self, goal):
 
-        # Unpack goal
-        p_mbes = [goal.mbes_pose.transform.translation.x,
-                  goal.mbes_pose.transform.translation.y,
-                  goal.mbes_pose.transform.translation.z]
-        r_mbes = quaternion_matrix([goal.mbes_pose.transform.rotation.x,
-                                    goal.mbes_pose.transform.rotation.y,
-                                    goal.mbes_pose.transform.rotation.z,
-                                    goal.mbes_pose.transform.rotation.w])[0:3, 0:3]
+        tf_map2fls = goal.map2fls_tf
 
-        # IGL sim ping
-        # The sensor frame on IGL needs to have the z axis pointing opposite from the actual sensor direction
-        R_flip = rotation_matrix(np.pi, (1, 0, 0))[0:3, 0:3]
-        mbes = self.draper.project_mbes(np.asarray(p_mbes), r_mbes,
-                                        goal.beams_num.data, self.mbes_angle)
-
-        mbes = mbes[::-1]  # Reverse beams for same order as real pings
-
-        # Transform points to MBES frame (same frame than real pings)
-        rot_inv = r_mbes.transpose()
-        p_inv = rot_inv.dot(p_mbes)
-        mbes = np.dot(rot_inv, mbes.T)
-        mbes = np.subtract(mbes.T, p_inv)
-
-        # Add noise
-        # mbes = gaussian_filter1d(mbes , sigma=0.5)
-
-
-        # Pack result
-        mbes_cloud = self.pack_cloud(self.mbes_frame, mbes)
-        result = MbesSimResult()
-        result.sim_mbes = mbes_cloud
+        for i in range(self.num_auvs): #TODO: find a faster way to do this, if it's an issue - rewrite in C++
+            hugin_frame = "hugin_" + str(i) + "/base_link"
+            tf_hugin2map = self.tf_buffer.lookup_transform("map", hugin_frame, rospy.Time.now(), rospy.Duration(1.0))
+            tf_hugin2fls = tf_hugin2map * tf_map2fls
+            point = Point()
+            point = tf_hugin2fls*point
+            if self.point_in_fov(point):
+                break
+        
+        result = FlsSimResult()
+        result.header
+        result.range
+        result.angle
         self.as_ping.set_succeeded(result)
+    
+    def point_in_fov(self,point):
+        """Returns true if the point is within the field of view of the FLS. 
+        Point in the FLS frame.
+        """
+        x = point.x
+        y = point.y
+        z = point.z
+        R = self.fls_max_range
+        alpha = self.fls_horizontal_angle
+        beta = self.fls_vertical_angle
+        in_fov = x >=0 and x<=R*np.cos(alpha/2) and y>=-R*np.sin(alpha/2) and y<=R*np.sin(alpha/2) and z>=-R*np.sin(beta/2) and z<=R*np.sin(beta/2)
+        if in_fov:
+            
 
-
-    # Create PointCloud2 msg out of ping
-    def pack_cloud(self, frame, mbes):
-        mbes_pcloud = PointCloud2()
-        header = Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = frame
-        fields = [PointField('x', 0, PointField.FLOAT32, 1),
-                PointField('y', 4, PointField.FLOAT32, 1),
-                PointField('z', 8, PointField.FLOAT32, 1)]
-
-        mbes_pcloud = point_cloud2.create_cloud(header, fields, mbes)
-
-        return mbes_pcloud
 
 
 if __name__ == '__main__':
 
-    rospy.init_node('auv_mbes_model', disable_signals=False)
+    rospy.init_node('auv_fls_model', disable_signals=False)
     try:
-        mbes_model()
+        FLSModel()
     except rospy.ROSInterruptException:
-        rospy.logerr("Couldn't launch mbes_model")
+        rospy.logerr("Couldn't launch auv_fls_model")
         pass
 
