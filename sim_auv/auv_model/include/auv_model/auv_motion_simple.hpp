@@ -46,6 +46,9 @@ public:
 
     void updateMeas(const ros::TimerEvent &);
 
+    void updateFlsMeas(const ros::TimerEvent &);
+
+
 private:
     std::string node_name_;
     ros::NodeHandle* nh_;
