@@ -30,6 +30,9 @@
 
 #include <actionlib/client/simple_action_client.h>
 #include <auv_2_ros/MbesSimAction.h>
+#include <auv_2_ros/FlsSimAction.h>
+#include <auv_2_ros/FlsReading.h>
+
 
 using namespace Eigen;
 using namespace std;
@@ -54,6 +57,7 @@ private:
     ros::NodeHandle* nh_;
 
     ros::Publisher sim_ping_pub_;
+    ros::Publisher sim_fls_pub_;
     ros::Publisher odom_pub_;
     ros::Subscriber throttle_sub_;
     ros::Subscriber incl_sub_;
@@ -64,9 +68,12 @@ private:
     tf::TransformListener tflistener_;
     tf::StampedTransform tf_map_odom_;
     tf::StampedTransform tf_base_mbes_;
+    tf::StampedTransform tf_base_fls_;
     tf2_ros::TransformBroadcaster br_;
 
     actionlib::SimpleActionClient<auv_2_ros::MbesSimAction>* ac_;
+    actionlib::SimpleActionClient<auv_2_ros::FlsSimAction>* ac_fls_;
+
 
     Eigen::Isometry3d map_tf_;
     Eigen::Isometry3d odom_tf_;
@@ -77,7 +84,7 @@ private:
     geometry_msgs::TransformStamped new_base_link_;
 //    geometry_msgs::TransformStamped tfmsg_map_odom_;
 
-    std::string world_frame_, map_frame_, odom_frame_, base_frame_, mbes_frame_, synch_name_;
+    std::string world_frame_, map_frame_, odom_frame_, base_frame_, mbes_frame_, synch_name_, fls_frame_;
 
     double latest_thrust_, latest_throttle_, latest_inclination_;
     void thrustCB(const std_msgs::Float64ConstPtr& thrust_msg);

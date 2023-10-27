@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   geometry_msgs
   std_msgs
+  message_generation
 )
 
 # find_package(Ceres REQUIRED)
@@ -69,11 +70,10 @@ find_package(BathyMaps REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  FlsReading.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -131,6 +131,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mbes_model
  CATKIN_DEPENDS actionlib_msgs
+ CATKIN_DEPENDS message_runtime
 #  	DEPENDS LibXTF
 #     INCLUDE_DIRS 
 #     LIBRARIES ${LibXTF_LIBRARIES}

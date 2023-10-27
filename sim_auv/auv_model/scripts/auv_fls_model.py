@@ -27,10 +27,11 @@ from geometry_msgs.msg import Quaternion
 #1. OK auv_fls_model.py: action server that gives FLS reading upon request
 # - a semi-OK Make a bool such that FLS sends 	set_aborted() if it is not ready to send a ping. Ie, from mission planner we can publish ushc that when we know we wont
 #       have an auv infront of us, we can set the bool to false and the FLS will not send a ping. This to save computation. But for other cases, it's just always true.
-# - b CONTINUE HERE Static tf fls - base_link somewhere (see where mbes - base_link is)
-#2. auv_motion_simple.cpp: a single request at a given transform and time to the action server above #1
-#3. auv_motion_simple_node.cpp: a node that at a certain timer interval calls the single request #2 with this specific rate
+# -OK Static tf fls - base_link somewhere (see where mbes - base_link is)
+#2. -OK auv_motion_simple.cpp: a single request at a given transform and time to the action server above #1
+#3. - OK auv_motion_simple_node.cpp: a node that at a certain timer interval calls the single request #2 with this specific rate
 #4. Integrate into all launch files
+#5. Visualise BEAMS in rviz
 
 class FLSModel(object):
 
