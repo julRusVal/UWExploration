@@ -18,7 +18,7 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
     nh_->param<std::string>("thruster_cmd", thruster_top, "/thruster");
     nh_->param<std::string>("inclination_cmd", inclination_top, "/inclination");
     nh_->param<std::string>("mbes_sim_as", mbes_sim_as, "mbes_sim_action");
-    nh_->param<std::string>("fls_sim_as", fls_sim_as, "fls_sim_action"); //TODO
+    nh_->param<std::string>("fls_sim_as", fls_sim_as, "fls_sim_server"); //TODO
     nh_->param<int>("n_beams_mbes", beams_num_, 100);
     nh_->param<std::string>("synch_topic", synch_name_, "/pf/synch");
 

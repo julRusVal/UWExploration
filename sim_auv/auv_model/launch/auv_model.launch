@@ -67,6 +67,20 @@
         <param name="mesh_path" value="$(arg path)/mesh.npz" />       
     </node>
 
+    <node pkg="auv_model" type="auv_fls_model.py" name="auv_fls_model" output="screen">
+        <!-- <param name="mbes_open_angle" value="$(arg mbes_open_angle)" />
+        <param name="mbes_link" value="$(arg namespace)/mbes_link" />
+        <param name="mbes_sim_as" value="/$(arg namespace)/mbes_sim_server" /> 
+        <param name="server_mode" value="True" if="$(eval mode == 'sim')"/>    
+        <param name="server_mode" value="False" unless="$(eval mode == 'sim')"/> 
+        <param name="sound_velocity_prof" value="$(arg path)/svp.cereal" />       
+        <param name="mesh_path" value="$(arg path)/mesh.npz" />        -->
+        <param name="server_mode" value="True" if="$(eval mode == 'sim')"/>    
+        <param name="server_mode" value="False" unless="$(eval mode == 'sim')"/> 
+        <param name="fls_sim_as" value="/$(arg namespace)/fls_sim_server" /> 
+
+    </node>
+
     <group if="$(eval app == 'basic')">
         <node pkg="auv_model" type="auv_multi.py" name="fake_synch_srv" output="screen">
             <param name="synch_topic" value="/$(arg app)/synch" />

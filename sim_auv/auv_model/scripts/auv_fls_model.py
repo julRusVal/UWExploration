@@ -30,8 +30,12 @@ from geometry_msgs.msg import Quaternion
 # -OK Static tf fls - base_link somewhere (see where mbes - base_link is)
 #2. -OK auv_motion_simple.cpp: a single request at a given transform and time to the action server above #1
 #3. - OK auv_motion_simple_node.cpp: a node that at a certain timer interval calls the single request #2 with this specific rate
-#4. Integrate into all launch files
+#4. - semi OK Integrate into all launch files
 #5. Visualise BEAMS in rviz
+
+#Problems: 
+#1. transform multiplication, see below comment on continue. 
+#2. scan areas seems to be published from map
 
 class FLSModel(object):
 
@@ -70,15 +74,15 @@ class FLSModel(object):
 
     # Action server to simulate FLS for the sim AUV
     def fls_as_cb(self, goal):
-        self.goal_header = goal.header
+        self.goal_header = goal.map2fls_tf.header
         if self.fls_enabled:
             self.publish_fls_scan_area_to_rviz()
             tf_map2fls = goal.map2fls_tf
             r,theta = None,None
             for i in range(self.num_auvs): #TODO: find a faster way to do this, if it's an issue - rewrite in C++
                 hugin_frame = "hugin_" + str(i) + "/base_link"
-                tf_hugin2map = self.tf_buffer.lookup_transform("map", hugin_frame, goal.header.stamp, rospy.Duration(1.0))
-                tf_hugin2fls = tf_hugin2map * tf_map2fls
+                tf_hugin2map = self.tf_buffer.lookup_transform("map", hugin_frame, self.goal_header.stamp, rospy.Duration(1.0))
+                tf_hugin2fls = tf_hugin2map.transform * tf_map2fls.transform #NOTE: Continue here, trasnform multiplication is issue here.
                 point = Point() #point in origin
                 point = tf_hugin2fls*point
                 if self.point_in_fov(point):
@@ -86,7 +90,7 @@ class FLSModel(object):
                     break #TODO: handle the case with multiple agents in the fov. This is out of scope for the multi-agent thesis of Koray, but can be extended later here. If you do, remember to change definition of action message aswell
             
             result = FlsSimResult()
-            result.header = goal.header
+            result.header = self.goal_header
             result.range = r
             result.angle = theta
             self.as_ping.set_succeeded(result)
