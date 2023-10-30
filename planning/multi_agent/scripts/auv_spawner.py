@@ -19,6 +19,11 @@ class AUVSpawner():
         self.dataset = rospy.get_param('~dataset','lost_targets')
         self.vehicle_model = rospy.get_param('vehicle_model','hugin')
         self.spawn_sep = rospy.get_param('spawn_separation',10)
+
+        
+        self.fls_horizontal_angle = rospy.get_param("~fls_horizontal_angle", np.deg2rad(135))
+        self.fls_vertical_angle = rospy.get_param("~fls_vertical_angle", np.deg2rad(60))
+        self.fls_max_range = rospy.get_param("~fls_max_range", 50) #meters
         rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~auv_launch_file',rospack.get_path('auv_model') + '/launch/auv_environment.launch')
 
@@ -113,6 +118,11 @@ class AUVSpawner():
                             "roll:=" + str(roll),
                             "pitch:=" + str(pitch),
                             "yaw:=" + str(yaw),
+                            "fls_horizontal_angle:=" + str(self.fls_horizontal_angle),
+                            "fls_vertical_angle:=" + str(self.fls_vertical_angle),
+                            "fls_max_range:=" + str(self.fls_max_range),
+                            "vehicle_model:=" + self.vehicle_model,
+                            "num_auvs:=" + str(self.num_auvs),
                             ])
         rospy.loginfo(str("Spawned AUV: "+ str(namespace)) + str(" at x: " + str(x) + " y: " + str(y) + " z: " + str(z) + " roll: " + str(roll) + " pitch: " + str(pitch) + " yaw: " + str(yaw)))
 if __name__ == '__main__':

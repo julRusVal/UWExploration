@@ -11,14 +11,14 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
     nh_->param<std::string>("odom_frame", odom_frame_, "odom");
     nh_->param<std::string>("base_link", base_frame_, "base_link");
     nh_->param<std::string>("mbes_link", mbes_frame_, "mbes_link");
-    nh_->param<std::string>("fls_link", fls_frame_, "fls_link"); // TODO
+    nh_->param<std::string>("fls_link", fls_frame_, "fls_link"); 
     nh_->param<std::string>("mbes_pings_topic", sim_pings_top, "/sim/mbes_pings");
     nh_->param<std::string>("fls_meas_topic", sim_fls_meas_top, "/sim/fls_measurement"); //TODO
     nh_->param<std::string>("throttle_cmd", throttle_top, "/throttle");
     nh_->param<std::string>("thruster_cmd", thruster_top, "/thruster");
     nh_->param<std::string>("inclination_cmd", inclination_top, "/inclination");
     nh_->param<std::string>("mbes_sim_as", mbes_sim_as, "mbes_sim_action");
-    nh_->param<std::string>("fls_sim_as", fls_sim_as, "fls_sim_server"); //TODO
+    nh_->param<std::string>("fls_sim_as", fls_sim_as, "fls_sim_server");
     nh_->param<int>("n_beams_mbes", beams_num_, 100);
     nh_->param<std::string>("synch_topic", synch_name_, "/pf/synch");
 

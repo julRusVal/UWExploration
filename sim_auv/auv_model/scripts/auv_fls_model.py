@@ -30,7 +30,7 @@ from geometry_msgs.msg import Quaternion
 # -OK Static tf fls - base_link somewhere (see where mbes - base_link is)
 #2. -OK auv_motion_simple.cpp: a single request at a given transform and time to the action server above #1
 #3. - OK auv_motion_simple_node.cpp: a node that at a certain timer interval calls the single request #2 with this specific rate
-#4. - semi OK Integrate into all launch files
+#4. - OK Integrate into all launch files
 #5. Visualise BEAMS in rviz
 
 #Problems: 

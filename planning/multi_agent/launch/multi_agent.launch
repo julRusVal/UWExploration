@@ -16,6 +16,10 @@
     <!-- Choose mode ( eg 'gt','sim') -->
     <arg name="mode" default="sim"/>
 
+    <arg name="fls_horizontal_angle" default="3.14"/>
+    <arg name="fls_vertical_angle" default="1.5"/>
+    <arg name="fls_max_range" default="50.0"/>
+
     <!-- Specific args for navigation -->
     <!-- Choose manual control or waypoint following -->
     <arg name="manual_control" default="false"/>
@@ -79,6 +83,10 @@
         <param name="auv_launch_file" value="$(find auv_model)/launch/auv_environment.launch"/>    
         <!-- <param name="vehicle_model" value="$(arg vehicle_model)"/>  -->
         <!-- <param name="spawn_separation" value="$(arg spawn_separation)"/>  -->
+        <param name="fls_horizontal_angle" value="$(arg fls_horizontal_angle)"/>
+        <param name="fls_vertical_angle" value="$(arg fls_vertical_angle)"/>
+        <param name="fls_max_range" value="$(arg fls_max_range)"/>
+        
     </node>
 
     <!-- Enable navigation for AUVs -->
