@@ -63,7 +63,7 @@
         <param name="fls_sim_as" value="/$(arg namespace)/fls_sim_server" />
         <param name="n_beams_mbes" value="$(arg n_beams_mbes)" />
         <param name="synch_topic" value="/$(arg app)/synch" />
-        <param name="fls_meas_topic" value="/$(arg namespace)/sim/fls_measurement" />
+        <param name="fls_meas_topic" value="/sim/$(arg namespace)/fls_measurement" />
 
     </node>
 
@@ -89,7 +89,9 @@
         <param name="vehicle_model" value="$(arg vehicle_model)" />
         <param name="num_auvs" value="$(arg num_auvs)" />
         <param name="fls_enable_topic" value="/$(arg namespace)/fls_sim_enable" />
-        <param name="scan_area_marker_topic" value="/$(arg namespace)/sim/fls_scan_area" />
+        <param name="scan_area_marker_topic" value="/sim/$(arg namespace)/fls_scan_area" />
+        <param name="namespace" value="$(arg namespace)" />
+        
 
     </node>
 
