@@ -176,8 +176,8 @@ class FLSModel(object):
                 and abs(theta_horizontal) <= alpha/2
                 and abs(theta_vertical) <= beta/2
                 )
-        if in_fov:
-            print("theta_horizontal: ", np.rad2deg(theta_horizontal), " theta_vertical: ", np.rad2deg(theta_vertical))
+        # if in_fov:
+        #     print("theta_horizontal: ", np.rad2deg(theta_horizontal), " theta_vertical: ", np.rad2deg(theta_vertical))
         return in_fov
     
     def polar_coordinates(self,x,y):
