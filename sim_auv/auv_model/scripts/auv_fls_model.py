@@ -141,7 +141,7 @@ class FLSModel(object):
         """Returns true if the point is within the field of view of the FLS. 
         Point in the FLS frame.
         """
-        x = point.x #TODO: Range calcs are correct. #1. Check fov bounds correct #2. Check fls markerarray in rviz correct
+        x = point.x 
         y = point.y
         z = point.z
         R = self.fls_max_range
@@ -164,8 +164,8 @@ class FLSModel(object):
     def publish_fls_scan_area_to_rviz(self):
         # Create marker array
         #r_list = np.linspace(0,self.fls_max_range,5)
-        theta_list = np.linspace(-self.fls_horizontal_angle/2,self.fls_horizontal_angle/2,2)
-        phi_list = np.linspace(-self.fls_vertical_angle/2,self.fls_vertical_angle/2,2)
+        phi_list = np.linspace(-self.fls_horizontal_angle/2,self.fls_horizontal_angle/2,5)
+        theta_list = np.linspace(-self.fls_vertical_angle/2,self.fls_vertical_angle/2,5)
         marker_array = MarkerArray()
         id = 0
         for theta in theta_list:
