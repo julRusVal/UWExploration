@@ -21,8 +21,8 @@ class AUVSpawner():
         self.spawn_sep = rospy.get_param('spawn_separation',10)
 
         
-        self.fls_horizontal_angle = rospy.get_param("~fls_horizontal_angle", np.deg2rad(135))
-        self.fls_vertical_angle = rospy.get_param("~fls_vertical_angle", np.deg2rad(60))
+        self.fls_horizontal_angle = rospy.get_param("~fls_horizontal_angle", 135)
+        self.fls_vertical_angle = rospy.get_param("~fls_vertical_angle", 60)
         self.fls_max_range = rospy.get_param("~fls_max_range", 50) #meters
         rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~auv_launch_file',rospack.get_path('auv_model') + '/launch/auv_environment.launch')

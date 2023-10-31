@@ -32,6 +32,13 @@
 	<arg name="pitch" default="0.0"/>
 	<arg name="yaw" default="0.0"/>
 
+	<arg name="fls_horizontal_angle" default="135"/>
+    <arg name="fls_vertical_angle" default="60"/>
+    <arg name="fls_max_range" default="50.0"/>
+    <arg name="num_auvs" default="1"/>
+
+
+
 
 	<group ns="$(arg namespace)">
 
@@ -97,6 +104,10 @@
 				<arg name="pitch" value="$(arg pitch)"/>
 				<arg name="yaw" value="$(arg yaw)"/>
 				<arg name="multi_agent" value="$(arg multi_agent)"/>
+				<arg name="fls_horizontal_angle" value="$(arg fls_horizontal_angle)"/>
+				<arg name="fls_vertical_angle" value="$(arg fls_vertical_angle)"/>
+				<arg name="fls_max_range" value="$(arg fls_max_range)"/>
+				<arg name="num_auvs" value="$(arg num_auvs)"/>
 			</include>
 		</group>
 	

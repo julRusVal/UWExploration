@@ -31,8 +31,8 @@
 	<!-- <group ns="$(arg namespace)"> -->
     <arg name="vehicle_model" default="hugin"/>
     <arg name="num_auvs" default="1"/>
-    <arg name="fls_horizontal_angle" default="3.14"/>
-    <arg name="fls_vertical_angle" default="1.5"/>
+    <arg name="fls_horizontal_angle" default="135"/>
+    <arg name="fls_vertical_angle" default="60"/>
     <arg name="fls_max_range" default="50.0"/>
 
 
