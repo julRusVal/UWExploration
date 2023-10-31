@@ -692,6 +692,7 @@ void RbpfSlam::sampleCB(const actionlib::SimpleClientGoalState &state,
 }
 
 void RbpfSlam::predict(nav_msgs::Odometry odom_t, float dt)
+// one instance per auv
 {
     // Multithreading
     auto t1 = high_resolution_clock::now();

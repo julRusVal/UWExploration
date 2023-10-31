@@ -1,0 +1,144 @@
+<?xml version="1.0" ?>
+<launch>
+    <!-- Common args for multiple nodes -->
+    <arg name="path_array_topic" default="/multi_agent/path_array"/>
+    <arg name="path_array_spawn_pos_topic" default="/multi_agent/spawn_pos/path_array"/>
+    <!-- Choose number of AUVs to spawn -->
+    <arg name="num_auvs" default="1"/> 
+    <arg name="vehicle_model" default="hugin"/>
+    
+    <!-- Specific args for spawner -->
+    <!-- Choose spawn separation distance in meters along y-axis -->
+    <arg name="spawn_separation" default="10"/>
+    <arg name="node_name_spawner" default="auv_spawn_node"/>
+    <!-- Choose dataset to use -->
+    <arg name="dataset" default="lost_targets"/> 
+    <!-- Choose mode ( eg 'gt','sim') -->
+    <arg name="mode" default="sim"/>
+
+    <arg name="fls_horizontal_angle" default="3.14"/>
+    <arg name="fls_vertical_angle" default="1.5"/>
+    <arg name="fls_max_range" default="50.0"/>
+
+    <!-- Specific args for navigation -->
+    <!-- Choose manual control or waypoint following -->
+    <arg name="manual_control" default="false"/>
+    <arg name="node_name_navigation" default="auv_navigation_node"/>
+    <!-- max_thrust = 4 gives a turning radius of approx 2.5 m -->
+    <arg name="max_thrust" default="3.0"/> 
+    <arg name="max_throttle" default="10.0"/>
+    <!-- Acceptable types below: 'simple', 'simple_maxturn' -->
+    <arg name="waypoint_follower_type" default="simple_maxturn"/>
+    <arg name="dubins_turning_radius" default="3"/>
+	<arg name="dubins_step_size" default="0.5"/>
+	<arg name="goal_tolerance" default="1.0"/>
+	<arg name="time_sync" default="false"/>
+
+
+
+
+    <!-- Specific args for path relayer -->
+    <arg name="node_name_relay" default="path_relay_node"/>
+
+    <!-- Specific args for rviz helper -->
+    <arg name="node_name_helper" default="rviz_helper_node"/>
+    <arg name="rviz_helper" default="false"/>
+
+    <!-- Specific args for path pattern generator -->
+    <arg name="node_name_pattern" default="path_pattern_generator_node"/>
+    <arg name="swath" default="50"/>
+    <arg name="speed" default="$(arg max_throttle)"/>
+    <arg name="straight_slack" default="0.0"/>
+    <arg name="overlap_between_rows" default="0.0"/>
+    <arg name="overlap_between_lanes" default="0.0"/>
+    <arg name="double_sided" default="false"/>
+    <arg name="center_x" default="false"/>
+    <arg name="center_y" default="false"/>
+    <arg name="exiting_line" default="false"/>
+    <arg name="pattern_generation" default="true"/>
+
+
+    <!-- Specific args for auxiliary nodes -->
+    <arg name="auxiliary_enabled" default="false"/>
+
+
+
+    <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
+
+    <!-- Global params needed by multiple nodes -->
+    <param name="num_auvs" value="$(arg num_auvs)"/>
+    <param name="vehicle_model" value="$(arg vehicle_model)"/> 
+    <param name="path_array_topic" value="$(arg path_array_topic)"/>
+    <param name="path_array_spawn_pos_topic" value="$(arg path_array_spawn_pos_topic)"/>
+    <param name="spawn_separation" value="$(arg spawn_separation)"/>
+    <param name="pattern_generation" value="$(arg pattern_generation)"/> 
+    <param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
+
+
+
+    <!-- Spawn AUVs -->
+    <node type="auv_spawner.py" pkg="multi_agent" name="$(arg node_name_spawner)" output="screen">
+        <param name="mode" value="$(arg mode)"/>
+        <param name="dataset" value="$(arg dataset)"/>
+        <param name="auv_launch_file" value="$(find auv_model)/launch/auv_environment.launch"/>    
+        <!-- <param name="vehicle_model" value="$(arg vehicle_model)"/>  -->
+        <!-- <param name="spawn_separation" value="$(arg spawn_separation)"/>  -->
+        <param name="fls_horizontal_angle" value="$(arg fls_horizontal_angle)"/>
+        <param name="fls_vertical_angle" value="$(arg fls_vertical_angle)"/>
+        <param name="fls_max_range" value="$(arg fls_max_range)"/>
+        
+    </node>
+
+    <!-- Enable navigation for AUVs -->
+    <node type="auv_navigation.py" pkg="multi_agent" name="$(arg node_name_navigation)" output="screen">
+        <param name="navigation_launch_file" value="$(find basic_navigation)/launch/basic_mission.launch"/>    
+        
+        <param name="manual_control" value="$(arg manual_control)"/> 
+        <param name="max_thrust" value="$(arg max_thrust)"/>
+        <param name="max_throttle" value="$(arg max_throttle)"/>
+        <param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
+        <!-- <param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/> -->
+        <param name="dubins_step_size" value="$(arg dubins_step_size)"/>
+        <param name="goal_tolerance" value="$(arg goal_tolerance)"/>
+        <param name="time_sync" value="$(arg time_sync)"/>
+        
+    </node>
+
+    <!-- Relay paths to all AUVs -->
+    <node type="path_relay.py" pkg="multi_agent" name="$(arg node_name_relay)" output="screen">
+    </node>
+
+    <!-- Rviz helper  -->
+    <group if="$(arg rviz_helper)">
+        <node type="rviz_wp_helper.py" pkg="multi_agent" name="$(arg node_name_helper)" output="screen">
+        </node>
+    </group>
+
+    <!-- Generate lawn mower pattern -->
+    <group unless="$(arg rviz_helper)">
+        <group if="$(arg pattern_generation)">
+            <node type="path_pattern_generator.py" pkg="multi_agent" name="$(arg node_name_pattern)" output="screen">
+            <param name="swath" type="double" value="$(arg swath)"/>
+            <param name="speed" type="double" value="$(arg speed)"/>
+            <param name="straight_slack" type="double" value="$(arg straight_slack)"/>
+            <param name="overlap_between_rows" type="double" value="$(arg overlap_between_rows)"/>
+            <param name="overlap_between_lanes" type="double" value="$(arg overlap_between_lanes)"/>
+            <param name="double_sided" type="bool" value="$(arg double_sided)"/>
+            <param name="center_x" type="bool" value="$(arg center_x)"/>
+            <param name="center_y" type="bool" value="$(arg center_y)"/>
+            <param name="exiting_line" type="bool" value="$(arg exiting_line)"/>
+            </node>
+        </group>
+    </group>
+
+    <!-- Start rviz message display service  -->
+
+    <node type="display_message_service.py" pkg="rviz_visualization" name="display_rviz_message_service" output="screen">
+    </node>
+
+    <!-- Start auxiliary nodes  -->
+    <group if="$(arg auxiliary_enabled)">
+        <node type="auxiliary_map_and_sensors.py" pkg="multi_agent" name="auxiliary_node" output="screen">
+        </node>
+    </group>
+</launch>

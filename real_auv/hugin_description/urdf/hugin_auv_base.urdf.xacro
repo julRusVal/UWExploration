@@ -65,5 +65,34 @@
       </collision>
     </link>
 
+    <joint name="${namespace}/fls_joint" type="fixed">
+      <!--Ping in lost_targets-->
+      <!-- <origin xyz="4.0 0.0 0.0" rpy="${M_PI - 0.38} 0 0" />  -->
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57079632679 0.0" />  <!-- MBES for ripples -->
+      <parent link="${namespace}/base_link"/>
+      <child link="${namespace}/fls_link"/>
+    </joint>
+
+    <link name="${namespace}/fls_link">
+      <inertial>
+        <mass value="0.001"/>
+        <origin rpy="0 1.57079632679 0" xyz="0 0 0"/>
+        <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.0001"/>
+      </inertial>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <box size="0.01 0.01 0.01"/>
+        </geometry>
+        <material name="blue"/>  
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <box size="0.01 0.01 0.01"/>
+        </geometry>
+      </collision>
+    </link>
+
   </xacro:macro>
 </robot>

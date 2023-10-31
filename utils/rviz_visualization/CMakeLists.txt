@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(auv_2_ros)
+cmake_minimum_required(VERSION 3.0.2)
+project(rviz_visualization)
 
-## Compile as C++11, supported in ROS Kinetic and newer o
+## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
@@ -9,32 +9,12 @@ project(auv_2_ros)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  tf2
-  tf2_ros
-  pcl_ros
-  eigen_conversions
-  tf_conversions
-  genmsg
-  actionlib_msgs
-  geometry_msgs
+  rospy
   std_msgs
   message_generation
+  visualization_msgs
+  geometry_msgs
 )
-
-# find_package(Ceres REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(PCL 1.8 REQUIRED)
-find_package(OpenCV 4 REQUIRED)
-# find_package(g2o REQUIRED)
-
-# AUVLIB stuff
-find_package(LibXTF REQUIRED)
-find_package(LibGSF REQUIRED)
-find_package(EigenCereal REQUIRED)
-find_package(DataTools REQUIRED)
-find_package(SonarTracing REQUIRED)
-find_package(AuvlibGlad REQUIRED)
-find_package(BathyMaps REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -70,33 +50,32 @@ find_package(BathyMaps REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  FlsReading.msg
-)
-
-## Generate services in the 'srv' folder
-# add_service_files(
+# add_message_files(
 #   FILES
-#   Service1.srv
-#   Service2.srv
+#   Message1.msg
+#   Message2.msg
 # )
 
-# Generate actions in the 'action' folder
- add_action_files(
-   FILES
-   MbesSim.action
-   FlsSim.action
- )
+## Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  DisplayRvizMessage.srv
+)
+
+## Generate actions in the 'action' folder
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   std_msgs
-   actionlib_msgs
-   geometry_msgs
-   sensor_msgs
- )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  visualization_msgs
+  geometry_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -129,14 +108,10 @@ add_message_files(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES mbes_model
- CATKIN_DEPENDS actionlib_msgs
- CATKIN_DEPENDS message_runtime
-#  	DEPENDS LibXTF
-#     INCLUDE_DIRS 
-#     LIBRARIES ${LibXTF_LIBRARIES}
+#  LIBRARIES rviz_visualization
+#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  DEPENDS system_lib
 )
-
 
 ###########
 ## Build ##
@@ -145,35 +120,24 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-include
+# include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN_INCLUDE_DIRS} 
-  ${PCL_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
 )
 
-# Add cmake target dependencies of the library
-# as an example, code may need to be generated before libraries
-# either from message generation or dynamic reconfigure
-# add_dependencies(meas_model 
-# 	${${PROJECT_NAME}_EXPORTED_TARGETS} 
-# 	${catkin_EXPORTED_TARGETS}
+## Declare a C++ library
+# add_library(${PROJECT_NAME}
+#   src/${PROJECT_NAME}/rviz_visualization.cpp
 # )
+
+## Add cmake target dependencies of the library
+## as an example, code may need to be generated before libraries
+## either from message generation or dynamic reconfigure
+# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(auv_2_ros 
-       src/auv_2_ros_node.cpp
-       src/auv_2_ros.cpp
-       src/submaps.cpp
-)
-
-#add_executable(mbes_meas_node
-#       src/mbes_meas_node.cpp
-#       src/mbes_meas.cpp
-#)
-
+# add_executable(${PROJECT_NAME}_node src/rviz_visualization_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -183,34 +147,12 @@ add_executable(auv_2_ros
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(auv_2_ros 
-  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
-  ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-#add_dependencies(mbes_meas_node
-#  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-#  ${catkin_EXPORTED_TARGETS})
-
-# Specify libraries to link a library or executable target against
-target_link_libraries(auv_2_ros 
-    # utils_visualization
-    # submaps_tools
-    data_transforms
-    std_data
-    # multibeam_simple
-    ${PCL_LIBRARIES}
-    ${catkin_LIBRARIES}
-)
-
-#target_link_libraries(mbes_meas_node
-#    utils_visualization
-#    submaps_tools
-#    data_transforms
-#    std_data
-#    multibeam_simple
-#    ${PCL_LIBRARIES}
-#    ${catkin_LIBRARIES}
-#)
+## Specify libraries to link a library or executable target against
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -221,7 +163,7 @@ target_link_libraries(auv_2_ros
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
+# catkin_install_python(PROGRAMS
 #   scripts/my_python_script
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
@@ -259,7 +201,7 @@ target_link_libraries(auv_2_ros
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_auv_pf.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_rviz_visualization.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
