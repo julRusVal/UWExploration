@@ -141,13 +141,14 @@ class FLSModel(object):
         """Returns true if the point is within the field of view of the FLS. 
         Point in the FLS frame.
         """
-        x = point.x #TODO: problem is fov and then calc polar coordinates
+        x = point.x #TODO: Range calcs are correct. #1. Check fov bounds correct #2. Check fls markerarray in rviz correct
         y = point.y
         z = point.z
         R = self.fls_max_range
         alpha = self.fls_horizontal_angle
         beta = self.fls_vertical_angle
-        in_fov = x >=0 and x<=R*np.cos(alpha/2) and y>=-R*np.sin(alpha/2) and y<=R*np.sin(alpha/2) and z>=-R*np.sin(beta/2) and z<=R*np.sin(beta/2)
+        # in_fov = x >=0 and x<=R*np.cos(alpha/2) and y>=-R*np.sin(alpha/2) and y<=R*np.sin(alpha/2) and z>=-R*np.sin(beta/2) and z<=R*np.sin(beta/2)
+        in_fov = z >=0 and x<=R and y>=-R*np.sin(alpha/2) and y<=R*np.sin(alpha/2) and x>=-R*np.sin(beta/2) and x<=R*np.sin(beta/2)
         return in_fov
     
     def polar_coordinates(self,x,y):
