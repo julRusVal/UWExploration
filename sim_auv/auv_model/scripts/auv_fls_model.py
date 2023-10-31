@@ -35,7 +35,7 @@ from tf2_geometry_msgs import do_transform_point
 #3. - OK auv_motion_simple_node.cpp: a node that at a certain timer interval calls the single request #2 with this specific rate
 #4. - OK Integrate into all launch files
 #5. OK Visualise BEAMS in rviz
-#6. See why measurement is not published to topic
+#6. OK See why measurement is not published to topic
 #7. Test scenarios
 
 class FLSModel(object):
@@ -83,7 +83,7 @@ class FLSModel(object):
             self.publish_fls_scan_area_to_rviz()
             tf_map2fls = goal.map2fls_tf
             r,theta = None,None
-            for i in range(self.num_auvs): #TODO: find a faster way to do this, if it's an issue - rewrite in C++
+            for i in range(self.num_auvs+1): #TODO: find a faster way to do this, if it's an issue - rewrite in C++
                 if self.namespace != "hugin_"+ str(i):
                     hugin_frame_i = "hugin_" + str(i) + "/base_link"
                     # tf_hugin2map = self.tf_buffer.lookup_transform("map", hugin_frame, self.goal_header.stamp, rospy.Duration(1.0))
@@ -93,9 +93,14 @@ class FLSModel(object):
                     point.header.frame_id = hugin_frame_i
                     # point = tf_hugin2fls*point
                     point = do_transform_point(point, tf_hugin2fls)
+                    # x = point.point.x
+                    # z = point.point.z
+                    # point.point.x = z
+                    # point.point.z = x
+                    print("FLS ping at point: ", point)
                     if self.point_in_fov(point.point):
-                        r, theta = self.polar_coordinates(point.point.x,point.point.y)
-                        print("FLS ping at r = ", r, " theta = ", theta)
+                        r, theta = self.polar_coordinates(point.point.z,point.point.y)
+                        # print("FLS ping at r = ", r, " theta = ", theta)
                         #break #TODO: handle the case with multiple agents in the fov. This is out of scope for the multi-agent thesis of Koray, but can be extended later here. If you do, remember to change definition of action message aswell
             
             if r is None or theta is None:
@@ -136,7 +141,7 @@ class FLSModel(object):
         """Returns true if the point is within the field of view of the FLS. 
         Point in the FLS frame.
         """
-        x = point.x
+        x = point.x #TODO: problem is fov and then calc polar coordinates
         y = point.y
         z = point.z
         R = self.fls_max_range

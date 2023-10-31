@@ -261,7 +261,6 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
     ac_fls_->waitForResult(ros::Duration(1.0));
     actionlib::SimpleClientGoalState state = ac_fls_->getState();
     if (state == actionlib::SimpleClientGoalState::SUCCEEDED){
-        std::cout << "succeeded " << std::endl;
         std_msgs::Header header;
         std_msgs::Float32 range;
         std_msgs::Float32 angle;
@@ -278,11 +277,9 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
         fls_msg.range = range;
         fls_msg.angle = angle;
         //print result in terminal
-        std::cout << "result: " << fls_msg << std::endl;
         sim_fls_pub_.publish(fls_msg);
     }
     else {
-        std::cout << "failed " << std::endl;
     }
     //        printf("AUV Motion time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 }
