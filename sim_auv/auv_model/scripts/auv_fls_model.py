@@ -79,7 +79,7 @@ class FLSModel(object):
     # Action server to simulate FLS for the sim AUV
     def fls_as_cb(self, goal):
         self.goal_header_stamp = goal.map2fls_tf.header.stamp
-        if self.fls_enabled:
+        if self.fls_enabled and self.num_auvs > 1:
             self.publish_fls_scan_area_to_rviz()
             tf_map2fls = goal.map2fls_tf
             r,theta = None,None
