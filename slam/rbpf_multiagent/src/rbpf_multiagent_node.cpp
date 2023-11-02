@@ -44,7 +44,7 @@ int main(int argc, char** argv){
 }
 
 //TODO: 
-//1. Init pf for all auvs in the rbpf_multiagent files 
-//2. Integrate into launch files
-//3. Define svgp SLAM survey area intop rectangle defined by me 
-//4. Create callback for FLS measurements such that it can be forwarded to the update weights step
+//1. OK - Init pf for all auvs in the rbpf_multiagent files 
+//(2.Integrate into launch files)
+//3. Create callback for FLS measurements such that it can be forwarded to the update weights step
+//4. Define svgp SLAM survey area intop rectangle defined by me 
