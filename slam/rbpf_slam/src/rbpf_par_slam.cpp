@@ -190,9 +190,9 @@ RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_m
     marker_r_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
     marker_g_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
     marker_b_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
-    cout << "Marker color " << marker_r_ << " " << marker_g_ << " " << marker_b_ << endl;
-    cout << time(NULL) << endl;
-    cout << time(0) << endl;
+    // cout << "Marker color " << marker_r_ << " " << marker_g_ << " " << marker_b_ << endl;
+    // cout << time(NULL) << endl;
+    // cout << time(0) << endl;
     
 
     ROS_INFO("Particle filter instantiated");
@@ -339,6 +339,7 @@ void RbpfSlam::mbes_real_cb(const sensor_msgs::PointCloud2ConstPtr& msg)
 
 void RbpfSlam::rbpf_update(const ros::TimerEvent&)
 {
+    // cout << "MBES RBPF update" << endl;
     if(!mission_finished_)
     {
         if(latest_mbes_.header.stamp > prev_mbes_.header.stamp)
