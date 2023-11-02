@@ -15,8 +15,8 @@ int main(int argc, char** argv){
     boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
 
     // Spinner for AUV interface callbacks
-    ros::AsyncSpinner spinner_rbpf(1000, &rbpf_queue);
-    spinner_rbpf.start();
+    ros::AsyncSpinner spinner_rbpf(1000, &rbpf_queue); //asyncspinner pt1 (https://roboticsbackend.com/ros-asyncspinner-example/)
+    spinner_rbpf.start(); //asyncspinner pt2
     
     // Spinner for SVGPs minibatch callbacks
     int pc;
@@ -35,7 +35,7 @@ int main(int argc, char** argv){
     //     mb_queue.callAvailable();
     // }
 
-    ros::waitForShutdown();
+    ros::waitForShutdown(); //asyncspinner pt3
     if(!ros::ok()){
         rbpf_multi.reset();
     }
