@@ -3,6 +3,8 @@ import rospy
 from subprocess import call, Popen
 import numpy as np
 import rospkg
+import time
+import tf
 
 class RbpfSetup():
     def __init__(self):
@@ -14,35 +16,31 @@ class RbpfSetup():
         self.num_particle_handlers = rospy.get_param('~num_particle_handlers',1)
         self.results_path = rospy.get_param('~results_path','/home/kurreman/Downloads/rbpf_test"')
         self.mode = rospy.get_param('~mode','sim')
+        self.rbpf_sensor_FLS = rospy.get_param('~rbpf_sensor_FLS',True)
+        self.rbpf_sensor_MBES = rospy.get_param('~rbpf_sensor_MBES',False)
         self.i = 0
         
 
         rospy.loginfo("Setting up AUV RBPF SLAM...")
 
-        self.timer = rospy.Timer(rospy.Duration(3.0), self.cb)
-        
-        # for i in range(self.num_auvs):
-            # rospy.loginfo(str("Setting up RBPF SLAM for auv: "+ str(i)))
-            # namespace = self.vehicle_model + '_' + str(i)
-            # # color_r = np.random.uniform(0.5,1.0)
-            # # color_g = np.random.uniform(0.5,1.0)
-            # # color_b = np.random.uniform(0.5,1.0)
-            # # rospy.loginfo("particle color for auv: " + str(i) + " is: " + str(particle_viz_color))
-            # proc = Popen(["roslaunch", self.launch_file, 
-            #                 "namespace:=" + namespace,
-            #                 "particle_count:=" + str(self.particle_count),
-            #                 "num_particle_handlers:=" + str(self.num_particle_handlers),
-            #                 "results_path:=" + self.results_path,
-            #                 "mode:=" + self.mode
-            #               ])
-            
-            
-            # rospy.sleep(3)
+        listener = tf.TransformListener()
+        auvs_spawned = False
+        pr = False
+        while not auvs_spawned:
+            if not pr:
+                rospy.loginfo("Waiting for AUVS to spawn...")
+                pr = True
+            try:
+                listener.lookupTransform(
+                    "hugin_%d/base_link" % (self.num_auvs-1), "hugin_%d/base_link" % (self.num_auvs-2), rospy.Time(0))
+                auvs_spawned = True
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
 
-        rospy.spin()
-    def cb(self,event):
-        i = self.i
-        if i<self.num_auvs:
+
+        # self.timer = rospy.Timer(rospy.Duration(3.0), self.cb)
+        t = time.time()
+        for i in range(self.num_auvs):
             rospy.loginfo(str("Setting up RBPF SLAM for auv: "+ str(i)))
             namespace = self.vehicle_model + '_' + str(i)
             # color_r = np.random.uniform(0.5,1.0)
@@ -54,12 +52,38 @@ class RbpfSetup():
                             "particle_count:=" + str(self.particle_count),
                             "num_particle_handlers:=" + str(self.num_particle_handlers),
                             "results_path:=" + self.results_path,
-                            "mode:=" + self.mode
-                            ])
-            self.i  += 1
-        else:
-            rospy.loginfo("Shutting down rbpf_slam_setup timer")
-            self.timer.shutdown()
+                            "mode:=" + self.mode,
+                          ])
+            
+            while time.time() - t < 2:
+                # print("waiting for %d seconds" % (2 - (time.time() - t)))
+                pass
+            t = time.time()
+            # rospy.sleep(3)
+
+        rospy.spin()
+    # def cb(self,event):
+    #     i = self.i
+    #     if i<self.num_auvs:
+    #         rospy.loginfo(str("Setting up RBPF SLAM for auv: "+ str(i)))
+    #         namespace = self.vehicle_model + '_' + str(i)
+    #         # color_r = np.random.uniform(0.5,1.0)
+    #         # color_g = np.random.uniform(0.5,1.0)
+    #         # color_b = np.random.uniform(0.5,1.0)
+    #         # rospy.loginfo("particle color for auv: " + str(i) + " is: " + str(particle_viz_color))
+    #         proc = Popen(["roslaunch", self.launch_file, 
+    #                         "namespace:=" + namespace,
+    #                         "particle_count:=" + str(self.particle_count),
+    #                         "num_particle_handlers:=" + str(self.num_particle_handlers),
+    #                         "results_path:=" + self.results_path,
+    #                         "mode:=" + self.mode,
+    #                         "rbpf_sensor_FLS:=" + str(self.rbpf_sensor_FLS),
+    #                         "rbpf_sensor_MBES:=" + str(self.rbpf_sensor_MBES),
+    #                         ])
+    #         self.i  += 1
+    #     else:
+    #         rospy.loginfo("Shutting down rbpf_slam_setup timer")
+    #         self.timer.shutdown()
 if __name__ == '__main__':
 
     rospy.init_node('rbpf_slam_setup')

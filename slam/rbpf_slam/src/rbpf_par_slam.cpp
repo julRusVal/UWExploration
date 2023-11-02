@@ -180,9 +180,13 @@ RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_m
     std::string rbpf_markers_top;
     nh_->param<string>(("markers_top"), rbpf_markers_top, "/markers");
     vis_pub_ = nh_->advertise<visualization_msgs::MarkerArray>(rbpf_markers_top, 0);
-    float LO = 0.5;
-    float HI = 1.0;
+    // int seed;
+    // nh_->param<int>(("color_seed"), seed, 0);
+
+    float LO = 0.05;
+    float HI = 0.9;
     srand (time(0));
+    // int srand(seed);
     marker_r_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
     marker_g_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
     marker_b_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
