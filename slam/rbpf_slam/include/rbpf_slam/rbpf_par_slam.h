@@ -148,6 +148,7 @@ public:
     double time_;
     double old_time_;
     float rbpf_period_, rviz_period_;
+    float marker_r_, marker_g_, marker_b_;
 
     sensor_msgs::PointCloud2 prev_mbes_;
     sensor_msgs::PointCloud2 latest_mbes_;

@@ -180,6 +180,16 @@ RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_m
     std::string rbpf_markers_top;
     nh_->param<string>(("markers_top"), rbpf_markers_top, "/markers");
     vis_pub_ = nh_->advertise<visualization_msgs::MarkerArray>(rbpf_markers_top, 0);
+    float LO = 0.5;
+    float HI = 1.0;
+    srand (time(0));
+    marker_r_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+    marker_g_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+    marker_b_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+    cout << "Marker color " << marker_r_ << " " << marker_g_ << " " << marker_b_ << endl;
+    cout << time(NULL) << endl;
+    cout << time(0) << endl;
+    
 
     ROS_INFO("Particle filter instantiated");
 }
@@ -777,9 +787,9 @@ void RbpfSlam::pub_markers(const geometry_msgs::PoseArray& array_msg)
         marker.scale.y = 0.001;
         marker.scale.z = 0.001;
         marker.color.a = 1.0; 
-        marker.color.r = 0.0;
-        marker.color.g = 1.0;
-        marker.color.b = 0.0;
+        marker.color.r = marker_r_; //0.0;
+        marker.color.g = marker_g_; //1.0;
+        marker.color.b = marker_b_; //0.0;
         marker.mesh_resource = "package://hugin_description/mesh/Hugin_big_meter.dae";
         markers.markers.push_back(marker);
         i++;
