@@ -217,7 +217,7 @@ class FLSModel(object):
                 # Set the color 
                 marker.color.r = 0.0
                 marker.color.g = 1.0
-                marker.color.b = 0.0
+                marker.color.b = 1.0
                 marker.color.a = 0.3 #A bit see-through
 
                 # Add points to the line strip marker to define the rectangle
