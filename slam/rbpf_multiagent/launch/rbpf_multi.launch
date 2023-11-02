@@ -21,8 +21,8 @@
 	<arg name="yaw" default="0.0"/> -->
 
   <!-- RBPF params  -->
-  <arg name="particle_count"                    default="20"/> <!--50 -->
-  <arg name="num_particle_handlers"             default="4"/> 
+  <arg name="particle_count"                    default="10"/> <!--50 -->
+  <arg name="num_particle_handlers"             default="1"/> 
   <arg name="survey_finished_top" default="/$(arg mode)/survey_finished"/>
   
   <!-- API for SVGP particles -->

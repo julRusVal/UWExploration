@@ -35,6 +35,16 @@
 	<arg name="time_sync" default="false"/>
 
 
+    <!-- Specific args for SLAM -->
+    <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
+    <arg name="rbpf" default="true"/>
+    <!-- particle_count
+    num_particle_handlers
+    results_path -->
+    <arg name="particle_count" default="10"/>
+    <arg name="num_particle_handlers" default="1"/>
+    <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
+
 
 
     <!-- Specific args for path relayer -->
@@ -46,7 +56,7 @@
 
     <!-- Specific args for path pattern generator -->
     <arg name="node_name_pattern" default="path_pattern_generator_node"/>
-    <arg name="swath" default="50"/>
+    <arg name="swath" default="20"/>
     <arg name="speed" default="$(arg max_throttle)"/>
     <arg name="straight_slack" default="0.0"/>
     <arg name="overlap_between_rows" default="0.0"/>
@@ -139,6 +149,18 @@
     <!-- Start auxiliary nodes  -->
     <group if="$(arg auxiliary_enabled)">
         <node type="auxiliary_map_and_sensors.py" pkg="multi_agent" name="auxiliary_node" output="screen">
+        </node>
+    </group>
+    
+    <group if="$(arg rbpf)">
+        <node type="rbpf_setup_4_all_agents.py" pkg="rbpf_multiagent" name="$(arg node_name_rbpf_multi)" output="screen">
+            <param name="rbpf_multi_launch_file" value="$(find rbpf_multiagent)/launch/rbpf_multi.launch"/>    
+            <param name="particle_count" value="$(arg particle_count)"/>
+            <param name="num_particle_handlers" value="$(arg num_particle_handlers)"/>
+            <param name="results_path" value="$(arg results_path)"/>
+            <param name="mode" value="$(arg mode)"/>
+
+
         </node>
     </group>
 </launch>
