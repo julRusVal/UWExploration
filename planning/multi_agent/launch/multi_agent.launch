@@ -38,12 +38,12 @@
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
-    <!-- particle_count
-    num_particle_handlers
-    results_path -->
     <arg name="particle_count" default="10"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
+    <arg name="rbpf_sensor_FLS" default="true"/>
+    <arg name="rbpf_sensor_MBES" default="false"/>
+
 
 
 
@@ -159,6 +159,8 @@
             <param name="num_particle_handlers" value="$(arg num_particle_handlers)"/>
             <param name="results_path" value="$(arg results_path)"/>
             <param name="mode" value="$(arg mode)"/>
+            <param name="rbpf_sensor_FLS" value="$(arg rbpf_sensor_FLS)"/>
+            <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
 
 
         </node>

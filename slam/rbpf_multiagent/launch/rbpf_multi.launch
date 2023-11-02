@@ -48,6 +48,11 @@
   <arg name="particle_sim_mbes_topic"           default="/$(arg namespace)/$(arg app)/sim_mbes"/>
   <arg name="average_mbes_topic"                default="/$(arg namespace)/$(arg app)/avg_mbes"/>
 
+  <arg name="rbpf_sensor_FLS" default="true"/>
+  <arg name="rbpf_sensor_MBES" default="false"/>
+  <!-- <arg name="color_seed" default="0"/> -->
+
+
   <!-- Rosbags from lolo -->
   <!-- <node pkg="rosbag" type="play" name="mission_player" output="log" args="-s 1050 $(arg path)/2022-06-07-12-22-19.bag"/> -->
   
@@ -106,6 +111,8 @@
 				<param name="particle_enable_lc"  value="/$(arg namespace)/enable_lc" />
 				<param name="rbpf_saved_top"  value="/$(arg namespace)/rbpf_saved" />
 				<param name="markers_top"  value="/$(arg namespace)/rbpf/particle_markers" />
+        <param name="rbpf_sensor_FLS" value="$(arg rbpf_sensor_FLS)"/>
+        <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
       </node>
     </group>
   </group>

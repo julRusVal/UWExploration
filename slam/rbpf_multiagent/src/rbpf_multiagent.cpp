@@ -4,7 +4,13 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb): Rbp
 
     // The mission waypoints as a path
     std::string area_topic;
+    bool rbpf_sensor_FLS;
+    bool rbpf_sensor_MBES;
+
     nh_->param<string>(("area_topic"), area_topic, "/waypoints");
+    nh_->param<bool>(("rbpf_sensor_FLS"), rbpf_sensor_FLS, true);
+    nh_->param<bool>(("rbpf_sensor_MBES"), rbpf_sensor_MBES, false);
+
     area_sub_ = nh_->subscribe(area_topic, 1, &RbpfMultiagent::area_cb, this);
 }
 
