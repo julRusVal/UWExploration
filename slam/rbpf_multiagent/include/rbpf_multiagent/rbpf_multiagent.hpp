@@ -54,6 +54,10 @@
 #include "tf/transform_datatypes.h"
 #include "tf_conversions/tf_eigen.h"
 
+#include <auv_2_ros/FlsReading.h>
+
+
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -81,5 +85,11 @@ class RbpfMultiagent: public RbpfSlam
     RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb);
 
     void area_cb(const nav_msgs::PathConstPtr& wp_path);
+    void rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading);
+
+    ros::Subscriber sub_fls_meas_;
+
+    float rbpf_period_;
+
 
 };

@@ -113,6 +113,10 @@
 				<param name="markers_top"  value="/$(arg namespace)/rbpf/particle_markers" />
         <param name="rbpf_sensor_FLS" value="$(arg rbpf_sensor_FLS)"/>
         <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
+        <param name="namespace" value="$(arg namespace)"/>
+        <param name="fls_meas_topic" value="/sim/$(arg namespace)/fls_measurement" />
+
+
       </node>
     </group>
   </group>
