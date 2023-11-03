@@ -21,12 +21,14 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb): Rbp
     sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfMultiagent::rbpf_update_fls_cb, this);
 
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
-    area_sub_ = nh_->subscribe(survey_area_topic, 1, &RbpfMultiagent::survey_area_cb, this);
+    // survey_area_sub_ = nh_->subscribe(survey_area_topic, 1, &RbpfMultiagent::survey_area_cb, this);
 }
 
 // TODO: connect to topic with survey area boundaries
 void RbpfMultiagent::survey_area_cb(const visualization_msgs::MarkerArray& marker_array)
 {
+    ROS_INFO("Inside survey_area_cb");
+    
     if (marker_array.markers[0].points.size() > 0) //NOTE NACHO: Okay with dot and not ->?? 
     {
         // // This service will start the auv simulation or auv_2_ros nodes to start the mission
@@ -36,7 +38,7 @@ void RbpfMultiagent::survey_area_cb(const visualization_msgs::MarkerArray& marke
         if (!start_training_){
             ROS_INFO("Sending inducing points");
             std::vector<Eigen::RowVector3f> i_points;
-            int ma_size = marker_array.markers[0].points.size() > 0
+            int ma_size = marker_array.markers[0].points.size() > 0;
             sensor_msgs::PointCloud2 ip_pcloud;
             Eigen::RowVector3f ip;
 
@@ -53,13 +55,19 @@ void RbpfMultiagent::survey_area_cb(const visualization_msgs::MarkerArray& marke
             ip_pub_.publish(ip_pcloud);
             // This service will start the auv simulation or auv_2_ros nodes to start the mission
             nh_->param<string>(("synch_topic"), synch_top_, "/pf_synch");
-            srv_server_ = nh_->advertiseService(synch_top_, &RbpfSlam::empty_srv, this);
+            srv_server_multi_ = nh_->advertiseService(synch_top_, &RbpfMultiagent::empty_srv_multi, this);
         }
     }
     else{
         ROS_WARN("Received empty mission");
     }
 
+}
+
+bool RbpfMultiagent::empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+{
+    ROS_DEBUG("RBPF ready");
+    return true;
 }
 
 void RbpfMultiagent::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)

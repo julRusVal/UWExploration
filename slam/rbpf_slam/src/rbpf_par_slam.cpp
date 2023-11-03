@@ -261,6 +261,8 @@ void RbpfSlam::enable_lc(const std_msgs::Int32::ConstPtr& enable_lc)
 
 void RbpfSlam::path_cb(const nav_msgs::PathConstPtr& wp_path)
 {
+    ROS_INFO("Inside path_cb");
+
     if (wp_path->poses.size() > 0)
     {
         if (!start_training_){

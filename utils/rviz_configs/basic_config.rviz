@@ -9,6 +9,9 @@ Panels:
         - /Axes8
         - /MarkerArray10
         - /MarkerArray11
+        - /MarkerArray12
+        - /MarkerArray13
+        - /MarkerArray14
       Splitter Ratio: 0.5
     Tree Height: 523
   - Class: rviz/Selection
@@ -1008,7 +1011,7 @@ Visualization Manager:
       Marker Topic: /multi_agent/survey_area
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1024,7 +1027,7 @@ Visualization Manager:
       Marker Topic: /navigation/hugin_0/artificial_wps
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1032,7 +1035,7 @@ Visualization Manager:
       Marker Topic: /navigation/hugin_1/artificial_wps
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1040,7 +1043,7 @@ Visualization Manager:
       Marker Topic: /navigation/hugin_2/artificial_wps
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1214,8 +1217,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: -9999
-        Min Value: 9999
+        Max Value: -13.500046730041504
+        Min Value: -18.319496154785156
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -1242,8 +1245,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: -9999
-        Min Value: 9999
+        Max Value: -14.031044006347656
+        Min Value: -17.62098503112793
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -1270,8 +1273,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: -9999
-        Min Value: 9999
+        Max Value: -15.718969345092773
+        Min Value: -16.558122634887695
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -1384,7 +1387,7 @@ Visualization Manager:
       Marker Topic: /sim/hugin_0/fls_scan_area
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -1401,7 +1404,7 @@ Visualization Manager:
       Marker Topic: /sim/hugin_1/fls_scan_area
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1409,7 +1412,31 @@ Visualization Manager:
       Marker Topic: /sim/hugin_2/fls_scan_area
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /hugin_0/rbpf/particle_markers
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /hugin_1/rbpf/particle_markers
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /hugin_2/rbpf/particle_markers
+      Name: MarkerArray
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -1445,7 +1472,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 580.3563232421875
+      Distance: 475.7801208496094
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -1453,9 +1480,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 89.05648803710938
-        Y: 19.681800842285156
-        Z: -71.85151672363281
+        X: 53.450340270996094
+        Y: -149.5556640625
+        Z: 0.06184753030538559
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -1463,7 +1490,7 @@ Visualization Manager:
       Near Clip Distance: 0.009999999776482582
       Pitch: 1.5697963237762451
       Target Frame: hugin_0/base_link
-      Yaw: 4.7249345779418945
+      Yaw: 4.758587837219238
     Saved: ~
 Window Geometry:
   Displays:

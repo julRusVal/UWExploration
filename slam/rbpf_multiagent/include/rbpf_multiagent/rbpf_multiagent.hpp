@@ -80,7 +80,7 @@ class RbpfMultiagent: public RbpfSlam
 {
     public:
 
-    ros::Subscriber area_sub_;
+    ros::Subscriber survey_area_sub_;
     // inline RbpfMultiagent(){};
 
     RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb);
@@ -93,6 +93,11 @@ class RbpfMultiagent: public RbpfSlam
     // float rbpf_period_;
     string fls_meas_topic;
     string survey_area_topic;
+
+    ros::ServiceServer srv_server_multi_;
+
+    bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+
 
 
 };
