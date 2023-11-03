@@ -18,6 +18,8 @@ class RbpfSetup():
         self.mode = rospy.get_param('~mode','sim')
         self.rbpf_sensor_FLS = rospy.get_param('~rbpf_sensor_FLS',True)
         self.rbpf_sensor_MBES = rospy.get_param('~rbpf_sensor_MBES',False)
+        self.survey_area_topic = rospy.get_param('survey_area_topic', '/multi_agent/survey_area')
+
         self.i = 0
         
 
@@ -53,6 +55,9 @@ class RbpfSetup():
                             "num_particle_handlers:=" + str(self.num_particle_handlers),
                             "results_path:=" + self.results_path,
                             "mode:=" + self.mode,
+                            "rbpf_sensor_FLS:=" + str(self.rbpf_sensor_FLS),
+                            "rbpf_sensor_MBES:=" + str(self.rbpf_sensor_MBES),
+                            "survey_area_topic:=" + self.survey_area_topic,
                           ])
             
             while time.time() - t < 2:

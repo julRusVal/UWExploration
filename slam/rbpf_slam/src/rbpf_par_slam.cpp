@@ -274,8 +274,8 @@ void RbpfSlam::path_cb(const nav_msgs::PathConstPtr& wp_path)
 
             for (int i = 0; i < wp_size; i++)
             {
-                ip << poses[i].pose.position.x, poses[i].pose.position.y, 0;
-                i_points.push_back(ip);
+                ip << poses[i].pose.position.x, poses[i].pose.position.y, 0; //<< is element-wise assignment of the three values to the right into the row vector ip
+                i_points.push_back(ip); //add ip to the end of the vector i_points
             }
 
             ip_pcloud = pack_cloud(map_frame_, i_points);

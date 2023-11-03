@@ -40,7 +40,8 @@ class PatternGenerator():
         self.spawn_pos_path_array_pub = rospy.Publisher(self.spawn_pos_path_array_topic, AgentPathArray, queue_size=1)
         self.paths = AgentPathArray()
 
-        self.survey_marker_pub = rospy.Publisher('/multi_agent/survey_area', MarkerArray, queue_size=1)
+        self.survey_area_topic = rospy.get_param('survey_area_topic', '/multi_agent/survey_area')
+        self.survey_marker_pub = rospy.Publisher(self.survey_area_topic, MarkerArray, queue_size=1)
         # self.message_pub = rospy.Publisher('/rviz_message', MarkerArray, queue_size=1)
         self.message_srv = rospy.ServiceProxy('/display_rviz_message', DisplayRvizMessage)
         rospy.wait_for_service('/display_rviz_message',timeout=5)
@@ -53,7 +54,6 @@ class PatternGenerator():
         self.rect_width = self.num_agents*self.spawn_separation
         self.rect_height = None #Get from desired end point
 
-        #Doesn't matter since we don't care about time domain
         self.speed = rospy.get_param('~speed', 1.0)
 
         self.straight_slack = rospy.get_param('~straight_slack', 1.0)
@@ -72,6 +72,7 @@ class PatternGenerator():
         self.time_array = None
         self.time_array_pub = rospy.Publisher('/multi_agent/common_timestamps', Int32MultiArray, queue_size=1)
 
+        rospy.Timer(rospy.Duration(1.0), self.publish_survey_area)
         
         rospy.spin()
 
@@ -97,56 +98,57 @@ class PatternGenerator():
         elif self.top_right is None:
             self.top_right = msg
             rospy.loginfo("Received top right corner")
-            self.publish_survey_area()
+            # self.publish_survey_area()
             self.generate_lawn_mower_pattern()
         else:
             rospy.loginfo("Survey area already defined!")
     
-    def publish_survey_area(self):
+    def publish_survey_area(self, event=None):
         """Publishes a marker representing the survey area as a rectangle"""
-        # Create marker array
-        marker_array = MarkerArray()
+        if self.bottom_left and self.top_right:
+            # Create marker array
+            marker_array = MarkerArray()
 
-        # Create a line strip marker for the rectangle
-        marker_rect = Marker()
-        marker_rect.header.frame_id = "map"
-        marker_rect.header.stamp = rospy.Time.now()
-        marker_rect.type = Marker.LINE_STRIP
-        marker_rect.id = 0
-        marker_rect.pose.orientation = Quaternion(0, 0, 0, 1)  # Set the quaternion for orientation
+            # Create a line strip marker for the rectangle
+            marker_rect = Marker()
+            marker_rect.header.frame_id = "map"
+            marker_rect.header.stamp = rospy.Time.now()
+            marker_rect.type = Marker.LINE_STRIP
+            marker_rect.id = 0
+            marker_rect.pose.orientation = Quaternion(0, 0, 0, 1)  # Set the quaternion for orientation
 
-        # Set the scale of the marker (line width)
-        marker_rect.scale.x = 1.0  # You can adjust this value
+            # Set the scale of the marker (line width)
+            marker_rect.scale.x = 1.0  # You can adjust this value
 
-        # Set the color (blue, fully opaque)
-        marker_rect.color.r = 0.0
-        marker_rect.color.g = 0.0
-        marker_rect.color.b = 1.0
-        marker_rect.color.a = 1.0
+            # Set the color (blue, fully opaque)
+            marker_rect.color.r = 0.0
+            marker_rect.color.g = 0.0
+            marker_rect.color.b = 1.0
+            marker_rect.color.a = 1.0
 
-        # Add points to the line strip marker to define the rectangle
-        # Assuming that bottom_left and top_right are PoseStamped objects
-        points = [
-                self.bottom_left.pose.position,
-                Point(self.top_right.pose.position.x, self.bottom_left.pose.position.y, 0.0),
-                self.top_right.pose.position,
-                Point(self.bottom_left.pose.position.x, self.top_right.pose.position.y, 0.0),
-                self.bottom_left.pose.position  # Closing the loop
-                ]
+            # Add points to the line strip marker to define the rectangle
+            # Assuming that bottom_left and top_right are PoseStamped objects
+            points = [
+                    self.bottom_left.pose.position,
+                    Point(self.top_right.pose.position.x, self.bottom_left.pose.position.y, 0.0),
+                    self.top_right.pose.position,
+                    Point(self.bottom_left.pose.position.x, self.top_right.pose.position.y, 0.0),
+                    self.bottom_left.pose.position  # Closing the loop
+                    ]
 
-        # Append points to the marker
-        for point in points:
-            marker_point = Point()
-            marker_point.x = point.x
-            marker_point.y = point.y
-            marker_point.z = point.z
-            marker_rect.points.append(marker_point)
+            # Append points to the marker
+            for point in points:
+                marker_point = Point()
+                marker_point.x = point.x
+                marker_point.y = point.y
+                marker_point.z = point.z
+                marker_rect.points.append(marker_point)
 
-        # Add the rectangle marker to the marker array
-        marker_array.markers.append(marker_rect)
+            # Add the rectangle marker to the marker array
+            marker_array.markers.append(marker_rect)
 
-        # Publish the marker array
-        self.survey_marker_pub.publish(marker_array)
+            # Publish the marker array
+            self.survey_marker_pub.publish(marker_array)
     
     def display_message_in_rviz(self, message):
         self.message_srv(DisplayRvizMessageRequest(String(message)))

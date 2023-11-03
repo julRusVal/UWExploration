@@ -66,6 +66,8 @@
     <arg name="center_y" default="false"/>
     <arg name="exiting_line" default="false"/>
     <arg name="pattern_generation" default="true"/>
+    <arg name="survey_area_topic" default="/multi_agent/survey_area"/>
+
 
 
     <!-- Specific args for auxiliary nodes -->
@@ -137,6 +139,7 @@
             <param name="center_x" type="bool" value="$(arg center_x)"/>
             <param name="center_y" type="bool" value="$(arg center_y)"/>
             <param name="exiting_line" type="bool" value="$(arg exiting_line)"/>
+            <param name="survey_area_topic" value="$(arg survey_area_topic)"/>
             </node>
         </group>
     </group>
@@ -161,7 +164,8 @@
             <param name="mode" value="$(arg mode)"/>
             <param name="rbpf_sensor_FLS" value="$(arg rbpf_sensor_FLS)"/>
             <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
-
+            <param name="survey_area_topic" value="$(arg survey_area_topic)"/>
+            
 
         </node>
     </group>
