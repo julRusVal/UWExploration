@@ -93,7 +93,7 @@ class RbpfMultiagent: public RbpfSlam
     // float rbpf_period_;
     string fls_meas_topic;
     string survey_area_topic;
-
+    bool inducing_pts_sent;
     ros::ServiceServer srv_server_multi_;
 
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
