@@ -1,6 +1,7 @@
-#include <rbpf_multiagent/rbpf_multiagent.hpp>
+#include <rbpf_multiagent/rbpf_par_slam_multiagent_extension.hpp>
 
-RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb): RbpfSlam(nh, nh_mb){
+
+RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb): RbpfSlam(nh, nh_mb){
     path_sub_.shutdown(); //shutdown the path subscriber to allow the survey area define the first inducing points.
     // The mission waypoints as a path
     // std::string fls_meas_topic;
@@ -18,17 +19,18 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb): Rbp
     }
 
 
-    sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfMultiagent::rbpf_update_fls_cb, this);
+    sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
 
     inducing_pts_sent = false;
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
-    survey_area_sub_ = nh_->subscribe(survey_area_topic, 1, &RbpfMultiagent::survey_area_cb, this);
+    survey_area_sub_ = nh_->subscribe(survey_area_topic, 1, &RbpfSlamMultiExtension::survey_area_cb, this);
 
 }   
 
 // TODO: connect to topic with survey area boundaries
-void RbpfMultiagent::survey_area_cb(const visualization_msgs::MarkerArray& marker_array)
+void RbpfSlamMultiExtension::survey_area_cb(const visualization_msgs::MarkerArray& marker_array)
 {
+    // ROS_INFO("IN MULTI EXTENSIONS!!!!");
     if (!inducing_pts_sent) //only send inducing points once, when receiving the survey area the first time.
     {
         inducing_pts_sent = true;
@@ -60,7 +62,7 @@ void RbpfMultiagent::survey_area_cb(const visualization_msgs::MarkerArray& marke
                 ip_pub_.publish(ip_pcloud);
                 // This service will start the auv simulation or auv_2_ros nodes to start the mission
                 nh_->param<string>(("synch_topic"), synch_top_, "/pf_synch");
-                srv_server_multi_ = nh_->advertiseService(synch_top_, &RbpfMultiagent::empty_srv_multi, this);
+                srv_server_multi_ = nh_->advertiseService(synch_top_, &RbpfSlamMultiExtension::empty_srv_multi, this);
             }
         }
         else{
@@ -73,13 +75,13 @@ void RbpfMultiagent::survey_area_cb(const visualization_msgs::MarkerArray& marke
 
 }
 
-bool RbpfMultiagent::empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+bool RbpfSlamMultiExtension::empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
     ROS_DEBUG("RBPF ready");
     return true;
 }
 
-void RbpfMultiagent::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
+void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
 {
     // cout << "Received FLS reading" << endl;
     // cout << fls_reading << endl;

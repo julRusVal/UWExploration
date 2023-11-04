@@ -1,4 +1,5 @@
 #include <rbpf_multiagent/rbpf_multiagent.hpp>
+#include <rbpf_multiagent/rbpf_par_slam_multiagent_extension.hpp>
 #include <ros/callback_queue.h>
 
 
@@ -12,7 +13,9 @@ int main(int argc, char** argv){
     nh.setCallbackQueue(&rbpf_queue);
     nh_mb.setCallbackQueue(&mb_queue);
 
-    boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
+    // boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
+    boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfSlamMultiExtension(nh, nh_mb));
+
 
     // Spinner for AUV interface callbacks
     ros::AsyncSpinner spinner_rbpf(1000, &rbpf_queue); //asyncspinner pt1 (https://roboticsbackend.com/ros-asyncspinner-example/)

@@ -342,6 +342,7 @@ void RbpfSlam::mbes_real_cb(const sensor_msgs::PointCloud2ConstPtr& msg)
 void RbpfSlam::rbpf_update(const ros::TimerEvent&)
 {
     // cout << "MBES RBPF update" << endl;
+    ROS_INFO("MBES RBPF update");
     if(!mission_finished_)
     {
         if(latest_mbes_.header.stamp > prev_mbes_.header.stamp)

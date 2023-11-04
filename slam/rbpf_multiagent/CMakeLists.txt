@@ -143,7 +143,8 @@ include_directories(
 
 add_executable(rbpf_multiagent_node 
                 src/rbpf_multiagent_node.cpp
-                src/rbpf_multiagent.cpp)
+                src/rbpf_multiagent.cpp
+                src/rbpf_par_slam_multiagent_extension.cpp)
 
 add_dependencies(rbpf_multiagent_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
