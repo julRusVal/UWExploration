@@ -49,6 +49,6 @@ int main(int argc, char** argv){
 //3. OK - Create callback for FLS measurements such that it can be forwarded to the update weights step
 //4. Define svgp SLAM survey area intop rectangle defined by me 
 //   4a. see when path_cb is actually called in single agent- Am I doing the right thing?
-//   4b. In RbpfMultiagent::survey_area_cb make sure that it's only called once and not every time a message is published to topic /multi_agent/survey_area
+//   4b. OK - In RbpfMultiagent::survey_area_cb make sure that it's only called once and not every time a message is published to topic /multi_agent/survey_area
 //5. init measurement model
 
