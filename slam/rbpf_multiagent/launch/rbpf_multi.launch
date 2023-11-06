@@ -51,6 +51,7 @@
   <arg name="rbpf_sensor_FLS" default="true"/>
   <arg name="rbpf_sensor_MBES" default="false"/>
   <arg name="survey_area_topic" default="/multi_agent/survey_area"/>
+  <arg name="num_auvs" default="1"/>
 
   <!-- <arg name="color_seed" default="0"/> -->
 
@@ -118,6 +119,7 @@
         <param name="namespace" value="$(arg namespace)"/>
         <param name="fls_meas_topic" value="/sim/$(arg namespace)/fls_measurement" />
         <param name="survey_area_topic" value="$(arg survey_area_topic)" />
+        <param name="num_auvs" value="$(arg num_auvs)"/>
 
 
       </node>

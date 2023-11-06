@@ -1,8 +1,9 @@
 #include <rbpf_multiagent/rbpf_par_slam_multiagent_extension.hpp>
 
 
-RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb): RbpfSlam(nh, nh_mb){
+RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb, string &base_link_custom_): RbpfSlam(nh, nh_mb){
     path_sub_.shutdown(); //shutdown the path subscriber to allow the survey area define the first inducing points.
+    base_link_ = base_link_custom_;
     // The mission waypoints as a path
     // std::string fls_meas_topic;
     bool rbpf_sensor_FLS;

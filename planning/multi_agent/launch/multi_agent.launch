@@ -165,6 +165,8 @@
             <param name="rbpf_sensor_FLS" value="$(arg rbpf_sensor_FLS)"/>
             <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
             <param name="survey_area_topic" value="$(arg survey_area_topic)"/>
+            <param name="num_auvs" value="$(arg num_auvs)"/>
+            
             
 
         </node>

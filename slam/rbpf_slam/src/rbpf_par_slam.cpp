@@ -6,6 +6,7 @@ RbpfSlam::RbpfSlam()
 
 RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_mb_(&nh_mb), rng_((std::random_device())()), g_((std::random_device())())
 {
+    ROS_INFO("base_link %s", base_frame_.c_str());
     // Get parameters from launch file
     nh_->param<int>(("particle_count"), pc_, 10);
     nh_->param<int>(("n_beams_mbes"), beams_real_, 512);
@@ -13,7 +14,7 @@ RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_m
     nh_->param<string>(("mbes_link"), mbes_frame_, "mbes_link");
     nh_->param<string>(("base_link"), base_frame_, "base_link");
     nh_->param<string>(("odom_frame"), odom_frame_, "odom");
-
+    ROS_INFO("base_link %s", base_frame_.c_str());
     // Read covariance values
     nh_->param<float>(("measurement_std"), meas_std_, 0.01);
     nh_->param("init_covariance", init_cov_, vector<float>());

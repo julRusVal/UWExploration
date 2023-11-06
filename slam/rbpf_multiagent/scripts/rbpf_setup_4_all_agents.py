@@ -58,6 +58,7 @@ class RbpfSetup():
                             "rbpf_sensor_FLS:=" + str(self.rbpf_sensor_FLS),
                             "rbpf_sensor_MBES:=" + str(self.rbpf_sensor_MBES),
                             "survey_area_topic:=" + self.survey_area_topic,
+                            "num_auvs:=" + str(self.num_auvs),
                           ])
             
             while time.time() - t < 2:
