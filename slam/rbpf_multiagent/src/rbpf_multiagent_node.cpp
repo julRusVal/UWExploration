@@ -122,5 +122,6 @@ int main(int argc, char** argv){
 //   5a OK - Create a fiel called rbpf_par_slam_multiagent_extension which is old rbpf_multiagent. Here is the extension of the single agent rbpf_slam
 //   5b Edit rbpf_multiagent to not depend on rbpf_par_slam and instead create three instances of rbpf_par_slam_multiagent_extension, one for neoghbour left, one for neighbour right and one for itself. 
 //   5c In rbpf_multiagent_node now call rbpf_multiagent instead of rbpf_par_slam_multiagent_extension and this way each auv has three particle filters. One for itself and one for each neighbour.
+//   CONTINUE HERE: MultiAgentExtension is not called. Only node and then multiagent and par slam. See why exntension is not instantiated.
 //6. init measurement model
 

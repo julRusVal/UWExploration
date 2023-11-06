@@ -55,7 +55,7 @@ boost::shared_ptr<RbpfSlam> RbpfMultiagent::setup_rbpf(string base_link_custom_)
     // nh_mb.setCallbackQueue(&mb_queue);
 
     // boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
-    boost::shared_ptr<RbpfSlam> rbpf(new RbpfSlamMultiExtension(nh, nh_mb, base_link_custom_));
+    boost::shared_ptr<RbpfSlam> rbpf(new RbpfSlamMultiExtension(nh, nh_mb, base_link_custom_)); // CONTINUE HERE: This doesn't seem to work. It doesn't create an instance of RbpfSlamMultiExtension
     return rbpf;
 }
     // path_sub_.shutdown(); //shutdown the path subscriber to allow the survey area define the first inducing points.
