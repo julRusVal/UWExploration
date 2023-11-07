@@ -4,8 +4,13 @@
 RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb, string &base_link_custom_): RbpfSlam(nh, nh_mb){
     ROS_INFO("Inside RbpfSlamMultiExtension constructor");
     path_sub_.shutdown(); //shutdown the path subscriber to allow the survey area define the first inducing points.
-    base_frame_ = base_link_custom_;
-    ROS_INFO("base_frame_ = %s", base_frame_.c_str());
+    // base_frame_ = base_link_custom_ + "/base_link";
+    // // nh_->param<string>(("mbes_link"), mbes_frame_, "mbes_link");
+    // // nh_->param<string>(("base_link"), base_frame_, "base_link");
+    // // nh_->param<string>(("odom_frame"), odom_frame_, "odom");
+    // mbes_frame_ = base_link_custom_ + "/mbes_link";
+    // odom_frame_ = base_link_custom_ + "/odom";
+    // ROS_INFO("base_frame_ = %s", base_frame_.c_str());
     // The mission waypoints as a path
     // std::string fls_meas_topic;
     bool rbpf_sensor_FLS;

@@ -6,9 +6,9 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
     std::string namespace_;
     int num_auvs_;
     // boost::shared_ptr<RbpfSlamMultiExtension> setup_rbpf(std::string base_link_custom);
-    boost::shared_ptr<RbpfSlamMultiExtension> rbpf_self;
-    boost::shared_ptr<RbpfSlamMultiExtension> rbpf_right;
-    boost::shared_ptr<RbpfSlamMultiExtension> rbpf_left;
+    // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_self;
+    // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_right;
+    // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_left;
     nh.param<string>(("namespace"), namespace_, "hugin_0");
     nh.param<int>(("num_auvs"), num_auvs_, 1);
 
@@ -17,17 +17,25 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
     
     // string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
     // rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
-    
+    string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
+   
+    boost::shared_ptr<RbpfSlamMultiExtension> rbpf_self(new RbpfSlamMultiExtension(nh, nh_mb, self_base_link)); 
+
     if (auv_id == 0)
     {
         ROS_INFO("Inside RbpfMultiagent constructor: auv_id == 0");
         //dynamically assign self base link as string of hugin_+str(auv_id)+/base_link
         string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
         string neighbour_right_base_link = "hugin_" + std::to_string(auv_id+1) + "/base_link";
-        rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
+        //This works: CHATGPT LOOK HERE
+        // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_self(new RbpfSlamMultiExtension(nh, nh_mb, self_base_link)); 
+
+        // //This doesn't: CHATGPT LOOK HERE
+        // rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
         if (num_auvs_ > 1)
         {
-            rbpf_right = RbpfMultiagent::setup_rbpf(neighbour_right_base_link);
+            // rbpf_right = RbpfMultiagent::setup_rbpf(neighbour_right_base_link);
+            // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_right(new RbpfSlamMultiExtension(nh, nh_mb, neighbour_right_base_link));
         }
     }
     else if (auv_id == num_auvs_-1)
@@ -35,8 +43,10 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
         ROS_INFO("Inside RbpfMultiagent constructor: auv_id == num_auvs_-1");
         string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
         string neighbour_left_base_link = "hugin_" + std::to_string(auv_id-1) + "/base_link";
-        rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
-        rbpf_left = RbpfMultiagent::setup_rbpf(neighbour_left_base_link);
+        // rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
+        // rbpf_left = RbpfMultiagent::setup_rbpf(neighbour_left_base_link);
+        // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_self(new RbpfSlamMultiExtension(nh, nh_mb, self_base_link));
+        // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_left(new RbpfSlamMultiExtension(nh, nh_mb, neighbour_left_base_link));
     }
     else
     {
@@ -44,20 +54,23 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
         string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
         string neighbour_left_base_link = "hugin_" + std::to_string(auv_id-1) + "/base_link";
         string neighbour_right_base_link = "hugin_" + std::to_string(auv_id+1) + "/base_link";
-        rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
-        rbpf_left = RbpfMultiagent::setup_rbpf(neighbour_left_base_link);
-        rbpf_right = RbpfMultiagent::setup_rbpf(neighbour_right_base_link);
+        // rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
+        // rbpf_left = RbpfMultiagent::setup_rbpf(neighbour_left_base_link);
+        // rbpf_right = RbpfMultiagent::setup_rbpf(neighbour_right_base_link);
+        // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_self(new RbpfSlamMultiExtension(nh, nh_mb, self_base_link));
+        // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_left(new RbpfSlamMultiExtension(nh, nh_mb, neighbour_left_base_link));
+        // boost::shared_ptr<RbpfSlamMultiExtension> rbpf_right(new RbpfSlamMultiExtension(nh, nh_mb, neighbour_right_base_link));
     }
 
-    while (true)
-    {
-        if(!ros::ok()){
-        // rbpf_multi.reset();
-        rbpf_self.reset();
-        rbpf_right.reset();
-        rbpf_left.reset();
-    }
-    }
+    // while (true)
+    // {
+    //     if(!ros::ok()){
+    //     // rbpf_multi.reset();
+    //     rbpf_self.reset();
+    //     rbpf_right.reset();
+    //     rbpf_left.reset();
+    // }
+    // }
 }
 boost::shared_ptr<RbpfSlamMultiExtension> RbpfMultiagent::setup_rbpf(string base_link_custom_){
     // ros::NodeHandle nh("~");
@@ -66,7 +79,7 @@ boost::shared_ptr<RbpfSlamMultiExtension> RbpfMultiagent::setup_rbpf(string base
     // ros::CallbackQueue mb_queue;
     // nh.setCallbackQueue(&rbpf_queue);
     // nh_mb.setCallbackQueue(&mb_queue);
-
+    // boost::shared_ptr<RbpfSlamMultiExtension> rbpf
     // boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
     boost::shared_ptr<RbpfSlamMultiExtension> rbpf(new RbpfSlamMultiExtension(nh, nh_mb, base_link_custom_)); // CONTINUE HERE: This doesn't seem to work. It doesn't create an instance of RbpfSlamMultiExtension
     return rbpf;

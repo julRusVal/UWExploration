@@ -3,6 +3,8 @@
 
 // #include "rbpf_slam/rbpf_particle.h"
 #include "rbpf_slam/rbpf_par_slam.h"
+#include <rbpf_multiagent/rbpf_par_slam_multiagent_extension.hpp>
+
 
 // Standard dependencies
 #include <fstream>
@@ -87,6 +89,8 @@ class RbpfMultiagent //public RbpfSlam
 
     ros::NodeHandle nh;
     ros::NodeHandle nh_mb;
+    boost::shared_ptr<RbpfSlamMultiExtension> rbpf;
+
 
     boost::shared_ptr<RbpfSlamMultiExtension> setup_rbpf(string base_link_custom_);
 

@@ -82,7 +82,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
 
     ros::Subscriber survey_area_sub_;
     // inline RbpfSlamMultiExtension(){};
-
+    // RbpfSlamMultiExtension();
     RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb, string &base_link_custom_);
 
     void survey_area_cb(const visualization_msgs::MarkerArray& marker_array); //& sign is used to denote a reference parameter. Avoids copying full variable
