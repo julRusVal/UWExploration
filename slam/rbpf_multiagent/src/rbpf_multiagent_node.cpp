@@ -28,7 +28,7 @@ int main(int argc, char** argv){
 
 
 
-    boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
+    boost::shared_ptr<RbpfMultiagent> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
     // boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfSlamMultiExtension(nh, nh_mb));
     // nh->param<string>(("namespace"), namespace_, "hugin_0");
     // nh->param<int>(("num_auvs"), num_auvs_, 1);

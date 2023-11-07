@@ -76,11 +76,11 @@ using std::chrono::milliseconds;
 
 // typedef actionlib::SimpleActionClient<slam_msgs::SamplePosteriorAction> Client;
 
-class RbpfMultiagent: public RbpfSlam
+class RbpfMultiagent //public RbpfSlam
 {
     public:
 
-    ros::Subscriber survey_area_sub_;
+    // ros::Subscriber survey_area_sub_;
     // inline RbpfMultiagent(){};
 
     RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb);
@@ -88,7 +88,7 @@ class RbpfMultiagent: public RbpfSlam
     ros::NodeHandle nh;
     ros::NodeHandle nh_mb;
 
-    boost::shared_ptr<RbpfSlam> setup_rbpf(string base_link_custom_);
+    boost::shared_ptr<RbpfSlamMultiExtension> setup_rbpf(string base_link_custom_);
 
     // void survey_area_cb(const visualization_msgs::MarkerArray& marker_array); //& sign is used to denote a reference parameter. Avoids copying full variable
     // void rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading);

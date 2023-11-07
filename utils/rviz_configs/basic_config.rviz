@@ -88,18 +88,33 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
-      Enabled: false
+      Enabled: true
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        hugin_0/base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hugin_0/fls_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hugin_0/mbes_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Name: RobotModel
       Robot Description: hugin_0/robot_description
       TF Prefix: ""
       Update Interval: 0
-      Value: false
+      Value: true
       Visual Enabled: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -170,21 +185,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        hugin_2/base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hugin_2/fls_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hugin_2/mbes_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Name: RobotModel
       Robot Description: hugin_2/robot_description
       TF Prefix: ""
@@ -1011,7 +1011,7 @@ Visualization Manager:
       Marker Topic: /multi_agent/survey_area
       Name: MarkerArray
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1217,8 +1217,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: -13.500046730041504
-        Min Value: -18.319496154785156
+        Max Value: -9999
+        Min Value: 9999
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -1245,8 +1245,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: -14.031044006347656
-        Min Value: -17.62098503112793
+        Max Value: -9999
+        Min Value: 9999
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -1387,7 +1387,7 @@ Visualization Manager:
       Marker Topic: /sim/hugin_0/fls_scan_area
       Name: MarkerArray
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -1404,7 +1404,7 @@ Visualization Manager:
       Marker Topic: /sim/hugin_1/fls_scan_area
       Name: MarkerArray
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1472,7 +1472,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 475.7801208496094
+      Distance: 206.86380004882812
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -1480,9 +1480,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 53.450340270996094
-        Y: -149.5556640625
-        Z: 0.06184753030538559
+        X: 111.96868133544922
+        Y: 100.61011505126953
+        Z: 98.15939331054688
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -1490,7 +1490,7 @@ Visualization Manager:
       Near Clip Distance: 0.009999999776482582
       Pitch: 1.5697963237762451
       Target Frame: hugin_0/base_link
-      Yaw: 4.758587837219238
+      Yaw: 4.70858907699585
     Saved: ~
 Window Geometry:
   Displays:

@@ -5,21 +5,22 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
     ROS_INFO("Inside RbpfMultiagent constructor");
     std::string namespace_;
     int num_auvs_;
-    boost::shared_ptr<RbpfSlam> setup_rbpf(std::string base_link_custom);
-    boost::shared_ptr<RbpfSlam> rbpf_self;
-    boost::shared_ptr<RbpfSlam> rbpf_right;
-    boost::shared_ptr<RbpfSlam> rbpf_left;
+    // boost::shared_ptr<RbpfSlamMultiExtension> setup_rbpf(std::string base_link_custom);
+    boost::shared_ptr<RbpfSlamMultiExtension> rbpf_self;
+    boost::shared_ptr<RbpfSlamMultiExtension> rbpf_right;
+    boost::shared_ptr<RbpfSlamMultiExtension> rbpf_left;
     nh.param<string>(("namespace"), namespace_, "hugin_0");
     nh.param<int>(("num_auvs"), num_auvs_, 1);
 
     // take the last character of the namespace string and convert it to an integer
     int auv_id = namespace_.back() - '0'; // ASCII code for 0 is 48, 1 is 49, etc. https://sentry.io/answers/char-to-int-in-c-and-cpp/#:~:text=C%20and%20C%2B%2B%20store%20characters,the%20value%20of%20'0'%20.
     
-    string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
-    rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
+    // string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
+    // rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
     
     if (auv_id == 0)
     {
+        ROS_INFO("Inside RbpfMultiagent constructor: auv_id == 0");
         //dynamically assign self base link as string of hugin_+str(auv_id)+/base_link
         string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
         string neighbour_right_base_link = "hugin_" + std::to_string(auv_id+1) + "/base_link";
@@ -31,6 +32,7 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
     }
     else if (auv_id == num_auvs_-1)
     {
+        ROS_INFO("Inside RbpfMultiagent constructor: auv_id == num_auvs_-1");
         string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
         string neighbour_left_base_link = "hugin_" + std::to_string(auv_id-1) + "/base_link";
         rbpf_self = RbpfMultiagent::setup_rbpf(self_base_link);
@@ -38,6 +40,7 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
     }
     else
     {
+        ROS_INFO("Inside RbpfMultiagent constructor: auv_id is neither 0 nor num_auvs_-1");
         string self_base_link = "hugin_" + std::to_string(auv_id) + "/base_link";
         string neighbour_left_base_link = "hugin_" + std::to_string(auv_id-1) + "/base_link";
         string neighbour_right_base_link = "hugin_" + std::to_string(auv_id+1) + "/base_link";
@@ -45,8 +48,18 @@ RbpfMultiagent::RbpfMultiagent(ros::NodeHandle &nh, ros::NodeHandle &nh_mb){
         rbpf_left = RbpfMultiagent::setup_rbpf(neighbour_left_base_link);
         rbpf_right = RbpfMultiagent::setup_rbpf(neighbour_right_base_link);
     }
+
+    while (true)
+    {
+        if(!ros::ok()){
+        // rbpf_multi.reset();
+        rbpf_self.reset();
+        rbpf_right.reset();
+        rbpf_left.reset();
+    }
+    }
 }
-boost::shared_ptr<RbpfSlam> RbpfMultiagent::setup_rbpf(string base_link_custom_){
+boost::shared_ptr<RbpfSlamMultiExtension> RbpfMultiagent::setup_rbpf(string base_link_custom_){
     // ros::NodeHandle nh("~");
     // ros::NodeHandle nh_mb("~");
     // ros::CallbackQueue rbpf_queue;
@@ -55,7 +68,7 @@ boost::shared_ptr<RbpfSlam> RbpfMultiagent::setup_rbpf(string base_link_custom_)
     // nh_mb.setCallbackQueue(&mb_queue);
 
     // boost::shared_ptr<RbpfSlam> rbpf_multi(new RbpfMultiagent(nh, nh_mb));
-    boost::shared_ptr<RbpfSlam> rbpf(new RbpfSlamMultiExtension(nh, nh_mb, base_link_custom_)); // CONTINUE HERE: This doesn't seem to work. It doesn't create an instance of RbpfSlamMultiExtension
+    boost::shared_ptr<RbpfSlamMultiExtension> rbpf(new RbpfSlamMultiExtension(nh, nh_mb, base_link_custom_)); // CONTINUE HERE: This doesn't seem to work. It doesn't create an instance of RbpfSlamMultiExtension
     return rbpf;
 }
     // path_sub_.shutdown(); //shutdown the path subscriber to allow the survey area define the first inducing points.
