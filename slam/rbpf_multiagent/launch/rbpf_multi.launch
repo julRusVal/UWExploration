@@ -117,6 +117,8 @@
 				<param name="particle_enable_lc"  value="/$(arg namespace)/enable_lc" />
 				<param name="rbpf_saved_top"  value="/$(arg namespace)/rbpf_saved" />
 				<param name="markers_top"  value="/$(arg namespace)/rbpf/particle_markers" />
+				<param name="markers_left_top"  value="/$(arg namespace)/rbpf/particle_markers_left" />
+				<param name="markers_right_top"  value="/$(arg namespace)/rbpf/particle_markers_right" />
         <param name="rbpf_sensor_FLS" value="$(arg rbpf_sensor_FLS)"/>
         <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
         <param name="namespace" value="$(arg namespace)"/>

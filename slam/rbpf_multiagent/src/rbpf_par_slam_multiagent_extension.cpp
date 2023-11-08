@@ -19,6 +19,14 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<bool>(("rbpf_sensor_FLS"), rbpf_sensor_FLS, true);
     nh_->param<bool>(("rbpf_sensor_MBES"), rbpf_sensor_MBES, false);
     nh_->param<string>(("fls_meas_topic"), fls_meas_topic, "/sim/hugin_0/fls_measurement");
+
+    nh_->param<int>(("particle_count_neighbours"), pcn_, 5);
+    nh_->param<float>(("measurement_std"), meas_std_, 0.01);
+    nh_->param("init_covariance", init_cov_, vector<float>());
+    nh_->param("motion_covariance", motion_cov_, vector<float>());
+    nh_->param<int>(("n_beams_mbes"), beams_real_, 512);
+    nh_->param<string>(("map_frame"), map_frame_, "map");
+    nh_->param<string>(("vehicle_model"), vehicle_model_, "hugin");
     // nh_mb_->param<float>(("rbpf_period"), rbpf_period_, 0.3);
 
     if(!rbpf_sensor_MBES){
@@ -33,7 +41,22 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
     survey_area_sub_ = nh_->subscribe(survey_area_topic, 1, &RbpfSlamMultiExtension::survey_area_cb, this);
     
-    // RbpfSlamMultiExtension::setup_neighbours();
+    //Rviz visualization
+    std::string rbpf_markers_left_top;
+    std::string rbpf_markers_right_top;
+    nh_->param<string>(("markers_left_top"), rbpf_markers_left_top, "/markers_left");
+    nh_->param<string>(("markers_right_top"), rbpf_markers_right_top, "/markers_right");
+    vis_pub_left_ = nh_->advertise<visualization_msgs::MarkerArray>(rbpf_markers_left_top, 0);
+    vis_pub_right_ = nh_->advertise<visualization_msgs::MarkerArray>(rbpf_markers_right_top, 0);
+    // Timer for updating RVIZ
+    nh_->param<float>(("rviz_period"), rviz_period_, 0.3);
+    if(rviz_period_ != 0.){
+        timer_neighbours_rviz_ = nh_->createTimer(ros::Duration(rviz_period_), &RbpfSlamMultiExtension::update_rviz_cb, this, false);
+    }
+
+
+    //Setup neighbours
+    RbpfSlamMultiExtension::setup_neighbours();
 }   
 
 // TODO: connect to topic with survey area boundaries
@@ -106,23 +129,27 @@ void RbpfSlamMultiExtension::setup_neighbours()
     nh_->param<string>(("namespace"), namespace_, "hugin_0");
     nh_->param<int>(("num_auvs"), num_auvs_, 1);
     int auv_id = namespace_.back() - '0'; // ASCII code for 0 is 48, 1 is 49, etc. https://sentry.io/answers/char-to-int-in-c-and-cpp/#:~:text=C%20and%20C%2B%2B%20store%20characters,the%20value%20of%20'0'%20.
-
+    auv_id_ = new int(auv_id);
     if (auv_id == 0 && num_auvs_ > 1)
     {
         ROS_INFO("Inside RbpfMultiagent constructor: auv_id == 0");
         particles_right_ = RbpfSlamMultiExtension::init_particles_of(auv_id+1);
+        auv_id_right_ = new int(auv_id+1);
         
     }
     else if (auv_id == num_auvs_-1 && num_auvs_ > 1)
     {
         ROS_INFO("Inside RbpfMultiagent constructor: auv_id == num_auvs_-1");
         particles_left_ = RbpfSlamMultiExtension::init_particles_of(auv_id-1);
+        auv_id_left_ = new int(auv_id-1);
     }
     else
     {
         ROS_INFO("Inside RbpfMultiagent constructor: auv_id is neither 0 nor num_auvs_-1");
         particles_left_ = RbpfSlamMultiExtension::init_particles_of(auv_id-1);
         particles_right_ = RbpfSlamMultiExtension::init_particles_of(auv_id+1);
+        auv_id_left_ = new int(auv_id-1);
+        auv_id_right_ = new int(auv_id+1);
     }
 }
 
@@ -133,13 +160,13 @@ std::vector<RbpfParticle> RbpfSlamMultiExtension::init_particles_of(int agent_id
     // string mbes_frame = "hugin_" + std::to_string(agent_id) + "/mbes_link";
     // string odom_frame = "hugin_" + std::to_string(agent_id) + "/odom";
 
-    nh_->param<int>(("particle_count_neighbours"), pcn_, 5);
-    nh_->param<float>(("measurement_std"), meas_std_, 0.01);
-    nh_->param("init_covariance", init_cov_, vector<float>());
-    nh_->param("motion_covariance", motion_cov_, vector<float>());
-    nh_->param<int>(("n_beams_mbes"), beams_real_, 512);
-    nh_->param<string>(("map_frame"), map_frame_, "map");
-    nh_->param<string>(("vehicle_model"), vehicle_model_, "hugin");
+    // nh_->param<int>(("particle_count_neighbours"), pcn_, 5);
+    // nh_->param<float>(("measurement_std"), meas_std_, 0.01);
+    // nh_->param("init_covariance", init_cov_, vector<float>());
+    // nh_->param("motion_covariance", motion_cov_, vector<float>());
+    // nh_->param<int>(("n_beams_mbes"), beams_real_, 512);
+    // nh_->param<string>(("map_frame"), map_frame_, "map");
+    // nh_->param<string>(("vehicle_model"), vehicle_model_, "hugin");
 
     string base_frame = vehicle_model_ + "_" + std::to_string(agent_id) + "/base_link";
     string mbes_frame = vehicle_model_ + "_" + std::to_string(agent_id) + "/mbes_link";
@@ -150,11 +177,11 @@ std::vector<RbpfParticle> RbpfSlamMultiExtension::init_particles_of(int agent_id
     try
     {
         ROS_DEBUG("Waiting for transforms");
-        auto asynch_1 = std::async(std::launch::async, [this]
+        auto asynch_1 = std::async(std::launch::async, [this,base_frame, mbes_frame]
                                        { return tf_buffer_.lookupTransform(base_frame, mbes_frame,
                                                                            ros::Time(0), ros::Duration(60.)); });
 
-        auto asynch_2 = std::async(std::launch::async, [this]
+        auto asynch_2 = std::async(std::launch::async, [this,odom_frame]
                                        { return tf_buffer_.lookupTransform(map_frame_, odom_frame,
                                                                            ros::Time(0), ros::Duration(60.)); });
 
@@ -197,4 +224,90 @@ std::vector<RbpfParticle> RbpfSlamMultiExtension::init_particles_of(int agent_id
                                             init_cov_, meas_std_, motion_cov_));
     }
     return particles;
+}
+
+void RbpfSlamMultiExtension::update_rviz_cb(const ros::TimerEvent &)
+{
+    if (auv_id_left_) {
+        geometry_msgs::PoseArray array_msg;
+        array_msg = particles_2_pose_array(*auv_id_left_, particles_left_);
+        pub_markers(array_msg, vis_pub_left_);
+    }
+    if (auv_id_right_) {
+        geometry_msgs::PoseArray array_msg;
+        array_msg = particles_2_pose_array(*auv_id_right_, particles_right_);
+        pub_markers(array_msg, vis_pub_right_);
+    }
+
+}
+
+geometry_msgs::PoseArray RbpfSlamMultiExtension::particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles)
+{
+    geometry_msgs::PoseArray array_msg;
+    array_msg.header.frame_id = vehicle_model_ + "_" + std::to_string(id) + "/odom";
+    array_msg.header.stamp = ros::Time::now();
+
+    for (int i=0; i<pc_; i++){
+        geometry_msgs::Pose pose_i;
+        pose_i.position.x = particles.at(i).p_pose_(0);
+        pose_i.position.y = particles.at(i).p_pose_(1);
+        pose_i.position.z = particles.at(i).p_pose_(2);
+
+        Eigen::AngleAxisf rollAngle(particles.at(i).p_pose_(3), Eigen::Vector3f::UnitX());
+        Eigen::AngleAxisf pitchAngle(particles.at(i).p_pose_(4), Eigen::Vector3f::UnitY());
+        Eigen::AngleAxisf yawAngle(particles.at(i).p_pose_(5), Eigen::Vector3f::UnitZ());
+        Eigen::Quaternion<float> q = rollAngle * pitchAngle * yawAngle;
+        pose_i.orientation.x = q.x();
+        pose_i.orientation.y = q.y();
+        pose_i.orientation.z = q.z();
+        pose_i.orientation.w = q.w();
+
+        array_msg.poses.push_back(pose_i);
+    }
+    // average_pose(array_msg);
+    
+    // if(false){
+    //     pf_pub_.publish(array_msg);
+    // }
+    // else{
+    //     pub_markers(array_msg);
+    // }
+    return array_msg;
+
+}
+
+void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher)
+{
+    visualization_msgs::MarkerArray markers;
+    int i = 0;
+    string frame_id = array_msg.header.frame_id;
+    for (geometry_msgs::Pose pose_i : array_msg.poses)
+    {
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = frame_id;
+        marker.header.stamp = ros::Time();
+        marker.ns = "markers";
+        marker.id = i;
+        marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.pose.position.x = pose_i.position.x;
+        marker.pose.position.y = pose_i.position.y;
+        marker.pose.position.z = pose_i.position.z;
+        marker.pose.orientation.x = pose_i.orientation.x;
+        marker.pose.orientation.y = pose_i.orientation.y;
+        marker.pose.orientation.z = pose_i.orientation.z;
+        marker.pose.orientation.w = pose_i.orientation.w;
+        marker.scale.x = 0.001;
+        marker.scale.y = 0.001;
+        marker.scale.z = 0.001;
+        marker.color.a = 1.0; 
+        marker.color.r = 0.0;
+        marker.color.g = 1.0;
+        marker.color.b = 0.0;
+        marker.mesh_resource = "package://hugin_description/mesh/Hugin_big_meter.dae";
+        markers.markers.push_back(marker);
+        i++;
+    }
+
+    publisher.publish(markers);
 }

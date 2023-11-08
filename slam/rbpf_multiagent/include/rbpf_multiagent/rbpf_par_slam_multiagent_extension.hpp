@@ -81,14 +81,28 @@ class RbpfSlamMultiExtension: public RbpfSlam
     public:
 
     ros::Subscriber survey_area_sub_;
+    ros::Publisher vis_pub_left_;
+    ros::Publisher vis_pub_right_;
+    ros::Timer timer_neighbours_rviz_;
+    ros::ServiceServer srv_server_multi_;
+
+
+
     // inline RbpfSlamMultiExtension(){};
     // RbpfSlamMultiExtension();
     RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb, string &base_link_custom_);
 
     void survey_area_cb(const visualization_msgs::MarkerArray& marker_array); //& sign is used to denote a reference parameter. Avoids copying full variable
     void rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading);
+    void update_rviz_cb(const ros::TimerEvent &);
+
+    bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+
     void setup_neighbours();
+
     std::vector<RbpfParticle> init_particles_of(int agent_id);
+    geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
+    void pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher);
 
 
 
@@ -100,11 +114,13 @@ class RbpfSlamMultiExtension: public RbpfSlam
     bool inducing_pts_sent;
     std::vector<RbpfParticle> particles_left_;
     std::vector<RbpfParticle> particles_right_;
-    ros::ServiceServer srv_server_multi_;
     int pcn_;
+    int* auv_id_ = nullptr;
+    int* auv_id_left_ = nullptr;
+    int* auv_id_right_ = nullptr;
     string vehicle_model_;
 
-    bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+    
     // void update_particles_weights(float &range, float &angle)
 
 
