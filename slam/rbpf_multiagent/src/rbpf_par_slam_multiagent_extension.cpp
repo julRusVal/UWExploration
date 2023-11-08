@@ -57,6 +57,13 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
 
     //Setup neighbours
     RbpfSlamMultiExtension::setup_neighbours();
+
+    //Neighbour prediction
+    nh_->param<string>(("odometry_topic"), odom_top_, "odom");
+    odom_sub_ = nh_->subscribe(odom_top_, 100, &RbpfSlamMultiExtension::odom_callback, this);
+     // Start timing now
+    time_neigh_ = ros::Time::now().toSec();
+    old_time_neigh_ = ros::Time::now().toSec();
 }   
 
 // TODO: connect to topic with survey area boundaries
@@ -310,4 +317,65 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
     }
 
     publisher.publish(markers);
+}
+
+void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
+{
+    time_neigh_ = odom_msg->header.stamp.toSec();
+
+    if(mission_finished_ != true)
+    {
+        // Motion prediction
+        if (time_neigh_ > old_time_neigh_)
+        {
+            // Added in the MBES CB to synch the DR steps with the pings log
+            nav_msgs::Odometry odom_cp = *odom_msg; // local copy
+            float dt = float(time_ - old_time_);
+            this->predict(odom_cp, dt,particles_left_);
+            this->predict(odom_cp, dt,particles_right_);
+
+        }
+    }
+    old_time_neigh_ = time_neigh_;
+
+}
+
+void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt,const std::vector<RbpfParticle>& particles)
+{
+    // Multithreading
+    // auto t1 = high_resolution_clock::now();
+    // Eigen::VectorXf noise_vec(6, 1);
+
+    // Angular vel
+    Eigen::Vector3f vel_rot = Eigen::Vector3f(-odom_t.twist.twist.angular.x,
+                                              odom_t.twist.twist.angular.y,
+                                              odom_t.twist.twist.angular.z);
+
+    // Linear vel
+    Eigen::Vector3f vel_p = Eigen::Vector3f(odom_t.twist.twist.linear.x,
+                                            odom_t.twist.twist.linear.y,
+                                            -odom_t.twist.twist.linear.z);
+
+    // Depth (read directly)
+    float depth = odom_t.pose.pose.position.z;
+
+    for(int i = 0; i < pc_; i++)
+    { //CONTINUE HERE: before was &particles.at(i). Builds well, but throws error when running. 
+        pred_threads_vec_.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
+                                    particles.at(i), std::ref(vel_rot), std::ref(vel_p),
+                                    depth, dt, std::ref(rng_)));
+    }
+
+    for (int i = 0; i < pc_; i++)
+    {
+        if (pred_threads_vec_[i].joinable())
+        {
+            pred_threads_vec_[i].join();
+        }
+    }
+    pred_threads_vec_.clear();
+
+    // // Particle to compute DR without filtering
+    // dr_particle_.at(0).motion_prediction(vel_rot, vel_p, depth, dt, rng_);
+
 }
