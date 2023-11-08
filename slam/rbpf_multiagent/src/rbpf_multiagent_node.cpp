@@ -108,16 +108,6 @@ int main(int argc, char** argv){
 }
 
 //TODO: 
-//1. OK - Init pf for all auvs in the rbpf_multiagent files 
-//(2.Integrate into launch files)
-//3. OK - Create callback for FLS measurements such that it can be forwarded to the update weights step
-//4. Define svgp SLAM survey area intop rectangle defined by me 
-//   4a. see when path_cb is actually called in single agent- Am I doing the right thing?
-//   4b. OK - In RbpfMultiagent::survey_area_cb make sure that it's only called once and not every time a message is published to topic /multi_agent/survey_area
-// 5. Continue fixing file structure. 
-//   5a OK - Create a fiel called rbpf_par_slam_multiagent_extension which is old rbpf_multiagent. Here is the extension of the single agent rbpf_slam
-//   5b Edit rbpf_multiagent to not depend on rbpf_par_slam and instead create three instances of rbpf_par_slam_multiagent_extension, one for neoghbour left, one for neighbour right and one for itself. 
-//   5c In rbpf_multiagent_node now call rbpf_multiagent instead of rbpf_par_slam_multiagent_extension and this way each auv has three particle filters. One for itself and one for each neighbour.
-//   CONTINUE HERE: MultiAgentExtension is not called. Only node and then multiagent and par slam. See why exntension is not instantiated.
-//6. init measurement model
+//1. Finish prediction of neighbour particles, see continue here in rbpf_par_slam_multiagent_extension.cpp
+//2. init measurement model
 
