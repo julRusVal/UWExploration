@@ -32,7 +32,8 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     inducing_pts_sent = false;
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
     survey_area_sub_ = nh_->subscribe(survey_area_topic, 1, &RbpfSlamMultiExtension::survey_area_cb, this);
-
+    
+    // RbpfSlamMultiExtension::setup_neighbours();
 }   
 
 // TODO: connect to topic with survey area boundaries
@@ -96,4 +97,104 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
 
     //Here implement measurement model and update weights, similar as RbpfSlam::rbpf_update
 
+}
+
+void RbpfSlamMultiExtension::setup_neighbours()
+{
+    std::string namespace_;
+    int num_auvs_;
+    nh_->param<string>(("namespace"), namespace_, "hugin_0");
+    nh_->param<int>(("num_auvs"), num_auvs_, 1);
+    int auv_id = namespace_.back() - '0'; // ASCII code for 0 is 48, 1 is 49, etc. https://sentry.io/answers/char-to-int-in-c-and-cpp/#:~:text=C%20and%20C%2B%2B%20store%20characters,the%20value%20of%20'0'%20.
+
+    if (auv_id == 0 && num_auvs_ > 1)
+    {
+        ROS_INFO("Inside RbpfMultiagent constructor: auv_id == 0");
+        particles_right_ = RbpfSlamMultiExtension::init_particles_of(auv_id+1);
+        
+    }
+    else if (auv_id == num_auvs_-1 && num_auvs_ > 1)
+    {
+        ROS_INFO("Inside RbpfMultiagent constructor: auv_id == num_auvs_-1");
+        particles_left_ = RbpfSlamMultiExtension::init_particles_of(auv_id-1);
+    }
+    else
+    {
+        ROS_INFO("Inside RbpfMultiagent constructor: auv_id is neither 0 nor num_auvs_-1");
+        particles_left_ = RbpfSlamMultiExtension::init_particles_of(auv_id-1);
+        particles_right_ = RbpfSlamMultiExtension::init_particles_of(auv_id+1);
+    }
+}
+
+std::vector<RbpfParticle> RbpfSlamMultiExtension::init_particles_of(int agent_id)
+{
+    std::vector<RbpfParticle> particles;
+    // string base_frame = "hugin_" + std::to_string(agent_id) + "/base_link";
+    // string mbes_frame = "hugin_" + std::to_string(agent_id) + "/mbes_link";
+    // string odom_frame = "hugin_" + std::to_string(agent_id) + "/odom";
+
+    nh_->param<int>(("particle_count_neighbours"), pcn_, 5);
+    nh_->param<float>(("measurement_std"), meas_std_, 0.01);
+    nh_->param("init_covariance", init_cov_, vector<float>());
+    nh_->param("motion_covariance", motion_cov_, vector<float>());
+    nh_->param<int>(("n_beams_mbes"), beams_real_, 512);
+    nh_->param<string>(("map_frame"), map_frame_, "map");
+    nh_->param<string>(("vehicle_model"), vehicle_model_, "hugin");
+
+    string base_frame = vehicle_model_ + "_" + std::to_string(agent_id) + "/base_link";
+    string mbes_frame = vehicle_model_ + "_" + std::to_string(agent_id) + "/mbes_link";
+    string odom_frame = vehicle_model_ + "_" + std::to_string(agent_id) + "/odom";
+
+
+    tf2_ros::TransformListener tf_listener(tf_buffer_);
+    try
+    {
+        ROS_DEBUG("Waiting for transforms");
+        auto asynch_1 = std::async(std::launch::async, [this]
+                                       { return tf_buffer_.lookupTransform(base_frame, mbes_frame,
+                                                                           ros::Time(0), ros::Duration(60.)); });
+
+        auto asynch_2 = std::async(std::launch::async, [this]
+                                       { return tf_buffer_.lookupTransform(map_frame_, odom_frame,
+                                                                           ros::Time(0), ros::Duration(60.)); });
+
+        tf::StampedTransform mbes_tf;
+        geometry_msgs::TransformStamped tfmsg_mbes_base = asynch_1.get();
+        tf::transformMsgToTF(tfmsg_mbes_base.transform, mbes_tf);
+        pcl_ros::transformAsMatrix(mbes_tf, base2mbes_mat_);
+
+        tf::StampedTransform m2o_tf;
+        geometry_msgs::TransformStamped tfmsg_map_odom = asynch_2.get();
+        tf::transformMsgToTF(tfmsg_map_odom.transform, m2o_tf);
+        pcl_ros::transformAsMatrix(m2o_tf, m2o_mat_);
+
+        ROS_INFO("Transforms locked - RBPF node");
+    }
+    catch (const std::exception &e)
+    {
+        ROS_ERROR("ERROR: Could not lookup transform from base_link to mbes_link");
+    }
+
+    // Initialize the particles on top of vehicle 
+    tf::StampedTransform o2b_tf;
+    tfListener_.waitForTransform(odom_frame, base_frame, ros::Time(0), ros::Duration(300.0));
+    tfListener_.lookupTransform(odom_frame, base_frame, ros::Time(0), o2b_tf);
+    double x, y, z, roll_o2b, pitch_o2b, yaw_o2b;
+    x = o2b_tf.getOrigin().x();
+    y = o2b_tf.getOrigin().y();
+    z = o2b_tf.getOrigin().z();
+    o2b_tf.getBasis().getRPY(roll_o2b, pitch_o2b, yaw_o2b);
+    init_p_pose_(0)= x;
+    init_p_pose_(1)= y;
+    init_p_pose_(2)= z;
+    init_p_pose_(3)= roll_o2b;
+    init_p_pose_(4)= pitch_o2b;
+    init_p_pose_(5)= yaw_o2b;
+
+    // Create particles
+    for (int i=0; i<pc_; i++){
+        particles.emplace_back(RbpfParticle(beams_real_, pcn_, i, base2mbes_mat_, m2o_mat_, init_p_pose_,
+                                            init_cov_, meas_std_, motion_cov_));
+    }
+    return particles;
 }

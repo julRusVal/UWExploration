@@ -39,6 +39,7 @@
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
     <arg name="particle_count" default="10"/>
+    <arg name="particle_count_neighbours" default="5"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
     <arg name="rbpf_sensor_FLS" default="true"/>
@@ -159,6 +160,7 @@
         <node type="rbpf_setup_4_all_agents.py" pkg="rbpf_multiagent" name="$(arg node_name_rbpf_multi)" output="screen">
             <param name="rbpf_multi_launch_file" value="$(find rbpf_multiagent)/launch/rbpf_multi.launch"/>    
             <param name="particle_count" value="$(arg particle_count)"/>
+            <param name="particle_count_neighbours" value="$(arg particle_count_neighbours)"/>
             <param name="num_particle_handlers" value="$(arg num_particle_handlers)"/>
             <param name="results_path" value="$(arg results_path)"/>
             <param name="mode" value="$(arg mode)"/>

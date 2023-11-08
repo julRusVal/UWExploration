@@ -13,6 +13,7 @@ class RbpfSetup():
         rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~navigation_launch_file',rospack.get_path('rbpf_multiagent') + '/launch/rbpf_multi.launch')
         self.particle_count = rospy.get_param('~particle_count',10)
+        self.particle_count_neighbours = rospy.get_param('~particle_count_neighbours',5)
         self.num_particle_handlers = rospy.get_param('~num_particle_handlers',1)
         self.results_path = rospy.get_param('~results_path','/home/kurreman/Downloads/rbpf_test"')
         self.mode = rospy.get_param('~mode','sim')
@@ -52,6 +53,7 @@ class RbpfSetup():
             proc = Popen(["roslaunch", self.launch_file, 
                             "namespace:=" + namespace,
                             "particle_count:=" + str(self.particle_count),
+                            "particle_count_neighbours:=" + str(self.particle_count_neighbours),
                             "num_particle_handlers:=" + str(self.num_particle_handlers),
                             "results_path:=" + self.results_path,
                             "mode:=" + self.mode,
@@ -59,6 +61,7 @@ class RbpfSetup():
                             "rbpf_sensor_MBES:=" + str(self.rbpf_sensor_MBES),
                             "survey_area_topic:=" + self.survey_area_topic,
                             "num_auvs:=" + str(self.num_auvs),
+                            "vehicle_model:=" + self.vehicle_model,
                           ])
             
             while time.time() - t < 2:
