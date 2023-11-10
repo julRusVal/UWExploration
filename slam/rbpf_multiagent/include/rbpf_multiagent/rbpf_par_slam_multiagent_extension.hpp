@@ -110,7 +110,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
 
 
     ros::Subscriber sub_fls_meas_;
-
+    ros::Subscriber odom_sub_neigh_;
     // float rbpf_period_;
     string fls_meas_topic;
     string survey_area_topic;

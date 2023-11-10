@@ -60,7 +60,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
 
     //Neighbour prediction
     nh_->param<string>(("odometry_topic"), odom_top_, "odom");
-    odom_sub_ = nh_->subscribe(odom_top_, 100, &RbpfSlamMultiExtension::odom_callback, this);
+    odom_sub_neigh_ = nh_->subscribe(odom_top_, 100, &RbpfSlamMultiExtension::odom_callback, this);
      // Start timing now
     time_neigh_ = ros::Time::now().toSec();
     old_time_neigh_ = ros::Time::now().toSec();
@@ -331,8 +331,8 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
             // Added in the MBES CB to synch the DR steps with the pings log
             nav_msgs::Odometry odom_cp = *odom_msg; // local copy
             float dt = float(time_ - old_time_);
-            this->predict(odom_cp, dt,particles_left_);
-            this->predict(odom_cp, dt,particles_right_);
+            // this->predict(odom_cp, dt,particles_left_);
+            // this->predict(odom_cp, dt,particles_right_);
 
         }
     }
