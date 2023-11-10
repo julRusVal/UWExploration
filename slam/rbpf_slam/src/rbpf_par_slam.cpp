@@ -733,9 +733,13 @@ void RbpfSlam::predict(nav_msgs::Odometry odom_t, float dt)
 
     for(int i = 0; i < pc_; i++)
     {
+        // ROS_INFO("BEFORE pose of particle %d = %f, %f, %f", i, particles_.at(i).p_pose_(0), particles_.at(i).p_pose_(1), particles_.at(i).p_pose_(2));
+
         pred_threads_vec_.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
                                     &particles_.at(i), std::ref(vel_rot), std::ref(vel_p),
                                     depth, dt, std::ref(rng_)));
+        // ROS_INFO("AFTER pose of particle %d = %f, %f, %f", i, particles_.at(i).p_pose_(0), particles_.at(i).p_pose_(1), particles_.at(i).p_pose_(2));
+
     }
 
     for (int i = 0; i < pc_; i++)
@@ -744,11 +748,14 @@ void RbpfSlam::predict(nav_msgs::Odometry odom_t, float dt)
         {
             pred_threads_vec_[i].join();
         }
+        // ROS_INFO("AFTER2 pose of particle %d = %f, %f, %f", i, particles_.at(i).p_pose_(0), particles_.at(i).p_pose_(1), particles_.at(i).p_pose_(2));
+
     }
     pred_threads_vec_.clear();
-
+    
     // Particle to compute DR without filtering
     dr_particle_.at(0).motion_prediction(vel_rot, vel_p, depth, dt, rng_);
+    // ROS_INFO("AFTER3 pose of particle 0 = %f, %f, %f", particles_.at(0).p_pose_(0), particles_.at(0).p_pose_(1), particles_.at(0).p_pose_(2));
 
     // auto t2 = high_resolution_clock::now();
     // duration<double, std::milli> ms_double = t2 - t1;

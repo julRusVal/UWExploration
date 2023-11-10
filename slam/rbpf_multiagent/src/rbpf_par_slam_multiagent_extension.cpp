@@ -355,7 +355,7 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     }
 }
 
-void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt,const std::vector<RbpfParticle>& particles, std::vector<std::thread>& pred_threads_vec)
+void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::vector<RbpfParticle>& particles, std::vector<std::thread>& pred_threads_vec)
 {
     // ROS_INFO("Inside predict");
     // Multithreading
@@ -375,12 +375,17 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt,const s
     // Depth (read directly)
     float depth = odom_t.pose.pose.position.z;
     // ROS_INFO("size of particles = %d", particles.size());
+    // ROS_INFO("vel_rot = %f, %f, %f", vel_rot(0), vel_rot(1), vel_rot(2));
+    // ROS_INFO("vel_p = %f, %f, %f", vel_p(0), vel_p(1), vel_p(2));
     for(int i = 0; i < pcn_; i++)
     { //CONTINUE HERE: before was &particles.at(i). Builds well, but throws error when running. 
-        // ROS_INFO("Predicting particle %d", i);
+        // ROS_INFO("dt = %f", dt);
+        // ROS_INFO("BEFORE pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
         pred_threads_vec.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
-                                    particles.at(i), std::ref(vel_rot), std::ref(vel_p),
+                                    std::ref(particles.at(i)), std::ref(vel_rot), std::ref(vel_p),
                                     depth, dt, std::ref(rng_)));
+        ROS_INFO("AFTER pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
+
     }
 
     for (int i = 0; i < pcn_; i++)
@@ -390,6 +395,8 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt,const s
         {
             pred_threads_vec[i].join();
         }
+        ROS_INFO("AFTER2 pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
+
     }
     pred_threads_vec.clear();
 

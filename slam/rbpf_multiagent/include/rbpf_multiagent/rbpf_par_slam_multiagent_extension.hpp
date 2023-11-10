@@ -105,7 +105,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     std::vector<RbpfParticle> init_particles_of(int agent_id);
     geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
     void pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher);
-    void predict(nav_msgs::Odometry odom_t, float dt,const std::vector<RbpfParticle>& particles,std::vector<std::thread>& pred_threads_vec);
+    void predict(nav_msgs::Odometry odom_t, float dt, std::vector<RbpfParticle>& particles,std::vector<std::thread>& pred_threads_vec);
 
 
 
