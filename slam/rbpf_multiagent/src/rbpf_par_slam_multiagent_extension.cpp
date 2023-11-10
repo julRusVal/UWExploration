@@ -362,7 +362,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // auto t1 = high_resolution_clock::now();
     // Eigen::VectorXf noise_vec(6, 1);
 
-    // Angular vel
+    // Angular vel #CONTINUE HERE: The auvs don't all start looking forward. Find a way to determine how the own odometry should decide the odometry of the neightbour. Look into map frame? 
     Eigen::Vector3f vel_rot = Eigen::Vector3f(-odom_t.twist.twist.angular.x,
                                               odom_t.twist.twist.angular.y,
                                               odom_t.twist.twist.angular.z);
@@ -384,7 +384,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
         pred_threads_vec.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
                                     std::ref(particles.at(i)), std::ref(vel_rot), std::ref(vel_p),
                                     depth, dt, std::ref(rng_)));
-        ROS_INFO("AFTER pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
+        // ROS_INFO("AFTER pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
 
     }
 
@@ -395,7 +395,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
         {
             pred_threads_vec[i].join();
         }
-        ROS_INFO("AFTER2 pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
+        // ROS_INFO("AFTER2 pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
 
     }
     pred_threads_vec.clear();
