@@ -108,6 +108,8 @@ int main(int argc, char** argv){
 }
 
 //TODO: 
-//1. Finish prediction of neighbour particles, see continue here in rbpf_par_slam_multiagent_extension.cpp
+//1. Finish prediction of neighbour particles, 
+// 1a. OK - MAke the neighbour particles move based on own odometry
+// 1b. Make the neighbour particles move in the right direction, see continue here in rbpf_par_slam_multiagent_extension.cpp
 //2. init measurement model
 
