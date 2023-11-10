@@ -105,7 +105,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     std::vector<RbpfParticle> init_particles_of(int agent_id);
     geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
     void pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher);
-    void predict(nav_msgs::Odometry odom_t, float dt,const std::vector<RbpfParticle>& particles);
+    void predict(nav_msgs::Odometry odom_t, float dt,const std::vector<RbpfParticle>& particles,std::vector<std::thread>& pred_threads_vec);
 
 
 
@@ -114,7 +114,9 @@ class RbpfSlamMultiExtension: public RbpfSlam
     // float rbpf_period_;
     string fls_meas_topic;
     string survey_area_topic;
+    string namespace_;
     bool inducing_pts_sent;
+    bool particle_sets_instantiated_ = false;
     std::vector<RbpfParticle> particles_left_;
     std::vector<RbpfParticle> particles_right_;
     int pcn_;
@@ -124,6 +126,9 @@ class RbpfSlamMultiExtension: public RbpfSlam
     string vehicle_model_;
     double time_neigh_;
     double old_time_neigh_;
+    std::vector<std::thread> pred_threads_vec_neigh_left_;
+    std::vector<std::thread> pred_threads_vec_neigh_right_;
+
     // nav_msgs::Odometry odom_latest_neigh_;
 
 

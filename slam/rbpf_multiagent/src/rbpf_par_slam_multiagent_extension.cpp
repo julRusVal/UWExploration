@@ -19,6 +19,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<bool>(("rbpf_sensor_FLS"), rbpf_sensor_FLS, true);
     nh_->param<bool>(("rbpf_sensor_MBES"), rbpf_sensor_MBES, false);
     nh_->param<string>(("fls_meas_topic"), fls_meas_topic, "/sim/hugin_0/fls_measurement");
+    nh_->param<string>(("namespace"), namespace_, "hugin_0");
 
     nh_->param<int>(("particle_count_neighbours"), pcn_, 5);
     nh_->param<float>(("measurement_std"), meas_std_, 0.01);
@@ -131,9 +132,9 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
 
 void RbpfSlamMultiExtension::setup_neighbours()
 {
-    std::string namespace_;
+    // std::string namespace_;
     int num_auvs_;
-    nh_->param<string>(("namespace"), namespace_, "hugin_0");
+    // nh_->param<string>(("namespace"), namespace_, "hugin_0");
     nh_->param<int>(("num_auvs"), num_auvs_, 1);
     int auv_id = namespace_.back() - '0'; // ASCII code for 0 is 48, 1 is 49, etc. https://sentry.io/answers/char-to-int-in-c-and-cpp/#:~:text=C%20and%20C%2B%2B%20store%20characters,the%20value%20of%20'0'%20.
     auv_id_ = new int(auv_id);
@@ -158,6 +159,7 @@ void RbpfSlamMultiExtension::setup_neighbours()
         auv_id_left_ = new int(auv_id-1);
         auv_id_right_ = new int(auv_id+1);
     }
+    particle_sets_instantiated_ = true;
 }
 
 std::vector<RbpfParticle> RbpfSlamMultiExtension::init_particles_of(int agent_id)
@@ -226,7 +228,7 @@ std::vector<RbpfParticle> RbpfSlamMultiExtension::init_particles_of(int agent_id
     init_p_pose_(5)= yaw_o2b;
 
     // Create particles
-    for (int i=0; i<pc_; i++){
+    for (int i=0; i<pcn_; i++){
         particles.emplace_back(RbpfParticle(beams_real_, pcn_, i, base2mbes_mat_, m2o_mat_, init_p_pose_,
                                             init_cov_, meas_std_, motion_cov_));
     }
@@ -254,7 +256,7 @@ geometry_msgs::PoseArray RbpfSlamMultiExtension::particles_2_pose_array(const in
     array_msg.header.frame_id = vehicle_model_ + "_" + std::to_string(id) + "/odom";
     array_msg.header.stamp = ros::Time::now();
 
-    for (int i=0; i<pc_; i++){
+    for (int i=0; i<pcn_; i++){
         geometry_msgs::Pose pose_i;
         pose_i.position.x = particles.at(i).p_pose_(0);
         pose_i.position.y = particles.at(i).p_pose_(1);
@@ -321,27 +323,41 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {
-    time_neigh_ = odom_msg->header.stamp.toSec();
-
-    if(mission_finished_ != true)
+    // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    // ROS_INFO("odom_callback");
+    if (particle_sets_instantiated_)
     {
-        // Motion prediction
-        if (time_neigh_ > old_time_neigh_)
+        
+        time_neigh_ = odom_msg->header.stamp.toSec();
+
+        if(mission_finished_ != true)
         {
-            // Added in the MBES CB to synch the DR steps with the pings log
-            nav_msgs::Odometry odom_cp = *odom_msg; // local copy
-            float dt = float(time_ - old_time_);
-            // this->predict(odom_cp, dt,particles_left_);
-            // this->predict(odom_cp, dt,particles_right_);
-
+            // Motion prediction
+            if (time_neigh_ > old_time_neigh_)
+            {
+                // Added in the MBES CB to synch the DR steps with the pings log
+                nav_msgs::Odometry odom_cp = *odom_msg; // local copy
+                float dt = float(time_ - old_time_);
+                // ROS_INFO("namespace_ = %s", namespace_.c_str());
+                if (auv_id_left_)
+                {
+                    // ROS_INFO("Predicting left neighbour");
+                    RbpfSlamMultiExtension::predict(odom_cp, dt,particles_left_, pred_threads_vec_neigh_left_);
+                }
+                if (auv_id_right_)
+                {
+                    // ROS_INFO("Predicting right neighbour");
+                    RbpfSlamMultiExtension::predict(odom_cp, dt,particles_right_, pred_threads_vec_neigh_right_);
+                }
+            }
         }
+        old_time_neigh_ = time_neigh_;
     }
-    old_time_neigh_ = time_neigh_;
-
 }
 
-void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt,const std::vector<RbpfParticle>& particles)
+void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt,const std::vector<RbpfParticle>& particles, std::vector<std::thread>& pred_threads_vec)
 {
+    // ROS_INFO("Inside predict");
     // Multithreading
     // auto t1 = high_resolution_clock::now();
     // Eigen::VectorXf noise_vec(6, 1);
@@ -358,22 +374,24 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt,const s
 
     // Depth (read directly)
     float depth = odom_t.pose.pose.position.z;
-
-    for(int i = 0; i < pc_; i++)
+    // ROS_INFO("size of particles = %d", particles.size());
+    for(int i = 0; i < pcn_; i++)
     { //CONTINUE HERE: before was &particles.at(i). Builds well, but throws error when running. 
-        pred_threads_vec_.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
+        // ROS_INFO("Predicting particle %d", i);
+        pred_threads_vec.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
                                     particles.at(i), std::ref(vel_rot), std::ref(vel_p),
                                     depth, dt, std::ref(rng_)));
     }
 
-    for (int i = 0; i < pc_; i++)
+    for (int i = 0; i < pcn_; i++)
     {
-        if (pred_threads_vec_[i].joinable())
+        // ROS_INFO("Joining thread %d", i);
+        if (pred_threads_vec[i].joinable())
         {
-            pred_threads_vec_[i].join();
+            pred_threads_vec[i].join();
         }
     }
-    pred_threads_vec_.clear();
+    pred_threads_vec.clear();
 
     // // Particle to compute DR without filtering
     // dr_particle_.at(0).motion_prediction(vel_rot, vel_p, depth, dt, rng_);
