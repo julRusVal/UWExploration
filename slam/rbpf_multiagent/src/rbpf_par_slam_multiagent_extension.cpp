@@ -123,12 +123,22 @@ bool RbpfSlamMultiExtension::empty_srv_multi(std_srvs::Empty::Request &req, std_
 
 void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
 {
+    // int neighbour_id = RbpfSlamMultiExtension::identify_frontal_neighbour_id();
     // cout << "Received FLS reading" << endl;
     // cout << fls_reading << endl;
 
     //Here implement measurement model and update weights, similar as RbpfSlam::rbpf_update
 
 }
+
+// void RbpfSlamMultiExtension::identify_frontal_neighbour_id()
+// {
+//     //iterate over each particle in particles_
+//     for (int i = 0; i < pc_; i++)
+//     {
+//         RbpfParticle particle = particles_.at(i);
+//     }
+// }
 
 void RbpfSlamMultiExtension::setup_neighbours()
 {
@@ -325,7 +335,7 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {
-    // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    ROS_INFO("namespace_ = %s", namespace_.c_str());
     // ROS_INFO("odom_callback");
     if (particle_sets_instantiated_)
     {
@@ -363,7 +373,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // Multithreading
     // auto t1 = high_resolution_clock::now();
     // Eigen::VectorXf noise_vec(6, 1);
-    // ROS_INFO("frame_id = %s", odom_t.header.frame_id.c_str());
+    ROS_INFO("frame_id = %s", odom_t.header.frame_id.c_str());
     // ROS_INFO("auv_id_ = %d", *auv_id_);
     // Angular vel #CONTINUE HERE: The auvs don't all start looking forward. Find a way to determine how the own odometry should decide the odometry of the neightbour. Look into map frame? 
 
@@ -380,7 +390,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     float depth = odom_t.pose.pose.position.z;
     // ROS_INFO("size of particles = %d", particles.size());
     // ROS_INFO("vel_rot = %f, %f, %f", vel_rot(0), vel_rot(1), vel_rot(2));
-    // ROS_INFO("vel_p = %f, %f, %f", vel_p(0), vel_p(1), vel_p(2));
+    ROS_INFO("vel_p = %f, %f, %f", vel_p(0), vel_p(1), vel_p(2));
     for(int i = 0; i < pcn_; i++)
     { //CONTINUE HERE: before was &particles.at(i). Builds well, but throws error when running. 
         // ROS_INFO("dt = %f", dt);

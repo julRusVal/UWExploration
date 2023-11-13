@@ -101,6 +101,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
     void setup_neighbours();
+    void identify_frontal_neighbour_id();
 
     std::vector<RbpfParticle> init_particles_of(int agent_id);
     geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
