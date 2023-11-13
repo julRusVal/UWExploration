@@ -254,6 +254,8 @@ geometry_msgs::PoseArray RbpfSlamMultiExtension::particles_2_pose_array(const in
 {
     geometry_msgs::PoseArray array_msg;
     array_msg.header.frame_id = vehicle_model_ + "_" + std::to_string(id) + "/odom";
+    // array_msg.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_) + "/odom";
+
     array_msg.header.stamp = ros::Time::now();
 
     for (int i=0; i<pcn_; i++){
@@ -361,16 +363,18 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // Multithreading
     // auto t1 = high_resolution_clock::now();
     // Eigen::VectorXf noise_vec(6, 1);
-
+    // ROS_INFO("frame_id = %s", odom_t.header.frame_id.c_str());
+    // ROS_INFO("auv_id_ = %d", *auv_id_);
     // Angular vel #CONTINUE HERE: The auvs don't all start looking forward. Find a way to determine how the own odometry should decide the odometry of the neightbour. Look into map frame? 
-    Eigen::Vector3f vel_rot = Eigen::Vector3f(-odom_t.twist.twist.angular.x,
+
+    Eigen::Vector3f vel_rot = Eigen::Vector3f(odom_t.twist.twist.angular.x,
                                               odom_t.twist.twist.angular.y,
-                                              odom_t.twist.twist.angular.z);
+                                              -odom_t.twist.twist.angular.z);
 
     // Linear vel
     Eigen::Vector3f vel_p = Eigen::Vector3f(odom_t.twist.twist.linear.x,
-                                            odom_t.twist.twist.linear.y,
-                                            -odom_t.twist.twist.linear.z);
+                                            -odom_t.twist.twist.linear.y,
+                                            odom_t.twist.twist.linear.z);
 
     // Depth (read directly)
     float depth = odom_t.pose.pose.position.z;

@@ -88,6 +88,9 @@
         <rosparam param="init_covariance">[1., 1., 0.0, 0.0, 0.0, 0.1]</rosparam>
         <rosparam param="motion_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.000001]</rosparam>
         <rosparam param="resampling_noise_covariance">[3.0, 3.0, 0.0, 0.0, 0.0, 0.0]</rosparam>
+        <!-- <rosparam param="init_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</rosparam>
+        <rosparam param="motion_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</rosparam>
+        <rosparam param="resampling_noise_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</rosparam> -->
         <param name="measurement_std"                         value="10." />
         <param name="odometry_topic"                          value="$(arg odometry_topic)" />
         <param name="mbes_pings_topic"                        value="$(arg mbes_pings_topic)" />
