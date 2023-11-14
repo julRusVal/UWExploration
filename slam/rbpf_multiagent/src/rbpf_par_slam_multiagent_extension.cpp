@@ -146,6 +146,7 @@ void RbpfSlamMultiExtension::update_frontal_neighbour_id()
     }
     else if(wp_counter_ % 2 != 0)
     {
+        ROS_INFO("nullptr");
         frontal_neighbour_id_ = nullptr;
     }
 
@@ -165,6 +166,7 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         // fls_meas_(1) = fls_reading.angle;
         // fls_meas_(2) = frontal_neighbour_id_;
         // RbpfSlamMultiExtension::update_particles_weights(fls_reading.range, fls_reading.angle, frontal_neighbour_id_);
+        ROS_INFO("namespace_ = %s inside rbpf_update_fls_cb", namespace_.c_str());
         if (frontal_neighbour_id_)
         {
         RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
