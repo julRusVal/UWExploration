@@ -112,7 +112,7 @@ int main(int argc, char** argv){
 // 1a. OK - MAke the neighbour particles move based on own odometry
 // 1b. OK - Make the neighbour particles move in the right direction, see continue here in rbpf_par_slam_multiagent_extension.cpp
 //2. init measurement model
-    //2a. Determinewhich neighbour is infront of the FLS
+    //2a. OK - Determinewhich neighbour is infront of the FLS
     //2b Calculate estimated mesurement (z_hat) for each neighbour particle and for each particle
     //2c. Calculate particle wweights (importance factors)
     //2d. Resample particles
