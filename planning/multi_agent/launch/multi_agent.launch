@@ -114,6 +114,8 @@
         <param name="dubins_step_size" value="$(arg dubins_step_size)"/>
         <param name="goal_tolerance" value="$(arg goal_tolerance)"/>
         <param name="time_sync" value="$(arg time_sync)"/>
+        <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
+
         
     </node>
 
@@ -168,6 +170,8 @@
             <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
             <param name="survey_area_topic" value="$(arg survey_area_topic)"/>
             <param name="num_auvs" value="$(arg num_auvs)"/>
+            <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
+
             
             
 

@@ -129,6 +129,8 @@
         <param name="survey_area_topic" value="$(arg survey_area_topic)" />
         <param name="num_auvs" value="$(arg num_auvs)"/>
         <param name="vehicle_model" value="$(arg vehicle_model)"/>
+        <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" />
+
 
 
       </node>

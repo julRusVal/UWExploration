@@ -9,7 +9,7 @@ from move_base_msgs.msg import MoveBaseFeedback, MoveBaseResult, MoveBaseAction,
 import actionlib
 import rospy
 import tf
-from std_msgs.msg import Float64, Header, Bool, Time, Int32MultiArray
+from std_msgs.msg import Float64, Header, Bool, Time, Int32MultiArray, Int32
 import math
 import dubins
 import pdb
@@ -41,6 +41,8 @@ class W2WMissionPlanner(object):
         self.namespace = rospy.get_param('~namespace', 'hugin')
         self.max_throttle = rospy.get_param('~max_throttle', 4)
         self.goal_tolerance = rospy.get_param('~goal_tolerance', 0.5)
+        self.wp_counter_topic = rospy.get_param('~wp_counter_topic', '/wp_counter')
+
 
 
         # The waypoints as a path
@@ -73,6 +75,7 @@ class W2WMissionPlanner(object):
 
         self.point_marker_pub = rospy.Publisher('artificial_wps', MarkerArray, queue_size=1)
         self.arrival_time_pub = rospy.Publisher('arrival_time', Time, queue_size=1)
+        self.wp_counter_pub = rospy.Publisher(self.wp_counter_topic, Int32, queue_size=1)
 
         self.wp_counter = 0
 
@@ -95,7 +98,7 @@ class W2WMissionPlanner(object):
                     self.map_frame, robot_pose_local)
                 
                 
-
+                self.wp_counter_pub.publish(Int32(self.wp_counter)) #Keep track of where we are in the path
                 if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'simple_maxturn' :
                     if self.wp_old is None:
                         self.wp_old = robot_pose

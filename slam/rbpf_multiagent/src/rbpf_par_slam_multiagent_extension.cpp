@@ -55,6 +55,10 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
         timer_neighbours_rviz_ = nh_->createTimer(ros::Duration(rviz_period_), &RbpfSlamMultiExtension::update_rviz_cb, this, false);
     }
 
+    std::string wp_counter_topic;
+    nh_->param<string>(("wp_counter_topic"), wp_counter_topic, "/wp_counter");
+    wp_counter_sub_ = nh_->subscribe(wp_counter_topic, 1, &RbpfSlamMultiExtension::wp_counter_cb, this);
+
 
     //Setup neighbours
     RbpfSlamMultiExtension::setup_neighbours();
@@ -112,6 +116,13 @@ void RbpfSlamMultiExtension::survey_area_cb(const visualization_msgs::MarkerArra
     // else{
     //     ROS_INFO("Survey area already received");
     // }
+
+}
+
+void RbpfSlamMultiExtension::wp_counter_cb(const std_msgs::Int32& wp_counter_msg)
+{   
+    wp_counter_ = wp_counter_msg.data;
+    ROS_INFO("Updating wp_counter_ to value %d", wp_counter_);
 
 }
 
@@ -335,7 +346,7 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {
-    ROS_INFO("namespace_ = %s", namespace_.c_str());
+    // ROS_INFO("namespace_ = %s", namespace_.c_str());
     // ROS_INFO("odom_callback");
     if (particle_sets_instantiated_)
     {
@@ -373,7 +384,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // Multithreading
     // auto t1 = high_resolution_clock::now();
     // Eigen::VectorXf noise_vec(6, 1);
-    ROS_INFO("frame_id = %s", odom_t.header.frame_id.c_str());
+    // ROS_INFO("frame_id = %s", odom_t.header.frame_id.c_str());
     // ROS_INFO("auv_id_ = %d", *auv_id_);
     // Angular vel #CONTINUE HERE: The auvs don't all start looking forward. Find a way to determine how the own odometry should decide the odometry of the neightbour. Look into map frame? 
 
@@ -390,7 +401,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     float depth = odom_t.pose.pose.position.z;
     // ROS_INFO("size of particles = %d", particles.size());
     // ROS_INFO("vel_rot = %f, %f, %f", vel_rot(0), vel_rot(1), vel_rot(2));
-    ROS_INFO("vel_p = %f, %f, %f", vel_p(0), vel_p(1), vel_p(2));
+    // ROS_INFO("vel_p = %f, %f, %f", vel_p(0), vel_p(1), vel_p(2));
     for(int i = 0; i < pcn_; i++)
     { //CONTINUE HERE: before was &particles.at(i). Builds well, but throws error when running. 
         // ROS_INFO("dt = %f", dt);

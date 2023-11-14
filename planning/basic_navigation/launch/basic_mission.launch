@@ -16,6 +16,7 @@
 	<arg name="dubins_step_size" default="0.5"/>
 	<arg name="goal_tolerance" default="5.0"/>
 	<arg name="time_sync" default="false"/>
+	<!-- <arg name="wp_counter_topic" default="/$(arg namespace)/wp_counter"/> -->
 
 
 
@@ -38,6 +39,7 @@
 					<param name="namespace" value="$(arg namespace)"/>
 					<param name="max_throttle"  value="$(arg max_throttle)" />
 					<param name="goal_tolerance"  value="$(arg goal_tolerance)" />
+					<param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" />
 
 
 

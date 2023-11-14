@@ -81,6 +81,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     public:
 
     ros::Subscriber survey_area_sub_;
+    ros::Subscriber wp_counter_sub_;
     ros::Subscriber odom_sub_neighbours_;
     ros::Publisher vis_pub_left_;
     ros::Publisher vis_pub_right_;
@@ -94,6 +95,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb, string &base_link_custom_);
 
     void survey_area_cb(const visualization_msgs::MarkerArray& marker_array); //& sign is used to denote a reference parameter. Avoids copying full variable
+    void wp_counter_cb(const std_msgs::Int32& wp_counter_msg);
     void rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading);
     void update_rviz_cb(const ros::TimerEvent &);
     void odom_callback(const nav_msgs::OdometryConstPtr& odom_msg);
@@ -121,6 +123,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     std::vector<RbpfParticle> particles_left_;
     std::vector<RbpfParticle> particles_right_;
     int pcn_;
+    int wp_counter_;
     int* auv_id_ = nullptr;
     int* auv_id_left_ = nullptr;
     int* auv_id_right_ = nullptr;
