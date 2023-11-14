@@ -137,11 +137,11 @@ void RbpfSlamMultiExtension::update_frontal_neighbour_id()
     }
     if (frontal_direction_ == 1)
     {
-        frontal_neighbour_id_ = auv_id_right_;
+        frontal_neighbour_id_ = new int(*auv_id_right_);
     }
     else
     {
-        frontal_neighbour_id_ = auv_id_left_;
+        frontal_neighbour_id_ = new int(*auv_id_left_);
     }   
     }
     else if(wp_counter_ % 2 != 0)
@@ -159,6 +159,22 @@ bool RbpfSlamMultiExtension::empty_srv_multi(std_srvs::Empty::Request &req, std_
 
 void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
 {
+    if (wp_counter_ % 2 == 0) //Only if facing anoher auv, not when travelling in the same direction
+    {
+        // fls_meas_(0) = fls_reading.range;
+        // fls_meas_(1) = fls_reading.angle;
+        // fls_meas_(2) = frontal_neighbour_id_;
+        // RbpfSlamMultiExtension::update_particles_weights(fls_reading.range, fls_reading.angle, frontal_neighbour_id_);
+        if (frontal_neighbour_id_)
+        {
+        RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
+        }
+        else
+        {
+            ROS_WARN("No frontal neighbour id available");
+        }
+
+    }
     // int neighbour_id = RbpfSlamMultiExtension::identify_frontal_neighbour_id();
     // cout << "Received FLS reading" << endl;
     // cout << fls_reading << endl;
@@ -167,14 +183,57 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
 
 }
 
-// void RbpfSlamMultiExtension::identify_frontal_neighbour_id()
-// {
-//     //iterate over each particle in particles_
-//     for (int i = 0; i < pc_; i++)
-//     {
-//         RbpfParticle particle = particles_.at(i);
-//     }
-// }
+void RbpfSlamMultiExtension::update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id)
+{
+    ROS_INFO("namespace_ = %s", namespace_.c_str());
+    ROS_INFO("Updating particle weights using FLS measurement");
+    ROS_INFO("fls_neighbour_id = %d", *fls_neighbour_id);
+
+    const std::vector<RbpfParticle>* particles_neighbour = nullptr;
+    ROS_INFO("0");
+    if (auv_id_left_)
+    {   
+        ROS_INFO("auv_id_left_ = %d", *auv_id_left_);
+        if (*fls_neighbour_id == *auv_id_left_)
+        {
+            ROS_INFO("1");
+            particles_neighbour = &particles_left_;
+        }
+    }
+    if (auv_id_right_)
+    {
+        ROS_INFO("auv_id_right_ = %d", *auv_id_right_);
+        if (*fls_neighbour_id == *auv_id_right_)
+        {
+            ROS_INFO("2");
+            particles_neighbour = &particles_right_;
+        }
+    }
+    ROS_INFO("mid");
+    if (particles_neighbour != nullptr) // Check if particles_neighbour is not nullptr
+    {
+        ROS_INFO("3");
+
+        for (const RbpfParticle& particle_m : particles_) //particle m
+        {
+            ROS_INFO("4");
+
+            for (const RbpfParticle& n_particle_phi : *particles_neighbour) //neighbour particle phi
+            {
+                ROS_INFO("5");
+
+                // Use particle_m and particle_phi here
+            }
+        }
+    }
+    else
+    {
+        ROS_WARN("No neighbour particles available");
+    }
+    
+
+}
+
 
 void RbpfSlamMultiExtension::setup_neighbours()
 {
@@ -186,20 +245,20 @@ void RbpfSlamMultiExtension::setup_neighbours()
     auv_id_ = new int(auv_id);
     if (auv_id == 0 && num_auvs_ > 1)
     {
-        ROS_INFO("Inside RbpfMultiagent constructor: auv_id == 0");
+        // ROS_INFO("Inside RbpfMultiagent constructor: auv_id == 0");
         particles_right_ = RbpfSlamMultiExtension::init_particles_of(auv_id+1);
         auv_id_right_ = new int(auv_id+1);
         
     }
     else if (auv_id == num_auvs_-1 && num_auvs_ > 1)
     {
-        ROS_INFO("Inside RbpfMultiagent constructor: auv_id == num_auvs_-1");
+        // ROS_INFO("Inside RbpfMultiagent constructor: auv_id == num_auvs_-1");
         particles_left_ = RbpfSlamMultiExtension::init_particles_of(auv_id-1);
         auv_id_left_ = new int(auv_id-1);
     }
     else
     {
-        ROS_INFO("Inside RbpfMultiagent constructor: auv_id is neither 0 nor num_auvs_-1");
+        // ROS_INFO("Inside RbpfMultiagent constructor: auv_id is neither 0 nor num_auvs_-1");
         particles_left_ = RbpfSlamMultiExtension::init_particles_of(auv_id-1);
         particles_right_ = RbpfSlamMultiExtension::init_particles_of(auv_id+1);
         auv_id_left_ = new int(auv_id-1);
@@ -207,6 +266,7 @@ void RbpfSlamMultiExtension::setup_neighbours()
     }
     particle_sets_instantiated_ = true;
 
+    //Initiate first FLS direction
     if (num_auvs_ % 2 == 0)
     {
         if (*auv_id_ % 2 == 0)
@@ -227,6 +287,33 @@ void RbpfSlamMultiExtension::setup_neighbours()
         else
         {
             frontal_direction_ = 1;
+        }
+    }
+    // Store transforms between auv odom and its two neighbours (if they exist)
+    if (auv_id_left_)
+    {
+        try 
+        {
+            string odom_frame_left = vehicle_model_ + "_" + std::to_string(*auv_id_left_) + "/odom";
+            tfListener_.waitForTransform(odom_frame_, odom_frame_left, ros::Time(0), ros::Duration(300.0));
+            tfListener_.lookupTransform(odom_frame_, odom_frame_left, ros::Time(0), oL2o_tf_);
+        }
+        catch (const std::exception &e)
+        {
+            ROS_ERROR("ERROR: Could not lookup transform from odom_left to odom");
+        }
+    }
+    if (auv_id_right_)
+    {
+        try
+        {
+            string odom_frame_right = vehicle_model_ + "_" + std::to_string(*auv_id_right_) + "/odom";
+            tfListener_.waitForTransform(odom_frame_, odom_frame_right, ros::Time(0), ros::Duration(300.0));
+            tfListener_.lookupTransform(odom_frame_, odom_frame_right, ros::Time(0), oR2o_tf_);
+        }
+        catch (const std::exception &e)
+        {
+            ROS_ERROR("ERROR: Could not lookup transform from odom_right to odom");
         }
     }
 }
@@ -394,16 +481,16 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {
-    ROS_INFO("namespace_ = %s", namespace_.c_str());
-    if (frontal_neighbour_id_)
-    {
-        ROS_INFO("frontal_neighbour_id_ = %d", *frontal_neighbour_id_);
-    }
-    else
-    {
-        ROS_INFO("frontal_neighbour_id_ = nullptr");
-    }
-    ROS_INFO("frontal_direction_ = %d", frontal_direction_);
+    // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    // if (frontal_neighbour_id_)
+    // {
+    //     ROS_INFO("frontal_neighbour_id_ = %d", *frontal_neighbour_id_);
+    // }
+    // else
+    // {
+    //     ROS_INFO("frontal_neighbour_id_ = nullptr");
+    // }
+    // ROS_INFO("frontal_direction_ = %d", frontal_direction_);
     // ROS_INFO("odom_callback");
     if (particle_sets_instantiated_)
     {

@@ -109,7 +109,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
     void pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher);
     void predict(nav_msgs::Odometry odom_t, float dt, std::vector<RbpfParticle>& particles,std::vector<std::thread>& pred_threads_vec);
-
+    void update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id);
 
 
     ros::Subscriber sub_fls_meas_;
@@ -135,6 +135,10 @@ class RbpfSlamMultiExtension: public RbpfSlam
     double old_time_neigh_;
     std::vector<std::thread> pred_threads_vec_neigh_left_;
     std::vector<std::thread> pred_threads_vec_neigh_right_;
+    tf::StampedTransform oL2o_tf_; //tf from odom left to odom self
+    tf::StampedTransform oR2o_tf_; //tf from odom right to odom self
+
+    // std::vector<float> fls_meas_;
 
     // nav_msgs::Odometry odom_latest_neigh_;
 
