@@ -108,8 +108,9 @@ class FLSModel(object):
                             # print("FLS ping at r = ", r, " theta = ", theta)
                             #break #TODO: handle the case with multiple agents in the fov. This is out of scope for the multi-agent thesis of Koray, but can be extended later here. If you do, remember to change definition of action message aswell
                     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-                        rospy.logerr("Could not lookup transform from %s to %s" % (self.fls_frame_current_auv,hugin_frame_i))
-                        rospy.logerr(e)
+                        rospy.logwarn("Could not lookup transform from %s to %s" % (self.fls_frame_current_auv,hugin_frame_i))
+                        rospy.logwarn(e)
+        
             if r is None or theta is None:
                 self.as_ping.set_aborted()
                 # print(self.namespace, " did not find any agents in the FLS fov")
