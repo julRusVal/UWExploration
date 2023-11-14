@@ -103,7 +103,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
     void setup_neighbours();
-    void identify_frontal_neighbour_id();
+    void update_frontal_neighbour_id();
 
     std::vector<RbpfParticle> init_particles_of(int agent_id);
     geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
@@ -124,10 +124,13 @@ class RbpfSlamMultiExtension: public RbpfSlam
     std::vector<RbpfParticle> particles_right_;
     int pcn_;
     int wp_counter_;
+    int* frontal_neighbour_id_ = nullptr;
+    int frontal_direction_;
     int* auv_id_ = nullptr;
     int* auv_id_left_ = nullptr;
     int* auv_id_right_ = nullptr;
     string vehicle_model_;
+    int num_auvs_;
     double time_neigh_;
     double old_time_neigh_;
     std::vector<std::thread> pred_threads_vec_neigh_left_;

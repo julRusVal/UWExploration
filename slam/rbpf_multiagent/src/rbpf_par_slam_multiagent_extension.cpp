@@ -123,6 +123,31 @@ void RbpfSlamMultiExtension::wp_counter_cb(const std_msgs::Int32& wp_counter_msg
 {   
     wp_counter_ = wp_counter_msg.data;
     ROS_INFO("Updating wp_counter_ to value %d", wp_counter_);
+    RbpfSlamMultiExtension::update_frontal_neighbour_id();
+
+}
+
+void RbpfSlamMultiExtension::update_frontal_neighbour_id()
+{   
+    if (wp_counter_ % 2 == 0) //even wp and not the first
+    {
+    if (wp_counter_ != 0)
+    {
+        frontal_direction_ = -frontal_direction_;
+    }
+    if (frontal_direction_ == 1)
+    {
+        frontal_neighbour_id_ = auv_id_right_;
+    }
+    else
+    {
+        frontal_neighbour_id_ = auv_id_left_;
+    }   
+    }
+    else if(wp_counter_ % 2 != 0)
+    {
+        frontal_neighbour_id_ = nullptr;
+    }
 
 }
 
@@ -154,7 +179,7 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
 void RbpfSlamMultiExtension::setup_neighbours()
 {
     // std::string namespace_;
-    int num_auvs_;
+    // int num_auvs_;
     // nh_->param<string>(("namespace"), namespace_, "hugin_0");
     nh_->param<int>(("num_auvs"), num_auvs_, 1);
     int auv_id = namespace_.back() - '0'; // ASCII code for 0 is 48, 1 is 49, etc. https://sentry.io/answers/char-to-int-in-c-and-cpp/#:~:text=C%20and%20C%2B%2B%20store%20characters,the%20value%20of%20'0'%20.
@@ -181,6 +206,29 @@ void RbpfSlamMultiExtension::setup_neighbours()
         auv_id_right_ = new int(auv_id+1);
     }
     particle_sets_instantiated_ = true;
+
+    if (num_auvs_ % 2 == 0)
+    {
+        if (*auv_id_ % 2 == 0)
+        {
+            frontal_direction_ = 1;
+        }
+        else
+        {
+            frontal_direction_ = -1;
+        }
+    }
+    else
+    {
+        if (*auv_id_ % 2 == 0)
+        {
+            frontal_direction_ = -1;
+        }
+        else
+        {
+            frontal_direction_ = 1;
+        }
+    }
 }
 
 std::vector<RbpfParticle> RbpfSlamMultiExtension::init_particles_of(int agent_id)
@@ -346,7 +394,16 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {
-    // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    ROS_INFO("namespace_ = %s", namespace_.c_str());
+    if (frontal_neighbour_id_)
+    {
+        ROS_INFO("frontal_neighbour_id_ = %d", *frontal_neighbour_id_);
+    }
+    else
+    {
+        ROS_INFO("frontal_neighbour_id_ = nullptr");
+    }
+    ROS_INFO("frontal_direction_ = %d", frontal_direction_);
     // ROS_INFO("odom_callback");
     if (particle_sets_instantiated_)
     {
