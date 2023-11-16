@@ -135,8 +135,10 @@ class RbpfSlamMultiExtension: public RbpfSlam
     double old_time_neigh_;
     std::vector<std::thread> pred_threads_vec_neigh_left_;
     std::vector<std::thread> pred_threads_vec_neigh_right_;
-    tf::StampedTransform oL2o_tf_; //tf from odom left to odom self
-    tf::StampedTransform oR2o_tf_; //tf from odom right to odom self
+    // tf::StampedTransform oL2o_tf_; //tf from odom left to odom self
+    // tf::StampedTransform oR2o_tf_; //tf from odom right to odom self
+    Eigen::Matrix4f oL2o_mat_;
+    Eigen::Matrix4f oR2o_mat_;
 
     // std::vector<float> fls_meas_;
 

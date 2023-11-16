@@ -325,8 +325,12 @@ void RbpfSlamMultiExtension::setup_neighbours()
         try 
         {
             string odom_frame_left = vehicle_model_ + "_" + std::to_string(*auv_id_left_) + "/odom";
+            tf::StampedTransform oL2o_tf; //tf from odom left to odom self
+
             tfListener_.waitForTransform(odom_frame_, odom_frame_left, ros::Time(0), ros::Duration(300.0));
-            tfListener_.lookupTransform(odom_frame_, odom_frame_left, ros::Time(0), oL2o_tf_);
+            tfListener_.lookupTransform(odom_frame_, odom_frame_left, ros::Time(0), oL2o_tf);
+            pcl_ros::transformAsMatrix(oL2o_tf, oL2o_mat_);
+            
         }
         catch (const std::exception &e)
         {
@@ -338,8 +342,10 @@ void RbpfSlamMultiExtension::setup_neighbours()
         try
         {
             string odom_frame_right = vehicle_model_ + "_" + std::to_string(*auv_id_right_) + "/odom";
+            tf::StampedTransform oR2o_tf; //tf from odom right to odom self
             tfListener_.waitForTransform(odom_frame_, odom_frame_right, ros::Time(0), ros::Duration(300.0));
-            tfListener_.lookupTransform(odom_frame_, odom_frame_right, ros::Time(0), oR2o_tf_);
+            tfListener_.lookupTransform(odom_frame_, odom_frame_right, ros::Time(0), oR2o_tf);
+            pcl_ros::transformAsMatrix(oR2o_tf, oR2o_mat_);
         }
         catch (const std::exception &e)
         {
