@@ -220,6 +220,8 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
     // ROS_INFO("fls_neighbour_id = %d", *fls_neighbour_id);
 
     const std::vector<RbpfParticle>* particles_neighbour = nullptr;
+    const Eigen::Matrix4f* oN2o_mat_ptr = nullptr; //Transformation matrix odom neighbour to odom self
+
     // ROS_INFO("0");
     if (auv_id_left_)
     {   
@@ -228,6 +230,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
         {
             // ROS_INFO("1");
             particles_neighbour = &particles_left_;
+            oN2o_mat_ptr = &oL2o_mat_;
         }
     }
     if (auv_id_right_)
@@ -237,10 +240,11 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
         {
             // ROS_INFO("2");
             particles_neighbour = &particles_right_;
+            oN2o_mat_ptr = &oR2o_mat_;
         }
     }
     // ROS_INFO("mid");
-    if (particles_neighbour != nullptr) // Check if particles_neighbour is not nullptr
+    if (particles_neighbour && oN2o_mat_ptr) // Check if particles_neighbour is not nullptr
     {
         // ROS_INFO("3");
 
@@ -251,14 +255,37 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
             for (const RbpfParticle& n_particle_phi : *particles_neighbour) //neighbour particle phi
             {
                 // ROS_INFO("5");
+                Eigen::Vector4f n_point_Nodom;//HOMOGENOUS neighbour point in neighbour odom frame
+                Eigen::Vector3f n_point; //neighbour point in self odom frame
+                Eigen::Vector3f s_point; //self point in self odom frame
+                const float PI = std::acos(-1.0f);
+                n_point_Nodom.head(3) = n_particle_phi.p_pose_.head(3); 
+                n_point_Nodom(3) = 1;
+                //*oN2o_mat_ptr has been checked manually and is correct.
+                n_point = ((*oN2o_mat_ptr) * n_point_Nodom).head(3); 
+                s_point = particle_m.p_pose_.head(3); //CONTINUE HERE
+                float heading = particle_m.p_pose_(5); // in self odom frame
+                float range_hat = (n_point.head(2) - s_point.head(2)).norm();
+                float phi = std::atan2(n_point(1) - s_point(1), n_point(0) - s_point(0)) - PI/2;
+                float angle_hat = -heading - phi - PI/2;
+                ROS_INFO("namespace_ = %s", namespace_.c_str());
+                ROS_INFO("range = %f", range);
+                ROS_INFO("range_hat = %f", range_hat);
+                ROS_INFO("angle = %f", angle);
+                ROS_INFO("angle_hat = %f", angle_hat);
+                ROS_INFO("oN2o_mat_ptr contents:");
 
+                const Eigen::Matrix4f& oN2o_mat = *oN2o_mat_ptr; // Dereference the pointer to get the matrix
+                for (int i = 0; i < 4; ++i) {
+                    ROS_INFO_STREAM(" | " << oN2o_mat(i, 0) << " " << oN2o_mat(i, 1) << " " << oN2o_mat(i, 2) << " " << oN2o_mat(i, 3));
+                }
                 // Use particle_m and particle_phi here
             }
         }
     }
     else
     {
-        ROS_WARN("No neighbour particles available");
+        ROS_WARN("No neighbour particles or transformation matrix available");
     }
     
 
