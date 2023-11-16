@@ -114,6 +114,6 @@ int main(int argc, char** argv){
 //2. init measurement model
     //2a. OK - Determinewhich neighbour is infront of the FLS
     //2b Calculate estimated mesurement (z_hat) for each neighbour particle and for each particle
-    // - Hugin 0 rbpf slam node seems to crash after pressing enter in the terminal. I don't think it has to do with frontal_neighbour_id_ being nullptr anymore. This is smoething that broke, when I was changing that...
+    // - OK - Hugin 0 rbpf slam node seems to crash after pressing enter in the terminal. I don't think it has to do with frontal_neighbour_id_ being nullptr anymore. This is smoething that broke, when I was changing that...
     //2c. Calculate particle wweights (importance factors)
     //2d. Resample particles
