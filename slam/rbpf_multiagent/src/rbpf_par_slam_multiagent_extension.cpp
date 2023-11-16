@@ -124,6 +124,16 @@ void RbpfSlamMultiExtension::wp_counter_cb(const std_msgs::Int32& wp_counter_msg
     wp_counter_ = wp_counter_msg.data;
     ROS_INFO("Updating wp_counter_ to value %d", wp_counter_);
     RbpfSlamMultiExtension::update_frontal_neighbour_id();
+    ROS_INFO("namespace_ = %s", namespace_.c_str());
+    if (frontal_neighbour_id_)
+    {
+        ROS_INFO("frontal_neighbour_id_ = %d", *frontal_neighbour_id_);
+    }
+    else
+    {
+        ROS_INFO("frontal_neighbour_id_ = nullptr");
+    }
+    ROS_INFO("frontal_direction_ = %d", frontal_direction_);
 
 }
 
@@ -137,16 +147,34 @@ void RbpfSlamMultiExtension::update_frontal_neighbour_id()
     }
     if (frontal_direction_ == 1)
     {
-        frontal_neighbour_id_ = new int(*auv_id_right_);
+        if (auv_id_right_)
+        {
+            frontal_neighbour_id_ = new int(*auv_id_right_);
+        }
+        else
+        {
+            // ROS_WARN("No frontal neighbour id available");
+            frontal_neighbour_id_ = nullptr;
+        }
+        // frontal_neighbour_id_ = new int(*auv_id_right_);
     }
     else
     {
-        frontal_neighbour_id_ = new int(*auv_id_left_);
+        if (auv_id_left_)
+        {
+            frontal_neighbour_id_ = new int(*auv_id_left_);
+        }
+        else
+        {
+            // ROS_WARN("No frontal neighbour id available");
+            frontal_neighbour_id_ = nullptr;
+        }
+        // frontal_neighbour_id_ = new int(*auv_id_left_);
     }   
     }
     else if(wp_counter_ % 2 != 0)
     {
-        ROS_INFO("nullptr");
+        // ROS_INFO("nullptr");
         frontal_neighbour_id_ = nullptr;
     }
 
@@ -166,7 +194,7 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         // fls_meas_(1) = fls_reading.angle;
         // fls_meas_(2) = frontal_neighbour_id_;
         // RbpfSlamMultiExtension::update_particles_weights(fls_reading.range, fls_reading.angle, frontal_neighbour_id_);
-        ROS_INFO("namespace_ = %s inside rbpf_update_fls_cb", namespace_.c_str());
+        // ROS_INFO("namespace_ = %s inside rbpf_update_fls_cb", namespace_.c_str());
         if (frontal_neighbour_id_)
         {
         RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
@@ -187,42 +215,42 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
 
 void RbpfSlamMultiExtension::update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id)
 {
-    ROS_INFO("namespace_ = %s", namespace_.c_str());
-    ROS_INFO("Updating particle weights using FLS measurement");
-    ROS_INFO("fls_neighbour_id = %d", *fls_neighbour_id);
+    // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    // ROS_INFO("Updating particle weights using FLS measurement");
+    // ROS_INFO("fls_neighbour_id = %d", *fls_neighbour_id);
 
     const std::vector<RbpfParticle>* particles_neighbour = nullptr;
-    ROS_INFO("0");
+    // ROS_INFO("0");
     if (auv_id_left_)
     {   
-        ROS_INFO("auv_id_left_ = %d", *auv_id_left_);
+        // ROS_INFO("auv_id_left_ = %d", *auv_id_left_);
         if (*fls_neighbour_id == *auv_id_left_)
         {
-            ROS_INFO("1");
+            // ROS_INFO("1");
             particles_neighbour = &particles_left_;
         }
     }
     if (auv_id_right_)
     {
-        ROS_INFO("auv_id_right_ = %d", *auv_id_right_);
+        // ROS_INFO("auv_id_right_ = %d", *auv_id_right_);
         if (*fls_neighbour_id == *auv_id_right_)
         {
-            ROS_INFO("2");
+            // ROS_INFO("2");
             particles_neighbour = &particles_right_;
         }
     }
-    ROS_INFO("mid");
+    // ROS_INFO("mid");
     if (particles_neighbour != nullptr) // Check if particles_neighbour is not nullptr
     {
-        ROS_INFO("3");
+        // ROS_INFO("3");
 
         for (const RbpfParticle& particle_m : particles_) //particle m
         {
-            ROS_INFO("4");
+            // ROS_INFO("4");
 
             for (const RbpfParticle& n_particle_phi : *particles_neighbour) //neighbour particle phi
             {
-                ROS_INFO("5");
+                // ROS_INFO("5");
 
                 // Use particle_m and particle_phi here
             }
