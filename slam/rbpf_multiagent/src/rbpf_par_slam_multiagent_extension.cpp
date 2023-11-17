@@ -69,6 +69,10 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
      // Start timing now
     time_neigh_ = ros::Time::now().toSec();
     old_time_neigh_ = ros::Time::now().toSec();
+
+    nh_->param<string>(("z_hat_viz_top"), z_hat_viz_top_, "/z_hat_marker");
+    z_hat_pub_ = nh_->advertise<visualization_msgs::Marker>(z_hat_viz_top_, 0);
+    
 }   
 
 // TODO: connect to topic with survey area boundaries
@@ -266,20 +270,30 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                 s_point = particle_m.p_pose_.head(3); //CONTINUE HERE
                 float heading = particle_m.p_pose_(5); // in self odom frame
                 float range_hat = (n_point.head(2) - s_point.head(2)).norm();
-                float phi = std::atan2(n_point(1) - s_point(1), n_point(0) - s_point(0)) - PI/2;
-                float angle_hat = -heading - phi - PI/2;
-                ROS_INFO("namespace_ = %s", namespace_.c_str());
-                ROS_INFO("range = %f", range);
-                ROS_INFO("range_hat = %f", range_hat);
-                ROS_INFO("angle = %f", angle);
-                ROS_INFO("angle_hat = %f", angle_hat);
-                ROS_INFO("oN2o_mat_ptr contents:");
+                // float phi = std::atan2(n_point(1) - s_point(1), n_point(0) - s_point(0)) - PI/2;
+                float phi = std::atan2(n_point(1) - s_point(1), n_point(0) - s_point(0));
+                // float angle_hat = (-heading - phi - PI/2);
+                // float angle_hat = fmod((-heading - phi - PI/2), (2 * PI));
+                float angle_hat = phi-heading;
+                
+                // ROS_INFO("namespace_ = %s", namespace_.c_str());
+                // ROS_INFO("range = %f", range);
+                // ROS_INFO("range_hat = %f", range_hat);
+                // ROS_INFO("angle = %f", angle);
+                // ROS_INFO("angle_hat = %f", angle_hat);
+                // ROS_INFO("heading = %f", heading);
+                // ROS_INFO("oN2o_mat_ptr contents:");
 
-                const Eigen::Matrix4f& oN2o_mat = *oN2o_mat_ptr; // Dereference the pointer to get the matrix
-                for (int i = 0; i < 4; ++i) {
-                    ROS_INFO_STREAM(" | " << oN2o_mat(i, 0) << " " << oN2o_mat(i, 1) << " " << oN2o_mat(i, 2) << " " << oN2o_mat(i, 3));
-                }
+                // const Eigen::Matrix4f& oN2o_mat = *oN2o_mat_ptr; // Dereference the pointer to get the matrix
+                // for (int i = 0; i < 4; ++i) {
+                //     ROS_INFO_STREAM(" | " << oN2o_mat(i, 0) << " " << oN2o_mat(i, 1) << " " << oN2o_mat(i, 2) << " " << oN2o_mat(i, 3));
+                // }
+                // ROS_INFO("s_point = %f, %f, %f", s_point(0), s_point(1), s_point(2));
+                // ROS_INFO("n_point = %f, %f, %f", n_point(0), n_point(1), n_point(2));
                 // Use particle_m and particle_phi here
+                
+                RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(s_point, n_point, odom_frame_);
+                
             }
         }
     }
@@ -289,6 +303,42 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
     }
     
 
+}
+
+void RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id)
+{
+   
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::LINE_STRIP;
+    marker.pose.orientation.w = 1.0;
+
+
+    marker.scale.x = 0.5;
+    
+    marker.color.a = 1.0; 
+    marker.color.r = 1.0;
+    marker.color.g = 0.0;
+    marker.color.b = 0.0;
+
+    // markers.markers.push_back(marker);
+
+    geometry_msgs::Point p_s;
+    geometry_msgs::Point p_e;
+    p_s.x = start(0);
+    p_s.y = start(1);
+    p_s.z = start(2);
+    p_e.x = end(0);
+    p_e.y = end(1);
+    p_e.z = end(2);
+    marker.points.push_back(p_s);
+    marker.points.push_back(p_e);
+        
+
+    z_hat_pub_.publish(marker);
 }
 
 
@@ -541,6 +591,8 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
     publisher.publish(markers);
 }
+
+
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {

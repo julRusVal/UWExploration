@@ -66,6 +66,7 @@
 #include <random>
 #include <vector>
 #include <future>
+#include <cmath>
 
 
 using namespace std;
@@ -85,6 +86,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     ros::Subscriber odom_sub_neighbours_;
     ros::Publisher vis_pub_left_;
     ros::Publisher vis_pub_right_;
+    ros::Publisher z_hat_pub_;
     ros::Timer timer_neighbours_rviz_;
     ros::ServiceServer srv_server_multi_;
 
@@ -110,6 +112,8 @@ class RbpfSlamMultiExtension: public RbpfSlam
     void pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher);
     void predict(nav_msgs::Odometry odom_t, float dt, std::vector<RbpfParticle>& particles,std::vector<std::thread>& pred_threads_vec);
     void update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id);
+    void pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id);
+
 
 
     ros::Subscriber sub_fls_meas_;
@@ -117,6 +121,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     // float rbpf_period_;
     string fls_meas_topic;
     string survey_area_topic;
+    string z_hat_viz_top_;
     string namespace_;
     bool inducing_pts_sent;
     bool particle_sets_instantiated_ = false;
