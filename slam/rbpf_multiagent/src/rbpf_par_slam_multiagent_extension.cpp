@@ -630,7 +630,8 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
             {
                 // Added in the MBES CB to synch the DR steps with the pings log
                 nav_msgs::Odometry odom_cp = *odom_msg; // local copy
-                float dt = float(time_ - old_time_);
+                // float dt = float(time_ - old_time_); //HERE LOOK YAMANIAC
+                float dt = float(time_neigh_ - old_time_neigh_);
                 // ROS_INFO("namespace_ = %s", namespace_.c_str());
                 if (auv_id_left_)
                 {
