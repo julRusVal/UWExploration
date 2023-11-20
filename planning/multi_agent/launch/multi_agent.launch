@@ -26,7 +26,7 @@
     <arg name="node_name_navigation" default="auv_navigation_node"/>
     <!-- max_thrust = 4 gives a turning radius of approx 2.5 m -->
     <arg name="max_thrust" default="3.0"/> 
-    <arg name="max_throttle" default="10.0"/>
+    <arg name="max_throttle" default="2.0"/>
     <!-- Acceptable types below: 'simple', 'simple_maxturn' -->
     <arg name="waypoint_follower_type" default="simple_maxturn"/>
     <arg name="dubins_turning_radius" default="3"/>
@@ -60,7 +60,7 @@
     <arg name="swath" default="20"/>
     <arg name="speed" default="$(arg max_throttle)"/>
     <arg name="straight_slack" default="0.0"/>
-    <arg name="overlap_between_rows" default="0.0"/>
+    <arg name="overlap_between_rows" default="-10.0"/>
     <arg name="overlap_between_lanes" default="0.0"/>
     <arg name="double_sided" default="false"/>
     <arg name="center_x" default="false"/>
