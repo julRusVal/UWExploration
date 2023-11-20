@@ -1,6 +1,5 @@
 #include <rbpf_multiagent/rbpf_par_slam_multiagent_extension.hpp>
 
-
 RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHandle &nh_mb, string &base_link_custom_): RbpfSlam(nh, nh_mb){
     ROS_INFO("Inside RbpfSlamMultiExtension constructor");
     path_sub_.shutdown(); //shutdown the path subscriber to allow the survey area define the first inducing points.
@@ -225,7 +224,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
 
     const std::vector<RbpfParticle>* particles_neighbour = nullptr;
     const Eigen::Matrix4f* oN2o_mat_ptr = nullptr; //Transformation matrix odom neighbour to odom self
-
+    string neighbour_location;
     // ROS_INFO("0");
     if (auv_id_left_)
     {   
@@ -235,6 +234,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
             // ROS_INFO("1");
             particles_neighbour = &particles_left_;
             oN2o_mat_ptr = &oL2o_mat_;
+            neighbour_location = "left";
         }
     }
     if (auv_id_right_)
@@ -245,6 +245,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
             // ROS_INFO("2");
             particles_neighbour = &particles_right_;
             oN2o_mat_ptr = &oR2o_mat_;
+            neighbour_location = "right";
         }
     }
     // ROS_INFO("mid");
@@ -286,7 +287,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                 {
                     angle_hat = angle_hat_alt;
                 }
-                //TODO(Koray): Include transformation to/from fls_frame. Right now real mesaurement is from fls_frame, while hat is from base_link. This is okay now sincethey're fused. To futureproof, this should be fixed (in case fls_frame is move from bein identical to base_link)
+                RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(s_point, n_point, odom_frame_);
                 // ROS_INFO("namespace_ = %s", namespace_.c_str());
                 // ROS_INFO("range = %f", range);
                 // ROS_INFO("range_hat = %f", range_hat);
@@ -301,9 +302,17 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                 // }
                 // ROS_INFO("s_point = %f, %f, %f", s_point(0), s_point(1), s_point(2));
                 // ROS_INFO("n_point = %f, %f, %f", n_point(0), n_point(1), n_point(2));
+
+                //TODO(Koray): Include transformation to/from fls_frame. Right now real mesaurement is from fls_frame, while hat is from base_link. This is okay now sincethey're fused. To futureproof, this should be fixed (in case fls_frame is move from bein identical to base_link)
+                
+                w = Weight();
+                w.self_index = particle_m.index_;
+                w.neighbour_index = n_particle_phi.index_;
+                w.neighbour_location = neighbour_location;
+                w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle), Eigen::Vector2f(range_hat, angle_hat));
+                
                 // Use particle_m and particle_phi here
                 
-                RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(s_point, n_point, odom_frame_);
                 
             }
         }
@@ -315,6 +324,14 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
     
 
 }
+
+double RbpfSlamMultiExtension::compute_weight(const Eigen::Vector2f z, const Eigen::Vector2f z_hat)
+{
+    //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.CONTINUE HERE. 
+    //Determine the covariance matrices gp_var and fls_sigma. 
+
+}
+
 
 void RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id)
 {

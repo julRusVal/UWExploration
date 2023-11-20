@@ -3,6 +3,7 @@
 
 // #include "rbpf_slam/rbpf_particle.h"
 #include "rbpf_slam/rbpf_par_slam.h"
+#include "weight.hpp"
 
 // Standard dependencies
 #include <fstream>
@@ -103,6 +104,8 @@ class RbpfSlamMultiExtension: public RbpfSlam
     void odom_callback(const nav_msgs::OdometryConstPtr& odom_msg);
 
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+    double compute_weight(const Eigen::Vector2f z, const Eigen::Vector2f z_hat)
+
 
     void setup_neighbours();
     void update_frontal_neighbour_id();
