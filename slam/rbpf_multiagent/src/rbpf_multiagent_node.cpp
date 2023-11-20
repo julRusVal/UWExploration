@@ -116,6 +116,6 @@ int main(int argc, char** argv){
     //2b Calculate estimated mesurement (z_hat) for each neighbour particle and for each particle
     // - OK - Hugin 0 rbpf slam node seems to crash after pressing enter in the terminal. I don't think it has to do with frontal_neighbour_id_ being nullptr anymore. This is smoething that broke, when I was changing that...
     // - OK Right now, range_hat and angle_hat are not correct. The transformation matrix *oN2o_mat_ptr is correct, checked manually. See CONTINUE HERE in ...extension.cpp.
-    // - Always get the "smallest" direction, so if -350 deg should instead be +10 deg
+    // - OK Always get the "smallest" direction, so if -350 deg should instead be +10 deg
     //2c. Calculate particle wweights (importance factors)
     //2d. Resample particles
