@@ -275,7 +275,18 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                 // float angle_hat = (-heading - phi - PI/2);
                 // float angle_hat = fmod((-heading - phi - PI/2), (2 * PI));
                 float angle_hat = phi-heading;
-                
+                int sgn = (angle_hat > 0) - (angle_hat < 0);
+                // ROS_INFO("namespace_ = %s", namespace_.c_str());
+
+                // ROS_INFO("sgn = %d", sgn);
+                // ROS_INFO("angle_hat = %f", angle_hat);
+                float angle_hat_alt = -sgn*(2*PI-sgn*angle_hat);
+                //set angle_hat as the one of the smallest absolute value
+                if (std::abs(angle_hat) > std::abs(angle_hat_alt))
+                {
+                    angle_hat = angle_hat_alt;
+                }
+                //TODO(Koray): Include transformation to/from fls_frame. Right now real mesaurement is from fls_frame, while hat is from base_link. This is okay now sincethey're fused. To futureproof, this should be fixed (in case fls_frame is move from bein identical to base_link)
                 // ROS_INFO("namespace_ = %s", namespace_.c_str());
                 // ROS_INFO("range = %f", range);
                 // ROS_INFO("range_hat = %f", range_hat);
