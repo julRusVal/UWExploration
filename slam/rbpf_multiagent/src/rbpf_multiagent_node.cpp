@@ -119,6 +119,7 @@ int main(int argc, char** argv){
     // - OK Always get the "smallest" direction, so if -350 deg should instead be +10 deg
     //2c. Calculate particle wweights (importance factors)
     //   - Determine the covariance matrix (gp_var and fls_sigma), combine them to a SIGMA matrix
-    //   - caluclate the log likelihood, then return the likelihood by exp. 
-    //   - store each instance of Weight (weight for each pair)
-    //2d. Resample particles
+    //   - OK caluclate the log likelihood, then return the likelihood by exp. 
+    //   - CONTINUE HERE store each instance of Weight (weight for each pair)
+    //   - double check calculation of likelihood, according to me it's should be different
+    //2d. THEN CONTINUE HERE Resample particles

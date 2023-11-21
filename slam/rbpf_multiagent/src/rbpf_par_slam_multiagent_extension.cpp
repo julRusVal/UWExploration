@@ -83,7 +83,7 @@ void RbpfSlamMultiExtension::survey_area_cb(const visualization_msgs::MarkerArra
         inducing_pts_sent = true;
         ROS_INFO("Inside survey_area_cb");
         
-        if (marker_array.markers[0].points.size() > 0) //NOTE NACHO: Okay with dot and not ->?? 
+        if (marker_array.markers[0].points.size() > 0) 
         {
             // // This service will start the auv simulation or auv_2_ros nodes to start the mission
             // nh_->param<string>(("synch_topic"), synch_top_, "/pf_synch");
@@ -268,7 +268,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                 n_point_Nodom(3) = 1;
                 //*oN2o_mat_ptr has been checked manually and is correct.
                 n_point = ((*oN2o_mat_ptr) * n_point_Nodom).head(3); 
-                s_point = particle_m.p_pose_.head(3); //CONTINUE HERE
+                s_point = particle_m.p_pose_.head(3); 
                 float heading = particle_m.p_pose_(5); // in self odom frame
                 float range_hat = (n_point.head(2) - s_point.head(2)).norm();
                 // float phi = std::atan2(n_point(1) - s_point(1), n_point(0) - s_point(0)) - PI/2;
@@ -331,7 +331,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
 
 double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat)
 {
-    //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.CONTINUE HERE. 
+    //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.
     //Determine the covariance matrices gp_var and fls_sigma. 
     double n = double(z.cols());
 
@@ -691,7 +691,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // Eigen::VectorXf noise_vec(6, 1);
     // ROS_INFO("frame_id = %s", odom_t.header.frame_id.c_str());
     // ROS_INFO("auv_id_ = %d", *auv_id_);
-    // Angular vel #CONTINUE HERE: The auvs don't all start looking forward. Find a way to determine how the own odometry should decide the odometry of the neightbour. Look into map frame? 
+    
 
     Eigen::Vector3f vel_rot = Eigen::Vector3f(odom_t.twist.twist.angular.x,
                                               odom_t.twist.twist.angular.y,
@@ -708,7 +708,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // ROS_INFO("vel_rot = %f, %f, %f", vel_rot(0), vel_rot(1), vel_rot(2));
     // ROS_INFO("vel_p = %f, %f, %f", vel_p(0), vel_p(1), vel_p(2));
     for(int i = 0; i < pcn_; i++)
-    { //CONTINUE HERE: before was &particles.at(i). Builds well, but throws error when running. 
+    {
         // ROS_INFO("dt = %f", dt);
         // ROS_INFO("BEFORE pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
         pred_threads_vec.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
