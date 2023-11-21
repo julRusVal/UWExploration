@@ -114,7 +114,9 @@ class RbpfSlamMultiExtension: public RbpfSlam
     geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
     void pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher);
     void predict(nav_msgs::Odometry odom_t, float dt, std::vector<RbpfParticle>& particles,std::vector<std::thread>& pred_threads_vec);
-    void update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id);
+    std::vector<Weight> update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id);
+    void resample(const std::vector<Weight> &weights);
+    void regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights);
     void pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id);
 
 

@@ -200,7 +200,8 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         // ROS_INFO("namespace_ = %s inside rbpf_update_fls_cb", namespace_.c_str());
         if (frontal_neighbour_id_)
         {
-        RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
+        std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
+        RbpfSlamMultiExtension::resample(weights);
         }
         else
         {
@@ -216,11 +217,12 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
 
 }
 
-void RbpfSlamMultiExtension::update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id)
+std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id)
 {
     // ROS_INFO("namespace_ = %s", namespace_.c_str());
     // ROS_INFO("Updating particle weights using FLS measurement");
     // ROS_INFO("fls_neighbour_id = %d", *fls_neighbour_id);
+    std::vector<Weight> weights;
 
     const std::vector<RbpfParticle>* particles_neighbour = nullptr;
     const Eigen::Matrix4f* oN2o_mat_ptr = nullptr; //Transformation matrix odom neighbour to odom self
@@ -252,7 +254,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
     if (particles_neighbour && oN2o_mat_ptr) // Check if particles_neighbour is not nullptr
     {
         // ROS_INFO("3");
-
+        // std::vector<Weight> weights;
         for (const RbpfParticle& particle_m : particles_) //particle m
         {
             // ROS_INFO("4");
@@ -309,11 +311,12 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                 w.neighbour_index = n_particle_phi.index_;
                 w.neighbour_location = neighbour_location;
                 w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle).cast<double>(), Eigen::Vector2f(range_hat, angle_hat).cast<double>());
+                weights.push_back(w);
                 //print the weight in the terminal
-                ROS_INFO("w.value = %f", w.value);
-                ROS_INFO("w.self_index = %d", w.self_index);
-                ROS_INFO("w.neighbour_index = %d", w.neighbour_index);
-                ROS_INFO("w.neighbour_location = %s", w.neighbour_location.c_str());
+                // ROS_INFO("w.value = %f", w.value);
+                // ROS_INFO("w.self_index = %d", w.self_index);
+                // ROS_INFO("w.neighbour_index = %d", w.neighbour_index);
+                // ROS_INFO("w.neighbour_location = %s", w.neighbour_location.c_str());
 
                 // Use particle_m and particle_phi here
                 
@@ -326,7 +329,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
         ROS_WARN("No neighbour particles or transformation matrix available");
     }
     
-
+    return weights;
 }
 
 double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat)
@@ -349,6 +352,104 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     // return 0;
 }
 
+void RbpfSlamMultiExtension::resample(const std::vector<Weight> &weights)
+{
+    //Normalize weights
+    double sum = 0;
+    for (const Weight& w : weights)
+    {
+        sum += w.value;
+    }
+
+    if (sum == 0)
+    {
+        ROS_WARN("Sum of weights is zero");
+        return;
+    }
+
+    for (Weight& w : weights)
+    {
+        w.value = w.value / sum;
+    }
+
+    //Resample
+    int N = weights.size();
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dis(0, 1);
+    double rand_n = dis(gen);
+
+    vector<int> range = RbpfSlam::arange(0, N, 1);
+    vector<double> positions(N); //vector of 0.0 (double) of size N
+    vector<int> indexes(N, 0); //vector of 0 (int) of size N
+    vector<double> cum_sum(N); //vector of 0.0 (double) of size N
+
+    // make N subdivisions, and choose positions with a consistent random offset
+    for(int i = 0; i < N; i++)
+        positions[i] = (range[i] + rand_n) / double(N);
+
+    partial_sum(weights.begin(), weights.end(), cum_sum.begin()); //cumulative sum of weights starting from beginning to end, storing results in cum_sum - starting at beginning of cum_sum
+
+    int i = 0;
+    int j = 0;
+
+    while(i < N)
+    {
+        if(positions[i] < cum_sum[j])
+        {
+            indexes[i] = j;
+            i++;
+        }
+        else
+            j++;
+    }
+    // return indexes;
+    RbpfSlamMultiExtension::regenerate_particle_sets(indexes, weights);
+}
+
+void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights)
+{
+    std::vector<RbpfParticle> particles_self_new;
+    std::vector<RbpfParticle> particles_neighbour_new;
+
+    std::vector<RbpfParticle>* particles_neighbour_ptr = nullptr;
+
+    if (weights[0].neighbour_location == "left") {
+        particles_neighbour_ptr = &particles_left_;
+    } else if (weights[0].neighbour_location == "right") {
+        particles_neighbour_ptr = &particles_right_;
+    } else {
+        ROS_WARN("No neighbour location available");
+    }
+
+    
+
+    for (const int& i : indexes)
+    {
+        const Weight w = weights[i];
+        particles_self_new.emplace_back(particles_[w.self_index]);
+        particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[w.neighbour_index]);
+        //TODO check if indexes are within size of particles_ and neighbour particles. Raise error if not.
+        // Also check if indexes array is non empty, otherwise raise error. 
+        // if (w.neighbour_location == "left")
+        // {
+        //     particles_neighbour_new.emplace_back(particles_left_[w.neighbour_index]);
+        // }
+        // else if (w.neighbour_location == "right")
+        // {
+        //     particles_neighbour_new.emplace_back(particles_right_[w.neighbour_index]);
+        // }
+        // else
+        // {
+        //     ROS_WARN("No neighbour location available");
+        // }
+    }
+
+    particles_ = particles_self_new;
+    if (particles_neighbour_ptr != nullptr) {
+        *particles_neighbour_ptr = particles_neighbour_new;
+    }
+}
 
 void RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id)
 {
