@@ -288,7 +288,7 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                     angle_hat = angle_hat_alt;
                 }
                 RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(s_point, n_point, odom_frame_);
-                // ROS_INFO("namespace_ = %s", namespace_.c_str());
+                ROS_INFO("namespace_ = %s", namespace_.c_str());
                 // ROS_INFO("range = %f", range);
                 // ROS_INFO("range_hat = %f", range_hat);
                 // ROS_INFO("angle = %f", angle);
@@ -304,13 +304,17 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
                 // ROS_INFO("n_point = %f, %f, %f", n_point(0), n_point(1), n_point(2));
 
                 //TODO(Koray): Include transformation to/from fls_frame. Right now real mesaurement is from fls_frame, while hat is from base_link. This is okay now sincethey're fused. To futureproof, this should be fixed (in case fls_frame is move from bein identical to base_link)
-                
-                w = Weight();
+                Weight w;
                 w.self_index = particle_m.index_;
                 w.neighbour_index = n_particle_phi.index_;
                 w.neighbour_location = neighbour_location;
-                w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle), Eigen::Vector2f(range_hat, angle_hat));
-                
+                w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle).cast<double>(), Eigen::Vector2f(range_hat, angle_hat).cast<double>());
+                //print the weight in the terminal
+                ROS_INFO("w.value = %f", w.value);
+                ROS_INFO("w.self_index = %d", w.self_index);
+                ROS_INFO("w.neighbour_index = %d", w.neighbour_index);
+                ROS_INFO("w.neighbour_location = %s", w.neighbour_location.c_str());
+
                 // Use particle_m and particle_phi here
                 
                 
@@ -325,11 +329,24 @@ void RbpfSlamMultiExtension::update_particles_weights(const float &range, const 
 
 }
 
-double RbpfSlamMultiExtension::compute_weight(const Eigen::Vector2f z, const Eigen::Vector2f z_hat)
+double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat)
 {
     //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.CONTINUE HERE. 
     //Determine the covariance matrices gp_var and fls_sigma. 
+    double n = double(z.cols());
 
+    // Eigen::VectorXd var_diag = gp_var.array() + std::pow(mbes_sigma, 2);
+    //Vector of ones
+    Eigen::VectorXd var_diag = Eigen::Vector2d(1,1);
+    Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
+    Eigen::MatrixXd var_mat = var_diag.asDiagonal();
+    Eigen::VectorXd diff = (z - z_hat).array().transpose() * var_inv.array() * 
+                            (z - z_hat).array();
+    double logl = -(n / 2.) * std::log(var_mat.determinant()) 
+                  -(1 / 2.0) * diff.array().sum();
+
+    return exp(logl);
+    // return 0;
 }
 
 
