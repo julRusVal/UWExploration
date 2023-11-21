@@ -120,6 +120,8 @@ int main(int argc, char** argv){
     //2c. Calculate particle wweights (importance factors)
     //   - Determine the covariance matrix (gp_var and fls_sigma), combine them to a SIGMA matrix
     //   - OK caluclate the log likelihood, then return the likelihood by exp. 
-    //   - CONTINUE HERE store each instance of Weight (weight for each pair)
+    //   - OK store each instance of Weight (weight for each pair)
     //   - double check calculation of likelihood, according to me it's should be different
-    //2d. THEN CONTINUE HERE Resample particles
+    //2d.  Resample particles
+    //   - Make the code compile
+    //   - see TODO, handle exceptions (se CONTINUE HERE in ...extension.cpp)

@@ -429,7 +429,7 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         const Weight w = weights[i];
         particles_self_new.emplace_back(particles_[w.self_index]);
         particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[w.neighbour_index]);
-        //TODO check if indexes are within size of particles_ and neighbour particles. Raise error if not.
+        //TODO check if indexes are within size of particles_ and neighbour particles. Raise error if not. CONTINUE HERE
         // Also check if indexes array is non empty, otherwise raise error. 
         // if (w.neighbour_location == "left")
         // {
