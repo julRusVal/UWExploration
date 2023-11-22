@@ -127,7 +127,7 @@ void RbpfSlamMultiExtension::wp_counter_cb(const std_msgs::Int32& wp_counter_msg
     wp_counter_ = wp_counter_msg.data;
     ROS_INFO("Updating wp_counter_ to value %d", wp_counter_);
     RbpfSlamMultiExtension::update_frontal_neighbour_id();
-    ROS_INFO("namespace_ = %s", namespace_.c_str());
+    // ROS_INFO("namespace_ = %s", namespace_.c_str());
     if (frontal_neighbour_id_)
     {
         ROS_INFO("frontal_neighbour_id_ = %d", *frontal_neighbour_id_);
@@ -290,7 +290,7 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
                     angle_hat = angle_hat_alt;
                 }
                 RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(s_point, n_point, odom_frame_);
-                ROS_INFO("namespace_ = %s", namespace_.c_str());
+                // ROS_INFO("namespace_ = %s", namespace_.c_str());
                 // ROS_INFO("range = %f", range);
                 // ROS_INFO("range_hat = %f", range_hat);
                 // ROS_INFO("angle = %f", angle);
@@ -352,10 +352,11 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     // return 0;
 }
 
-void RbpfSlamMultiExtension::resample(const std::vector<Weight> &weights)
+void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 {
-    //Normalize weights
+    // //Normalize weights
     double sum = 0;
+    std::vector<double> weights_values;
     for (const Weight& w : weights)
     {
         sum += w.value;
@@ -370,6 +371,7 @@ void RbpfSlamMultiExtension::resample(const std::vector<Weight> &weights)
     for (Weight& w : weights)
     {
         w.value = w.value / sum;
+        weights_values.push_back(w.value);
     }
 
     //Resample
@@ -388,7 +390,7 @@ void RbpfSlamMultiExtension::resample(const std::vector<Weight> &weights)
     for(int i = 0; i < N; i++)
         positions[i] = (range[i] + rand_n) / double(N);
 
-    partial_sum(weights.begin(), weights.end(), cum_sum.begin()); //cumulative sum of weights starting from beginning to end, storing results in cum_sum - starting at beginning of cum_sum
+    partial_sum(weights_values.begin(), weights_values.end(), cum_sum.begin()); //cumulative sum of weights starting from beginning to end, storing results in cum_sum - starting at beginning of cum_sum
 
     int i = 0;
     int j = 0;
@@ -414,6 +416,12 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
 
     std::vector<RbpfParticle>* particles_neighbour_ptr = nullptr;
 
+    if (indexes.size() == 0)
+    {
+        ROS_WARN("Indexes array for resampling is empty");
+        return;
+    }
+
     if (weights[0].neighbour_location == "left") {
         particles_neighbour_ptr = &particles_left_;
     } else if (weights[0].neighbour_location == "right") {
@@ -427,10 +435,15 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     for (const int& i : indexes)
     {
         const Weight w = weights[i];
-        particles_self_new.emplace_back(particles_[w.self_index]);
-        particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[w.neighbour_index]);
-        //TODO check if indexes are within size of particles_ and neighbour particles. Raise error if not. CONTINUE HERE
-        // Also check if indexes array is non empty, otherwise raise error. 
+        const int i_self = w.self_index;
+        const int i_neighbour = w.neighbour_index;
+        if (i_self >= particles_.size() || i_neighbour >= particles_neighbour_ptr->size()) {
+            ROS_WARN("Index out of bounds");
+            continue;
+        }
+        particles_self_new.emplace_back(particles_[i_self]);
+        particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
+        
         // if (w.neighbour_location == "left")
         // {
         //     particles_neighbour_new.emplace_back(particles_left_[w.neighbour_index]);
@@ -448,6 +461,12 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     particles_ = particles_self_new;
     if (particles_neighbour_ptr != nullptr) {
         *particles_neighbour_ptr = particles_neighbour_new;
+    }
+    ROS_INFO("Particles resampled!");
+
+    if (particles_.size() != pc_ || particles_left_.size() != pcn_ || particles_right_.size() != pcn_) //CONINUE HERE, the code crashes after a few times of this.
+    {
+        ROS_WARN("Resampling failed, too many or too few particles regenerated!");
     }
 }
 

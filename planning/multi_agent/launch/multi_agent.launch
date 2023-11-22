@@ -26,7 +26,7 @@
     <arg name="node_name_navigation" default="auv_navigation_node"/>
     <!-- max_thrust = 4 gives a turning radius of approx 2.5 m -->
     <arg name="max_thrust" default="3.0"/> 
-    <arg name="max_throttle" default="2.0"/>
+    <arg name="max_throttle" default="6.0"/>
     <!-- Acceptable types below: 'simple', 'simple_maxturn' -->
     <arg name="waypoint_follower_type" default="simple_maxturn"/>
     <arg name="dubins_turning_radius" default="3"/>
