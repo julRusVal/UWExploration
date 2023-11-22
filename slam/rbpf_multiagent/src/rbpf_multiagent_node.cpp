@@ -108,20 +108,15 @@ int main(int argc, char** argv){
 }
 
 //TODO: 
-//1. Finish prediction of neighbour particles, 
-// 1a. OK - MAke the neighbour particles move based on own odometry
-// 1b. OK - Make the neighbour particles move in the right direction, see continue here in rbpf_par_slam_multiagent_extension.cpp
-//2. init measurement model
-    //2a. OK - Determinewhich neighbour is infront of the FLS
-    //2b Calculate estimated mesurement (z_hat) for each neighbour particle and for each particle
-    // - OK - Hugin 0 rbpf slam node seems to crash after pressing enter in the terminal. I don't think it has to do with frontal_neighbour_id_ being nullptr anymore. This is smoething that broke, when I was changing that...
-    // - OK Right now, range_hat and angle_hat are not correct. The transformation matrix *oN2o_mat_ptr is correct, checked manually. See CONTINUE HERE in ...extension.cpp.
-    // - OK Always get the "smallest" direction, so if -350 deg should instead be +10 deg
-    //2c. Calculate particle wweights (importance factors)
-    //   - Determine the covariance matrix (gp_var and fls_sigma), combine them to a SIGMA matrix
-    //   - OK caluclate the log likelihood, then return the likelihood by exp. 
-    //   - OK store each instance of Weight (weight for each pair)
-    //   - double check calculation of likelihood, according to me it's should be different
-    //2d.  Resample particles
-    //   - Make the code compile
-    //   - see TODO, handle exceptions (se CONTINUE HERE in ...extension.cpp)
+//1. Calculate particle weights (importance factors)
+//   - Determine the covariance matrix (gp_var and fls_sigma), combine them to a SIGMA matrix
+//   - OK caluclate the log likelihood, then return the likelihood by exp. 
+//   - OK store each instance of Weight (weight for each pair)
+//   - double check calculation of likelihood, according to me it's should be different
+//2.  Resample particles
+//   - OK Make the code compile
+//   - OK see TODO, handle exceptions 
+//   - Handle crashing code (see CONTINUE HERE in ...extension.cpp)
+//   - Handle too many particles being regenerated. > pc_ or >pcn_
+// 3. Add noise in FLS measurememt
+// 4. Add plots
