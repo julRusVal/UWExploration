@@ -200,8 +200,14 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         // ROS_INFO("namespace_ = %s inside rbpf_update_fls_cb", namespace_.c_str());
         if (frontal_neighbour_id_)
         {
+        // log current time
+        auto start = std::chrono::high_resolution_clock::now();
         std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
         RbpfSlamMultiExtension::resample(weights);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end - start;
+        // ROS_INFO("Time for resampling: %d", duration.count());
+        std::cout << "Duration of resampling step: " << duration.count() << " seconds" << std::endl;
         }
         else
         {
@@ -337,7 +343,7 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.
     //Determine the covariance matrices gp_var and fls_sigma. 
     double n = double(z.cols());
-
+    double PI = std::acos(-1.0);
     // Eigen::VectorXd var_diag = gp_var.array() + std::pow(mbes_sigma, 2);
     //Vector of ones
     Eigen::VectorXd var_diag = Eigen::Vector2d(1,1);
@@ -345,7 +351,7 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     Eigen::MatrixXd var_mat = var_diag.asDiagonal();
     Eigen::VectorXd diff = (z - z_hat).array().transpose() * var_inv.array() * 
                             (z - z_hat).array();
-    double logl = -(n / 2.) * std::log(var_mat.determinant()) 
+    double logl = -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))) 
                   -(1 / 2.0) * diff.array().sum();
 
     return exp(logl);
@@ -883,12 +889,12 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {
-    ROS_INFO("namespace_ = %s", namespace_.c_str());
-    ROS_INFO("particles_.size() = %zu", particles_.size());
-    ROS_INFO("particles_left_.size() = %zu", particles_left_.size());
-    ROS_INFO("particles_right_.size() = %zu", particles_right_.size());
-    ROS_INFO("pc_ = %d", pc_);
-    ROS_INFO("pcn_ = %d", pcn_);
+    // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    // ROS_INFO("particles_.size() = %zu", particles_.size());
+    // ROS_INFO("particles_left_.size() = %zu", particles_left_.size());
+    // ROS_INFO("particles_right_.size() = %zu", particles_right_.size());
+    // ROS_INFO("pc_ = %d", pc_);
+    // ROS_INFO("pcn_ = %d", pcn_);
     // ROS_INFO("namespace_ = %s", namespace_.c_str());
     // if (frontal_neighbour_id_)
     // {
