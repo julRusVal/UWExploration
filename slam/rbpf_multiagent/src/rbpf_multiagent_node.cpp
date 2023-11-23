@@ -116,7 +116,8 @@ int main(int argc, char** argv){
 //2.  Resample particles
 //   - OK Make the code compile
 //   - OK see TODO, handle exceptions 
-//   - Handle crashing code (see CONTINUE HERE in ...extension.cpp)
-//   - Handle too many particles being regenerated. > pc_ or >pcn_
+//   - OK Handle crashing code (see CONTINUE HERE in ...extension.cpp)
+//   - OK Handle too many particles being regenerated. > pc_ or >pcn_
 // 3. Add noise in FLS measurememt
 // 4. Add plots
+// 5. Add external estimated measurements
