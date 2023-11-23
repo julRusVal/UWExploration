@@ -112,7 +112,7 @@ int main(int argc, char** argv){
 //   - Determine the covariance matrix (gp_var and fls_sigma), combine them to a SIGMA matrix
 //   - OK caluclate the log likelihood, then return the likelihood by exp. 
 //   - OK store each instance of Weight (weight for each pair)
-//   - double check calculation of likelihood, according to me it's should be different
+//   - OK double check calculation of likelihood, according to me it's should be different
 //2.  Resample particles
 //   - OK Make the code compile
 //   - OK see TODO, handle exceptions 
@@ -121,3 +121,12 @@ int main(int argc, char** argv){
 // 3. Add noise in FLS measurememt
 // 4. Add plots
 // 5. Add external estimated measurements
+
+// FOR OI:
+// 1. No spinning
+// 2. Convergence particles, find bug
+// 3. Normalized pt clouds all auvs
+// 4. FLS BEAMS only 4
+// 3. Lower priority: Cool plots
+// AFTER OI:
+// - Eternal estimated measurement, comms
