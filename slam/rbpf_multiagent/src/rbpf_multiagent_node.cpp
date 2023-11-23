@@ -118,15 +118,18 @@ int main(int argc, char** argv){
 //   - OK see TODO, handle exceptions 
 //   - OK Handle crashing code (see CONTINUE HERE in ...extension.cpp)
 //   - OK Handle too many particles being regenerated. > pc_ or >pcn_
+//   - Implement the effective (N_eff) value of the weights determining when to resample and when not to resample
+
 // 3. Add noise in FLS measurememt
 // 4. Add plots
 // 5. Add external estimated measurements
 
 // FOR OI:
 // 1. OK No spinning
-// 2. Convergence particles, find bug
+// 2. COTINUE HERE Convergence particles, find bug. It happens in the resampling of the self and neighbour particles. Ony prediction keeps the self particles dead on teh GT- 
 // 3. Normalized pt clouds all auvs
 // 4. OK FLS BEAMS only 4
+// 5. Fixblue rectangle for survey area
 // 3. Lower priority: Cool plots
 // AFTER OI:
 // - External estimated measurement, comms
