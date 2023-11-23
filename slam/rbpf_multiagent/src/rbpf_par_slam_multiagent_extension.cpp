@@ -416,6 +416,9 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
 
     std::vector<RbpfParticle>* particles_neighbour_ptr = nullptr;
 
+    std::vector<int> particle_votes(pc_,0); //a vector of size pc_ filled with zeros
+    std::vector<int> particle_votes_neighbour(pcn_,0);
+
     if (indexes.size() == 0)
     {
         ROS_WARN("Indexes array for resampling is empty");
@@ -441,9 +444,10 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
             ROS_WARN("Index out of bounds");
             continue;
         }
-        particles_self_new.emplace_back(particles_[i_self]);
-        particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
-        
+        // particles_self_new.emplace_back(particles_[i_self]);
+        // particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
+        particle_votes[i_self] += 1;
+        particle_votes_neighbour[i_neighbour] += 1;
         // if (w.neighbour_location == "left")
         // {
         //     particles_neighbour_new.emplace_back(particles_left_[w.neighbour_index]);
@@ -458,6 +462,34 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         // }
     }
 
+    //normalize votes
+    // int self_sum = std::accumulate(particle_votes.begin(), particle_votes.end(), 0);
+    // int neighbour_sum = std::accumulate(particle_votes_neighbour.begin(), particle_votes_neighbour.end(), 0);
+    // if (self_sum != 0 && neighbour_sum != 0)
+    // {
+    //     transform(particle_votes.begin(), particle_votes.end(), particle_votes.begin(), [&self_sum](int& c){return c/self_sum;});
+    //     transform(particle_votes_neighbour.begin(), particle_votes_neighbour.end(), particle_votes_neighbour.begin(), [&neighbour_sum](int& c){return c/neighbour_sum;});
+    // }
+    // else
+    // {
+    //     ROS_WARN("Sum of votes is zero");
+    //     return;
+    // }
+    std::vector<int> particle_indexes_self = RbpfSlamMultiExtension::resample_particle_votes(particle_votes);
+    std::vector<int> particle_indexes_neighbour = RbpfSlamMultiExtension::resample_particle_votes(particle_votes_neighbour);
+
+    for (const int& i : particle_indexes_self)
+    {
+        particles_self_new.emplace_back(particles_[i]);
+    }
+
+    for (const int& i : particle_indexes_neighbour)
+    {
+        particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i]);
+    }
+    
+
+
     particles_ = particles_self_new;
     if (particles_neighbour_ptr != nullptr) {
         *particles_neighbour_ptr = particles_neighbour_new;
@@ -468,6 +500,58 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     {
         ROS_WARN("Resampling failed, too many or too few particles regenerated!");
     }
+}
+
+std::vector<int> RbpfSlamMultiExtension::resample_particle_votes(std::vector<int> votes)
+{
+    //CONTINUE HERE - code crashes here somewhere
+    int N = votes.size(); 
+    // std::vector<int> indexes(N,0);
+    std::vector<double> votes_normalized(N);
+    //Normalize votes
+    int sum = std::accumulate(votes.begin(), votes.end(), 0);
+    if (sum != 0)
+    {
+        transform(votes.begin(), votes.end(), votes_normalized.begin(), [&sum](int& c){return c/sum;});
+    }
+    else
+    {
+        ROS_WARN("Sum of votes is zero");
+        return std::vector<int>(); //return empty vector
+    }
+
+    // int N = votes.size(); 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dis(0, 1);
+    double rand_n = dis(gen);
+
+    vector<int> range = RbpfSlam::arange(0, N, 1);
+    vector<double> positions(N); //vector of 0.0 (double) of size N
+    vector<int> indexes(N, 0); //vector of 0 (int) of size N
+    vector<double> cum_sum(N); //vector of 0.0 (double) of size N
+
+    // make N subdivisions, and choose positions with a consistent random offset
+    for(int i = 0; i < N; i++)
+        positions[i] = (range[i] + rand_n) / double(N);
+
+    partial_sum(votes_normalized.begin(), votes_normalized.end(), cum_sum.begin()); //cumulative sum of weights starting from beginning to end, storing results in cum_sum - starting at beginning of cum_sum
+
+    int i = 0;
+    int j = 0;
+
+    while(i < N)
+    {
+        if(positions[i] < cum_sum[j])
+        {
+            indexes[i] = j;
+            i++;
+        }
+        else
+            j++;
+    }
+
+    return indexes;
 }
 
 void RbpfSlamMultiExtension::pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id)
@@ -761,6 +845,12 @@ void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_m
 
 void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odom_msg)
 {
+    ROS_INFO("namespace_ = %s", namespace_.c_str());
+    ROS_INFO("particles_.size() = %zu", particles_.size());
+    ROS_INFO("particles_left_.size() = %zu", particles_left_.size());
+    ROS_INFO("particles_right_.size() = %zu", particles_right_.size());
+    ROS_INFO("pc_ = %d", pc_);
+    ROS_INFO("pcn_ = %d", pcn_);
     // ROS_INFO("namespace_ = %s", namespace_.c_str());
     // if (frontal_neighbour_id_)
     // {

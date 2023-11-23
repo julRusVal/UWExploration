@@ -117,6 +117,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     std::vector<Weight> update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id);
     void resample(std::vector<Weight> &weights);
     void regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights);
+    std::vector<int> resample_particle_votes(std::vector<int> votes);
     void pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id);
 
 
