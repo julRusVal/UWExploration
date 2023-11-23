@@ -123,10 +123,10 @@ int main(int argc, char** argv){
 // 5. Add external estimated measurements
 
 // FOR OI:
-// 1. No spinning
+// 1. OK No spinning
 // 2. Convergence particles, find bug
 // 3. Normalized pt clouds all auvs
-// 4. FLS BEAMS only 4
+// 4. OK FLS BEAMS only 4
 // 3. Lower priority: Cool plots
 // AFTER OI:
-// - Eternal estimated measurement, comms
+// - External estimated measurement, comms
