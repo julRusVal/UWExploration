@@ -202,6 +202,7 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         {
         // log current time
         auto start = std::chrono::high_resolution_clock::now();
+        //CONTINUE HERE - with the two lines below commented out, the particel sets are dead on teh GT. After this, sometimesweird stuff happens. Fins the issue
         std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
         RbpfSlamMultiExtension::resample(weights);
         auto end = std::chrono::high_resolution_clock::now();
@@ -346,7 +347,7 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     double PI = std::acos(-1.0);
     // Eigen::VectorXd var_diag = gp_var.array() + std::pow(mbes_sigma, 2);
     //Vector of ones
-    Eigen::VectorXd var_diag = Eigen::Vector2d(1,1);
+    Eigen::VectorXd var_diag = Eigen::Vector2d(1e-9,1e-9); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise 
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
     Eigen::MatrixXd var_mat = var_diag.asDiagonal();
     Eigen::VectorXd diff = (z - z_hat).array().transpose() * var_inv.array() * 
