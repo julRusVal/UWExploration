@@ -354,7 +354,18 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
 
 void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 {
-    // //Normalize weights
+    //Shrink weights array to contain the maximum weights needed for computational reasons
+    int max_pc = std::max(pc_, pcn_);
+    //Refactor weights such that it consist of the top max_pc weights in terms of weight value. We still want weight to be an array of weights, but with size max_pc.
+    std::vector<Weight> weights_refactored;
+    std::sort(weights.begin(), weights.end(), [](const Weight& lhs, const Weight& rhs){return lhs.value > rhs.value;}); //sort weights in descending order
+    for (int i = 0; i < max_pc; i++)
+    {
+        weights_refactored.push_back(weights[i]);
+    }
+    weights = weights_refactored;
+
+    //Normalize weights
     double sum = 0;
     std::vector<double> weights_values;
     for (const Weight& w : weights)
@@ -435,8 +446,14 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
 
     
 
-    for (const int& i : indexes)
-    {
+    for (int k=0; k < indexes.size(); k++)
+    {   
+        //generate a random integer r between 0 and indexes.size()-1
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, indexes.size()-1);
+        int r = dis(gen);
+        int i = indexes[r];
         const Weight w = weights[i];
         const int i_self = w.self_index;
         const int i_neighbour = w.neighbour_index;
@@ -444,10 +461,16 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
             ROS_WARN("Index out of bounds");
             continue;
         }
-        // particles_self_new.emplace_back(particles_[i_self]);
-        // particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
-        particle_votes[i_self] += 1;
-        particle_votes_neighbour[i_neighbour] += 1;
+        if (k<pc_)
+        {
+            particles_self_new.emplace_back(particles_[i_self]);
+        }
+        if (k<pcn_)
+        {
+            particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
+        }
+        // particle_votes[i_self] += 1;
+        // particle_votes_neighbour[i_neighbour] += 1;
         // if (w.neighbour_location == "left")
         // {
         //     particles_neighbour_new.emplace_back(particles_left_[w.neighbour_index]);
@@ -475,18 +498,18 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     //     ROS_WARN("Sum of votes is zero");
     //     return;
     // }
-    std::vector<int> particle_indexes_self = RbpfSlamMultiExtension::resample_particle_votes(particle_votes);
-    std::vector<int> particle_indexes_neighbour = RbpfSlamMultiExtension::resample_particle_votes(particle_votes_neighbour);
+    // std::vector<int> particle_indexes_self = RbpfSlamMultiExtension::resample_particle_votes(particle_votes);
+    // std::vector<int> particle_indexes_neighbour = RbpfSlamMultiExtension::resample_particle_votes(particle_votes_neighbour);
 
-    for (const int& i : particle_indexes_self)
-    {
-        particles_self_new.emplace_back(particles_[i]);
-    }
+    // for (const int& i : particle_indexes_self)
+    // {
+    //     particles_self_new.emplace_back(particles_[i]);
+    // }
 
-    for (const int& i : particle_indexes_neighbour)
-    {
-        particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i]);
-    }
+    // for (const int& i : particle_indexes_neighbour)
+    // {
+    //     particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i]);
+    // }
     
 
 
@@ -496,12 +519,27 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     }
     ROS_INFO("Particles resampled!");
 
-    if (particles_.size() != pc_ || particles_left_.size() != pcn_ || particles_right_.size() != pcn_) //CONINUE HERE, the code crashes after a few times of this.
+    if (particles_.size() != pc_)
     {
-        ROS_WARN("Resampling failed, too many or too few particles regenerated!");
+        ROS_WARN("Resampling failed, too many or too few SELF particles regenerated!");
+    }
+    if (auv_id_left_ && particles_left_.size() != pcn_)
+    {
+        ROS_WARN("Resampling failed, too many or too few LEFT neighbour particles regenerated!");
+    }
+    if (!auv_id_left_ && particles_left_.size() != 0)
+    {
+        ROS_WARN("LEFT neighbour particles generated, they should NOT exist!");
+    }
+    if (auv_id_right_ && particles_right_.size() != pcn_)
+    {
+        ROS_WARN("Resampling failed, too many or too few RIGHT neighbour particles regenerated!");
+    }
+    if (!auv_id_right_ && particles_right_.size() != 0)
+    {
+        ROS_WARN("RIGHT neighbour particles generated, they should NOT exist!");
     }
 }
-
 std::vector<int> RbpfSlamMultiExtension::resample_particle_votes(std::vector<int> votes)
 {
     //CONTINUE HERE - code crashes here somewhere
