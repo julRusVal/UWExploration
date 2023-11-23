@@ -294,7 +294,7 @@ class W2WPathPlanner(object):
         self.dubins_turning_radius = rospy.get_param('~dubins_turning_radius')
         self.do_max_turn = None
         self.k = None
-        self.goal_tolerance_max_turn = self.goal_tolerance+1
+        self.goal_tolerance_max_turn = self.goal_tolerance+3
         self.goal_tolerance_original = self.goal_tolerance
         self.wp_follower_type = rospy.get_param('~waypoint_follower_type', 'simple')
 
