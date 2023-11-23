@@ -195,8 +195,8 @@ class FLSModel(object):
         # Create marker array
         #r_list = np.linspace(0,self.fls_max_range,5)
               
-        phi_list = np.linspace(-self.fls_horizontal_angle/2,self.fls_horizontal_angle/2,5,endpoint=True)
-        theta_list = np.linspace(-self.fls_vertical_angle/2,self.fls_vertical_angle/2,5,endpoint=True)
+        phi_list = np.linspace(-self.fls_horizontal_angle/2,self.fls_horizontal_angle/2,2,endpoint=True)
+        theta_list = np.linspace(-self.fls_vertical_angle/2,self.fls_vertical_angle/2,2,endpoint=True)
         # print("phi_list: ", np.rad2deg(phi_list))
         # print("theta_list: ", np.rad2deg(theta_list))
         marker_array = MarkerArray()
