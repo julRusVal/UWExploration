@@ -19,6 +19,8 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<bool>(("rbpf_sensor_MBES"), rbpf_sensor_MBES, false);
     nh_->param<string>(("fls_meas_topic"), fls_meas_topic, "/sim/hugin_0/fls_measurement");
     nh_->param<string>(("namespace"), namespace_, "hugin_0");
+    nh_->param("resampling_noise_covariance", res_noise_cov_, vector<float>());
+
 
     nh_->param<int>(("particle_count_neighbours"), pcn_, 5);
     nh_->param<float>(("measurement_std"), meas_std_, 0.01);
@@ -546,6 +548,22 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     {
         ROS_WARN("RIGHT neighbour particles generated, they should NOT exist!");
     }
+
+    //Add noise to particles to avoid loss of variance
+    for(int i = 0; i < pc_; i++)
+    {
+        particles_[i].add_noise(res_noise_cov_);
+    }
+    
+    for(int i = 0; i < pcn_; i++)
+    {
+        //Use the neighbour pointer
+        if (particles_neighbour_ptr != nullptr) {
+            (*particles_neighbour_ptr)[i].add_noise(res_noise_cov_);
+        }
+    }
+
+
 }
 std::vector<int> RbpfSlamMultiExtension::resample_particle_votes(std::vector<int> votes)
 {
