@@ -202,7 +202,7 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         {
         // log current time
         auto start = std::chrono::high_resolution_clock::now();
-        //CONTINUE HERE - with the two lines below commented out, the particel sets are dead on teh GT. After this, sometimesweird stuff happens. Fins the issue
+        
         std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
         RbpfSlamMultiExtension::resample(weights);
         auto end = std::chrono::high_resolution_clock::now();
@@ -549,7 +549,7 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
 }
 std::vector<int> RbpfSlamMultiExtension::resample_particle_votes(std::vector<int> votes)
 {
-    //CONTINUE HERE - code crashes here somewhere
+    
     int N = votes.size(); 
     // std::vector<int> indexes(N,0);
     std::vector<double> votes_normalized(N);
