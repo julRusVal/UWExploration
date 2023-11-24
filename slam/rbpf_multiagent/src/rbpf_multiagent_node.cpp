@@ -130,7 +130,9 @@ int main(int argc, char** argv){
 // 3. Normalized pt clouds all auvs
 // 4. OK FLS BEAMS only 4
 // 5. Fixblue rectangle for survey area
-// 3. Lower priority: Cool plots
+// 6. Lower priority: Cool plots
+// 7. Record video
 // AFTER OI:
 // - See TODO above
 // - External estimated measurement, comms
+// - OK Add noise after resampling
