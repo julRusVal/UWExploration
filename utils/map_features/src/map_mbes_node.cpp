@@ -33,7 +33,7 @@ public:
 
     MapConstructor(std::string node_name, ros::NodeHandle &nh, std::string auv_name, ros::Publisher map_pub__,PointCloudT &mbes_map__ ) : node_name_(node_name), nh_(&nh),mbes_map_(mbes_map__)
     {
-        ROS_INFO("Initializing map constructor");
+        // ROS_INFO("Initializing map constructor");
         std::string pings_top, odom_top, save_map_srv_name, map_topic;
         // nh_->param<std::string>("mbes_pings", pings_top, "/gt/mbes_pings");
         // nh_->param<std::string>("odom_topic", odom_top, "/gt/odom");
@@ -102,7 +102,7 @@ public:
     void addPingCB(const sensor_msgs::PointCloud2Ptr &mbes_ping,
                    const nav_msgs::OdometryPtr &odom_msg)
     {
-        ROS_INFO("Adding ping to map");
+        // ROS_INFO("Adding ping to map");
         tf::Transform odom_base_tf;
         tf::poseMsgToTF(odom_msg->pose.pose, odom_base_tf);
         
@@ -155,20 +155,20 @@ int main(int argc, char **argv)
 
     map_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/map/fused_mbes_pings", 2, false);
 
-    // int num_auvs = nh.param<int>("num_auvs", 1);
-    // std::vector<boost::shared_ptr<MapConstructor>> map_constructors(num_auvs);
-    // for (int i = 0; i < num_auvs; i++)
-    // {
-    //     std::string auv_name = "hugin_" + std::to_string(i);
-    //     boost::shared_ptr<MapConstructor> map_constructor(new MapConstructor(auv_name+"_map_mbes_node", nh, auv_name, map_pub_, mbes_map_));    
-    //     map_constructors[i] = map_constructor;
-    // }
+    int num_auvs = nh.param<int>("num_auvs", 1);
+    std::vector<boost::shared_ptr<MapConstructor>> map_constructors(num_auvs);
+    for (int i = 0; i < num_auvs; i++)
+    {
+        std::string auv_name = "hugin_" + std::to_string(i);
+        boost::shared_ptr<MapConstructor> map_constructor(new MapConstructor(auv_name+"_map_mbes_node", nh, auv_name, map_pub_, mbes_map_));    
+        map_constructors[i] = map_constructor;
+    }
     // boost::shared_ptr<MapConstructor> map_constructor(new MapConstructor("map_mbes_node", nh));
 
-    boost::shared_ptr<MapConstructor> map_constructor0(new MapConstructor("map_mbes_node", nh, "hugin_0", map_pub_, mbes_map_));
-    boost::shared_ptr<MapConstructor> map_constructor1(new MapConstructor("map_mbes_node", nh, "hugin_1", map_pub_, mbes_map_));
-    boost::shared_ptr<MapConstructor> map_constructor2(new MapConstructor("map_mbes_node", nh, "hugin_2", map_pub_, mbes_map_));
-    boost::shared_ptr<MapConstructor> map_constructor3(new MapConstructor("map_mbes_node", nh, "hugin_3", map_pub_, mbes_map_));
+    // boost::shared_ptr<MapConstructor> map_constructor0(new MapConstructor("map_mbes_node", nh, "hugin_0", map_pub_, mbes_map_));
+    // boost::shared_ptr<MapConstructor> map_constructor1(new MapConstructor("map_mbes_node", nh, "hugin_1", map_pub_, mbes_map_));
+    // boost::shared_ptr<MapConstructor> map_constructor2(new MapConstructor("map_mbes_node", nh, "hugin_2", map_pub_, mbes_map_));
+    // boost::shared_ptr<MapConstructor> map_constructor3(new MapConstructor("map_mbes_node", nh, "hugin_3", map_pub_, mbes_map_));
 
 
     ros::spin();
