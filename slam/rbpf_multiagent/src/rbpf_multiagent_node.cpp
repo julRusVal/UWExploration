@@ -127,7 +127,7 @@ int main(int argc, char** argv){
 // FOR OI:
 // 1. OK No spinning
 // 2. OK Convergence particles, find bug. It happens in the resampling of the self and neighbour particles. Ony prediction keeps the self particles dead on teh GT- 
-// 3. Normalized pt clouds all auvs
+// 3. OK Normalized pt clouds all auvs
 // 4. OK FLS BEAMS only 4
 // 5. semi-OK (fix is to no display survey area just before cklicking enter) Fixblue rectangle for survey area
 // 6. Lower priority: Cool plots
