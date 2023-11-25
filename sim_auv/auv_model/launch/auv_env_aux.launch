@@ -5,9 +5,10 @@
     <arg name="mode" default="sim"/>
 	<arg name="dataset" default="ripples"/>
     <arg name="map_frame" default="map"/>
-    <arg name="namespace" default="hugin_0"/>
-    <arg name="odom_frame" default="$(arg namespace)/odom"/>
+    <!-- <arg name="namespace" default=""/> -->
+    <!-- <arg name="odom_frame" default="$(arg namespace)/odom"/> -->
     <arg name="load_dataset" default="true"/>
+	<arg name="num_auvs" default="1"/>
 
 
 	<!-- <group ns="$(arg namespace)"> -->
@@ -34,17 +35,19 @@
         <param name="map_mbes" value="/map_mbes" />
     </node> -->
 
-	<node type="map_mbes_node" pkg="map_features" name="$(arg namespace)_map_mbes_node" output="screen">
-		<param name="mbes_pings"  value="/$(arg mode)/$(arg namespace)/mbes_pings" />
-		<param name="odom_topic"  value="/$(arg mode)/$(arg namespace)/odom" />
+	<node type="map_mbes_node" pkg="map_features" name="map_mbes_node" output="screen">
+		<!-- <param name="mbes_pings"  value="/$(arg mode)/$(arg namespace)/mbes_pings" /> -->
+		<!-- <param name="odom_topic"  value="/$(arg mode)/$(arg namespace)/odom" /> -->
 		<param name="map_frame" value="$(arg map_frame)" />
-		<param name="odom_frame" value="$(arg odom_frame)" />
-		<param name="base_link" value="$(arg namespace)/base_link" />
-		<param name="mbes_link" value="$(arg namespace)/mbes_link" />
-		<param name="save_map_srv" value="/$(arg namespace)/save_map" />
+		<!-- <param name="odom_frame" value="$(arg odom_frame)" /> -->
+		<!-- <param name="base_link" value="$(arg namespace)/base_link" /> -->
+		<!-- <param name="mbes_link" value="$(arg namespace)/mbes_link" /> -->
+		<!-- <param name="save_map_srv" value="/$(arg namespace)/save_map" /> -->
 		<param name="save_map_path" value="$(find uw_tests)/datasets/$(arg dataset)/map_mbes.pcd" />
-		<param name="map_topic" value="/$(arg namespace)/map/mbes_pings" />
+		<!-- <param name="map_topic" value="/$(arg namespace)/map/mbes_pings" /> -->
 		<param name="publish_mbes_cloud" type= "bool" value="True" />
+		<param name="num_auvs" value="$(arg num_auvs)" />
+		<param name="mode" value="$(arg mode)" />
 	</node>
 
 </launch>
