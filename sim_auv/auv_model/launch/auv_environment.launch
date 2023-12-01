@@ -35,6 +35,9 @@
 	<arg name="fls_horizontal_angle" default="135"/>
     <arg name="fls_vertical_angle" default="60"/>
     <arg name="fls_max_range" default="50.0"/>
+    <arg name="fls_range_std" default="0.001"/>
+	<arg name="fls_angle_std" default="0.001"/>
+
     <arg name="num_auvs" default="1"/>
 
 
@@ -107,6 +110,8 @@
 				<arg name="fls_horizontal_angle" value="$(arg fls_horizontal_angle)"/>
 				<arg name="fls_vertical_angle" value="$(arg fls_vertical_angle)"/>
 				<arg name="fls_max_range" value="$(arg fls_max_range)"/>
+				<arg name="fls_range_std" value="$(arg fls_range_std)"/>
+				<arg name="fls_angle_std" value="$(arg fls_angle_std)"/>
 				<arg name="num_auvs" value="$(arg num_auvs)"/>
 			</include>
 		</group>

@@ -34,6 +34,8 @@
     <arg name="fls_horizontal_angle" default="135"/>
     <arg name="fls_vertical_angle" default="60"/>
     <arg name="fls_max_range" default="50.0"/>
+    <arg name="fls_range_std" default="0.001"/>
+	<arg name="fls_angle_std" default="0.001"/>
 
 
 
@@ -86,6 +88,8 @@
         <param name="fls_horizontal_angle" value="$(arg fls_horizontal_angle)" />
         <param name="fls_vertical_angle" value="$(arg fls_vertical_angle)" />
         <param name="fls_max_range" value="$(arg fls_max_range)" />
+        <param name="fls_range_std" value="$(arg fls_range_std)" />
+        <param name="fls_angle_std" value="$(arg fls_angle_std)" />
         <param name="vehicle_model" value="$(arg vehicle_model)" />
         <param name="num_auvs" value="$(arg num_auvs)" />
         <param name="fls_enable_topic" value="/$(arg namespace)/fls_sim_enable" />

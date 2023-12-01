@@ -99,6 +99,8 @@
         <param name="fls_horizontal_angle" value="$(arg fls_horizontal_angle)"/>
         <param name="fls_vertical_angle" value="$(arg fls_vertical_angle)"/>
         <param name="fls_max_range" value="$(arg fls_max_range)"/>
+        <param name="fls_range_std" value="0.0"/> <!-- 0.1 meter -->
+        <param name="fls_angle_std" value="0.0"/> <!-- 1 degree = 0.0174532925 radians -->
         
     </node>
 

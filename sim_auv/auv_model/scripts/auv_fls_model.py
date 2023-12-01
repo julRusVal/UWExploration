@@ -24,6 +24,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Quaternion
 import tf
 from tf2_geometry_msgs import do_transform_point
+import numpy.random as rnd
 
 
 #TODO:
@@ -54,7 +55,10 @@ class FLSModel(object):
         self.num_auvs = rospy.get_param("~num_auvs", 1)
         self.fls_enable_topic = rospy.get_param("~fls_enable_topic", "/fls_sim_enable") #TODO: add in launch file 1a
         self.scan_area_marker_topic = rospy.get_param("~scan_area_marker_topic", "/sim/fls_scan_area") #TODO: add in launch file 1a
-        self.namespace = rospy.get_param("~namespace", "hugin_0") 
+        self.namespace = rospy.get_param("~namespace", "hugin_0")
+        self.std_range = rospy.get_param("~fls_range_std")  # meters
+        self.std_angle = rospy.get_param("~fls_angle_std")    # radians
+
         # Initialize the TF2 buffer and listener
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -118,8 +122,12 @@ class FLSModel(object):
                 result = FlsSimResult()
                 result.header.stamp = self.goal_header_stamp
                 result.header.frame_id = self.fls_frame_current_auv
-                result.range = Float32(r)
-                result.angle = Float32(theta)
+                # print("std_range: ", self.std_range, " std_angle: ", self.std_angle)
+                r_noise = rnd.normal(0,self.std_range)
+                t_noise = rnd.normal(0,self.std_angle)
+                # print("r_noise: ", r_noise, " t_noise: ", t_noise)
+                result.range = Float32(r + r_noise) 
+                result.angle = Float32(theta + t_noise)
                 self.as_ping.set_succeeded(result)
         else:
             #Don't do any calculation if FLS is disabled, save computation.
