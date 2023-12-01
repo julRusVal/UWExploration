@@ -154,6 +154,9 @@
     <node type="display_message_service.py" pkg="rviz_visualization" name="display_rviz_message_service" output="screen">
     </node>
 
+    <node type="plot_generator_service.py" pkg="plot_generator" name="plot_generator_service" output="screen">
+    </node>
+
     <!-- Start auxiliary nodes  -->
     <group if="$(arg auxiliary_enabled)">
         <!-- <node type="auxiliary_map_and_sensors.py" pkg="multi_agent" name="auxiliary_node" output="screen">

@@ -1,0 +1,7 @@
+std_msgs/Header header
+geometry_msgs/Pose ego_particles_mean_pose
+geometry_msgs/Pose neighbour_particles_mean_pose
+---
+std_msgs/Empty resp
+
+
