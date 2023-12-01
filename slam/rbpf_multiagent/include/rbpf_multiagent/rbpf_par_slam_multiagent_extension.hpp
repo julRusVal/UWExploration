@@ -145,6 +145,9 @@ class RbpfSlamMultiExtension: public RbpfSlam
     double time_neigh_;
     double old_time_neigh_;
     std::vector<float> res_noise_cov_;
+    std::vector<float> fls_measurement_std_;
+    double fls_measurement_std_range_;
+    double fls_measurement_std_angle_;
     std::vector<std::thread> pred_threads_vec_neigh_left_;
     std::vector<std::thread> pred_threads_vec_neigh_right_;
     // tf::StampedTransform oL2o_tf_; //tf from odom left to odom self
