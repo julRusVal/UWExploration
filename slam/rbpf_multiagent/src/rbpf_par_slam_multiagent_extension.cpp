@@ -886,30 +886,31 @@ geometry_msgs::PoseArray RbpfSlamMultiExtension::particles_2_pose_array(const in
 void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
 {
     plot_generator::PlotGenerator srv;
-    srv.request.header.stamp = ros::Time::now();
-    srv.request.header.frame_id = namespace_ + "/odom";
     
-    srv.request.auv_id_ego = *auv_id_;
-    srv.request.particles_mean_pose_ego = RbpfSlamMultiExtension::average_pose(particles_);
+    srv.request.ego.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_) + "/odom";
+    srv.request.ego.header.stamp = ros::Time::now();
+    srv.request.ego.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
 
     if (auv_id_left_)
     {
-        srv.request.auv_id_left = *auv_id_left_;
-        srv.request.particles_mean_pose_left = RbpfSlamMultiExtension::average_pose(particles_left_);
+        srv.request.left.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_left_) + "/odom";
+        srv.request.left.header.stamp = ros::Time::now();
+        srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
 
     }
     else
     {
-        srv.request.auv_id_left = -1; // -1 means no neighbour
+        srv.request.left.header.frame_id = "-1"; // -1 means no neighbour
     }
     if (auv_id_right_)
     {
-        srv.request.auv_id_right = *auv_id_right_;
-        srv.request.particles_mean_pose_right = RbpfSlamMultiExtension::average_pose(particles_right_);
+        srv.request.right.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_right_) + "/odom";
+        srv.request.right.header.stamp = ros::Time::now();
+        srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
     }
     else
     {
-        srv.request.auv_id_right = -1;
+        srv.request.right.header.frame_id = "-1"; // -1 means no neighbour
     }
 
     if (!client_plots_.call(srv))
@@ -918,11 +919,14 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
     }
 }
 
-geometry_msgs::Pose RbpfSlamMultiExtension::average_pose(const std::vector<RbpfParticle> particles)
+geometry_msgs::PoseWithCovariance RbpfSlamMultiExtension::average_pose_with_cov(const std::vector<RbpfParticle> particles)
 {
-    geometry_msgs::Pose pose;
+    geometry_msgs::PoseWithCovariance pose;
     Eigen::Vector3f mean_pose = Eigen::Vector3f::Zero();
     Eigen::Quaternionf mean_quat = Eigen::Quaternionf::Identity();
+    std::vector<float> covariances(36, 0.0);
+
+    // Compute mean pose
     for (const RbpfParticle& particle : particles)
     {
         mean_pose += particle.p_pose_.head(3);
@@ -937,13 +941,27 @@ geometry_msgs::Pose RbpfSlamMultiExtension::average_pose(const std::vector<RbpfP
     mean_quat.y() = mean_quat.y() / particles.size();
     mean_quat.z() = mean_quat.z() / particles.size();
     mean_quat.w() = mean_quat.w() / particles.size();
-    pose.position.x = mean_pose(0);
-    pose.position.y = mean_pose(1);
-    pose.position.z = mean_pose(2);
-    pose.orientation.x = mean_quat.x();
-    pose.orientation.y = mean_quat.y();
-    pose.orientation.z = mean_quat.z();
-    pose.orientation.w = mean_quat.w();
+    pose.pose.position.x = mean_pose(0);
+    pose.pose.position.y = mean_pose(1);
+    pose.pose.position.z = mean_pose(2);
+    pose.pose.orientation.x = mean_quat.x();
+    pose.pose.orientation.y = mean_quat.y();
+    pose.pose.orientation.z = mean_quat.z();
+    pose.pose.orientation.w = mean_quat.w();
+
+    // Compute covariance in translation
+    for (const RbpfParticle& particle : particles)
+    {
+        covariances[0] += std::pow(particle.p_pose_(0) - mean_pose(0), 2);
+        covariances[7] += std::pow(particle.p_pose_(1) - mean_pose(1), 2);
+        covariances[14] += std::pow(particle.p_pose_(2) - mean_pose(2), 2);
+    }
+    covariances[0] = covariances[0] / particles.size();
+    covariances[7] = covariances[7] / particles.size();
+    covariances[14] = covariances[14] / particles.size();
+    pose.covariance[0] = covariances[0];
+    pose.covariance[7] = covariances[7];
+    pose.covariance[14] = covariances[14];
     return pose;
 }
 
