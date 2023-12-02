@@ -36,6 +36,7 @@
   <arg name="results_path" default=""/>     
   <arg name="rbpf_period"   default="15." />
   <arg name="rviz_period"   default="0.1" />
+  <arg name="plot_period"   default="1" />
   <arg name="svgp_minibatch_size"   default="1000" />
 
   <arg name="map_frame"                         default="map"/>

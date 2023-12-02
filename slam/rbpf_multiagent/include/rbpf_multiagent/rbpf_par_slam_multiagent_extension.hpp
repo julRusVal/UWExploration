@@ -69,6 +69,10 @@
 #include <future>
 #include <cmath>
 
+#include "ros/ros.h"
+#include <cstdlib>
+#include "plot_generator/PlotGenerator.h"
+
 
 using namespace std;
 using std::chrono::duration;
@@ -89,6 +93,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     ros::Publisher vis_pub_right_;
     ros::Publisher z_hat_pub_;
     ros::Timer timer_neighbours_rviz_;
+    ros::Timer timer_generate_plots;
     ros::ServiceServer srv_server_multi_;
 
 
@@ -101,6 +106,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     void wp_counter_cb(const std_msgs::Int32& wp_counter_msg);
     void rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading);
     void update_rviz_cb(const ros::TimerEvent &);
+    void update_plots(const ros::TimerEvent &);
     void odom_callback(const nav_msgs::OdometryConstPtr& odom_msg);
 
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
@@ -119,11 +125,12 @@ class RbpfSlamMultiExtension: public RbpfSlam
     void regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights);
     std::vector<int> resample_particle_votes(std::vector<int> votes);
     void pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id);
-
+    geometry_msgs::Pose average_pose(const std::vector<RbpfParticle> particles);
 
 
     ros::Subscriber sub_fls_meas_;
     ros::Subscriber odom_sub_neigh_;
+    ros::ServiceClient client_plots_;
     // float rbpf_period_;
     string fls_meas_topic;
     string survey_area_topic;
@@ -154,6 +161,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     // tf::StampedTransform oR2o_tf_; //tf from odom right to odom self
     Eigen::Matrix4f oL2o_mat_;
     Eigen::Matrix4f oR2o_mat_;
+    float plot_period_;
 
     // std::vector<float> fls_meas_;
 

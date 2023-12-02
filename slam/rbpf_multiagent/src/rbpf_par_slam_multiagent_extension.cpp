@@ -78,6 +78,13 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
 
     nh_->param<string>(("z_hat_viz_top"), z_hat_viz_top_, "/z_hat_marker");
     z_hat_pub_ = nh_->advertise<visualization_msgs::Marker>(z_hat_viz_top_, 0);
+
+    client_plots_ = nh_->serviceClient<plot_generator::PlotGenerator>("/plot_generator");
+    // Timer for updating plots
+    nh_->param<float>(("plot_period"), plot_period_, 0.3);
+    if(plot_period_ != 0.){
+        timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
+    }
     
 }   
 
@@ -874,6 +881,70 @@ geometry_msgs::PoseArray RbpfSlamMultiExtension::particles_2_pose_array(const in
     // }
     return array_msg;
 
+}
+
+void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
+{
+    plot_generator::PlotGenerator srv;
+    srv.request.header.stamp = ros::Time::now();
+    srv.request.header.frame_id = namespace_ + "/odom";
+    
+    srv.request.auv_id_ego = *auv_id_;
+    srv.request.particles_mean_pose_ego = RbpfSlamMultiExtension::average_pose(particles_);
+
+    if (auv_id_left_)
+    {
+        srv.request.auv_id_left = *auv_id_left_;
+        srv.request.particles_mean_pose_left = RbpfSlamMultiExtension::average_pose(particles_left_);
+
+    }
+    else
+    {
+        srv.request.auv_id_left = -1; // -1 means no neighbour
+    }
+    if (auv_id_right_)
+    {
+        srv.request.auv_id_right = *auv_id_right_;
+        srv.request.particles_mean_pose_right = RbpfSlamMultiExtension::average_pose(particles_right_);
+    }
+    else
+    {
+        srv.request.auv_id_right = -1;
+    }
+
+    if (!client_plots_.call(srv))
+    {
+        ROS_ERROR("Failed to call plot generator service");
+    }
+}
+
+geometry_msgs::Pose RbpfSlamMultiExtension::average_pose(const std::vector<RbpfParticle> particles)
+{
+    geometry_msgs::Pose pose;
+    Eigen::Vector3f mean_pose = Eigen::Vector3f::Zero();
+    Eigen::Quaternionf mean_quat = Eigen::Quaternionf::Identity();
+    for (const RbpfParticle& particle : particles)
+    {
+        mean_pose += particle.p_pose_.head(3);
+        Eigen::AngleAxisf rollAngle(particle.p_pose_(3), Eigen::Vector3f::UnitX());
+        Eigen::AngleAxisf pitchAngle(particle.p_pose_(4), Eigen::Vector3f::UnitY());
+        Eigen::AngleAxisf yawAngle(particle.p_pose_(5), Eigen::Vector3f::UnitZ());
+        Eigen::Quaternion<float> q = rollAngle * pitchAngle * yawAngle;
+        mean_quat = mean_quat * q;
+    }
+    mean_pose = mean_pose / particles.size();
+    mean_quat.x() = mean_quat.x() / particles.size();
+    mean_quat.y() = mean_quat.y() / particles.size();
+    mean_quat.z() = mean_quat.z() / particles.size();
+    mean_quat.w() = mean_quat.w() / particles.size();
+    pose.position.x = mean_pose(0);
+    pose.position.y = mean_pose(1);
+    pose.position.z = mean_pose(2);
+    pose.orientation.x = mean_quat.x();
+    pose.orientation.y = mean_quat.y();
+    pose.orientation.z = mean_quat.z();
+    pose.orientation.w = mean_quat.w();
+    return pose;
 }
 
 void RbpfSlamMultiExtension::pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher)

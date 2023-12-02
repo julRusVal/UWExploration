@@ -11,7 +11,7 @@ from plot_generator.srv import PlotGenerator, PlotGeneratorResponse
 class PlotGeneratorService:
     
     def __init__(self):
-        self.service = rospy.Service('/plot_generator_message', PlotGenerator, self.callback)
+        self.service = rospy.Service('/plot_generator', PlotGenerator, self.callback)
         rospy.loginfo("Plot Generator service initialized")
         # self.message_pub = rospy.Publisher('/rviz_message', MarkerArray, queue_size=1)
 
@@ -19,6 +19,7 @@ class PlotGeneratorService:
     def callback(self, req):
         """Generates plots"""
         print("Received request")
+        print(req)
         
         return PlotGeneratorResponse()
 
