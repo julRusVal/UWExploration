@@ -73,12 +73,13 @@ class PlotGeneratorServiceInstance:
         self.ax.legend()
 
         # Create the animation function
-        self.ani = animation.FuncAnimation(self.fig, self.update_plot, frames=None, interval=200, blit=True)
-
+        # self.ani = animation.FuncAnimation(self.fig, self.update_plot, frames=None, interval=200, blit=True)
+        # plt.show()
 
     def callback(self, req):
         """Generates plots"""
         print("Received request")
+        # print(self.ani)
         # print("left distance errors:",self.left_distance_errors)
         # print("right distance errors:",self.right_distance_errors)
         # print("left bearing errors:",self.left_bearing_errors)
@@ -148,6 +149,25 @@ class PlotGeneratorServiceInstance:
         #     rospy.logwarn("Time difference between ground truth and estimate is too large: %f",self.time_diff)
 
         # return PlotGeneratorResponse()
+
+        self.update_plot(None)
+        plot_image = self.plot_to_image()
+
+        window_name = "Animated Plot - AUV " + str(ego_id)
+        cv2.imshow(window_name, plot_image)
+        cv2.waitKey(1)  # Adjust the waitKey value as needed
+    
+    def plot_to_image(self):
+        # Convert the plot to an image using matplotlib
+        buf = io.BytesIO()
+        self.fig.savefig(buf, format='png')
+        buf.seek(0)
+        img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+        buf.close()
+        plot_image = cv2.imdecode(img_array, 1)
+
+        return plot_image
+
 
     def update_gt(self,ego_id,left_id,right_id,timestamp):
         """Updates the ground truth values"""
