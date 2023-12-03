@@ -81,7 +81,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
 
     client_plots_ = nh_->serviceClient<plot_generator::PlotGenerator>("/plot_generator");
     // Timer for updating plots
-    nh_->param<float>(("plot_period"), plot_period_, 0.3);
+    nh_->param<float>(("plot_period"), plot_period_, 1.0);
     if(plot_period_ != 0.){
         timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
     }
