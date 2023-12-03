@@ -63,14 +63,44 @@ class PlotGeneratorServiceInstance:
         # cv2.resizeWindow("Errors Plot", 500, 500)
 
         # Create a figure and axis for the animation
-        self.fig, self.ax = plt.subplots()
-        self.line_left_distance, = self.ax.plot([], [], label='Left Distance Error')
-        self.line_right_distance, = self.ax.plot([], [], label='Right Distance Error')
-        self.line_left_bearing, = self.ax.plot([], [], label='Left Bearing Error')
-        self.line_right_bearing, = self.ax.plot([], [], label='Right Bearing Error')
-        self.ax.set_xlabel('Callback Iteration')
-        self.ax.set_ylabel('Error')
-        self.ax.legend()
+        self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 8))
+        self.fig.suptitle('Position error and variance over time')
+        self.line_left_distance, = self.ax1.plot([], [], label='Left Distance Error')
+        self.line_right_distance, = self.ax1.plot([], [], label='Right Distance Error')
+        self.line_left_bearing, = self.ax1.plot([], [], label='Left Bearing Error')
+        self.line_right_bearing, = self.ax1.plot([], [], label='Right Bearing Error')
+        self.ax1.set_xlabel('Callback Iteration')
+        self.ax1.set_ylabel('Normed Error')
+        self.ax1.legend()
+        self.ax1.set_ylim(0, 1)
+
+        self.line_ego_x_var, = self.ax2.plot([], [], label='Ego Variance X')
+        self.line_ego_y_var, = self.ax2.plot([], [], label='Ego Variance Y')
+        self.ax2.set_xlabel('Callback Iteration')
+        self.ax2.set_ylabel('Ego Variance')
+        self.ax2.legend()
+
+        self.line_left_x_var, = self.ax3.plot([], [], label='Left Variance X')
+        self.line_left_y_var, = self.ax3.plot([], [], label='Left Variance Y')
+        self.ax3.set_xlabel('Callback Iteration')
+        self.ax3.set_ylabel('Left Variance')
+        self.ax3.legend()
+
+        self.line_right_x_var, = self.ax4.plot([], [], label='Right Variance X')
+        self.line_right_y_var, = self.ax4.plot([], [], label='Right Variance Y')
+        self.ax4.set_xlabel('Callback Iteration')
+        self.ax4.set_ylabel('Right Variance')
+        self.ax4.legend()
+
+        self.ego_x_var_list = []
+        self.ego_y_var_list = []
+
+        self.left_x_var_list = []
+        self.left_y_var_list = []
+
+        self.right_x_var_list = []
+        self.right_y_var_list = []
+
 
         # Create the animation function
         # self.ani = animation.FuncAnimation(self.fig, self.update_plot, frames=None, interval=200, blit=True)
@@ -97,12 +127,18 @@ class PlotGeneratorServiceInstance:
         right_id = -1
         if ego_odom_frame[0:5] == "hugin":
             ego_id = int(ego_odom_frame[6])
+            self.ego_x_var_list.append(ego_pose_with_cov.pose.covariance[0]) #CONTINUE HERE 1, the variance values doesn't seem to decrease even though the partiles converge to a solution
+            self.ego_y_var_list.append(ego_pose_with_cov.pose.covariance[7])
             if left_odom_frame != str(-1):
                 # print("left odom frame:",left_odom_frame)
                 left_id = int(left_odom_frame[6])
+                self.left_x_var_list.append(left_pose_with_cov.pose.covariance[0])
+                self.left_y_var_list.append(left_pose_with_cov.pose.covariance[7])
             if right_odom_frame != str(-1):
                 # print("right odom frame:",right_odom_frame)
                 right_id = int(right_odom_frame[6])
+                self.right_x_var_list.append(right_pose_with_cov.pose.covariance[0])
+                self.right_y_var_list.append(right_pose_with_cov.pose.covariance[7])
         else: #Here you can handle other vehicle models
             rospy.logerr("Vehicle model not recognized!")
     
@@ -114,26 +150,30 @@ class PlotGeneratorServiceInstance:
 
         # error_distance = np.array([None,None])
         # error_bearing = np.array([None,None])
-        if left_id >= 0:
-            left_error_distance = abs(self.gt_distance[0] - self.distance[0])
-            left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])
+        if left_id >= 0 and self.gt_distance[0] != None and self.distance[0] != None and self.gt_ego_bearing[0] != None and self.ego_bearing[0] != None:
+            # print("gt_distance[0]:",self.gt_distance[0])
+            # print("distance[0]:",self.distance[0])
+            left_error_distance = abs(self.gt_distance[0] - self.distance[0])/self.gt_distance[0]
+            left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])/self.gt_ego_bearing[0]
             # error_distance[0] = left_error_distance
             # error_bearing[0] = left_error_bearing
             self.left_distance_errors.append(left_error_distance)
             self.left_bearing_errors.append(left_error_bearing)
-        else:
-            self.left_distance_errors.append(0)
-            self.left_bearing_errors.append(0)
-        if right_id >= 0:
-            right_error_distance = abs(self.gt_distance[1] - self.distance[1])
-            right_error_bearing = abs(self.gt_ego_bearing[1] - self.ego_bearing[1])
+        # else:
+        #     self.left_distance_errors.append(0)
+        #     self.left_bearing_errors.append(0)
+        if right_id >= 0 and self.gt_distance[1] != None and self.distance[1] != None and self.gt_ego_bearing[1] != None and self.ego_bearing[1] != None:
+            # print("gt_distance[1]:",self.gt_distance[1])
+            # print("distance[1]:",self.distance[1])
+            right_error_distance = abs(self.gt_distance[1] - self.distance[1])/self.gt_distance[1]
+            right_error_bearing = abs(self.gt_ego_bearing[1] - self.ego_bearing[1])/self.gt_ego_bearing[1]
             # error_distance[1] = right_error_distance
             # error_bearing[1] = right_error_bearing
             self.right_distance_errors.append(right_error_distance)
             self.right_bearing_errors.append(right_error_bearing)
-        else:
-            self.right_distance_errors.append(0)
-            self.right_bearing_errors.append(0)
+        # else:
+        #     self.right_distance_errors.append(0)
+        #     self.right_bearing_errors.append(0)
 
         # error_distance = np.array([abs(self.gt_distance[0] - self.distance[0]), abs(self.gt_distance[1] - self.distance[1])])
         # error_bearing = np.array([abs(self.gt_ego_bearing[0] - self.ego_bearing[0]), abs(self.gt_ego_bearing[1] - self.ego_bearing[1])])
@@ -194,7 +234,7 @@ class PlotGeneratorServiceInstance:
             neighbour_pose_ego_bl = self.listener.transformPose(ego_bl_frame,neighbour_pose)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             rospy.logwarn("Error in transforming pose from %s to %s",neighbour_bl_frame,ego_bl_frame)
-            return 0, 0
+            return None, None
 
         distance = np.sqrt(neighbour_pose_ego_bl.pose.position.x**2 + neighbour_pose_ego_bl.pose.position.y**2)
         ego_bearing = np.arctan2(neighbour_pose_ego_bl.pose.position.y,neighbour_pose_ego_bl.pose.position.x)
@@ -220,9 +260,9 @@ class PlotGeneratorServiceInstance:
             neighbour_pose_ego_odom = self.listener.transformPose(ego_odom_frame,neighbour_pose)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             rospy.logwarn("Error in transforming pose from %s to %s",neighbour_pose.header.frame_id,ego_odom_frame)
-            return 0, 0
+            return None, None
         distance = np.sqrt(abs(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)**2 + abs(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)**2)
-        ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)
+        ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x) #CONTINUE HERE 2, the bearing valuues seem to be wrong. They oscillate weirdly.
         return distance, ego_bearing
     
     # def plot_errors(self):
@@ -279,10 +319,10 @@ class PlotGeneratorServiceInstance:
         # Update the plot with new data for each frame
         x_left = np.arange(len(self.left_distance_errors))
         x_right = np.arange(len(self.right_distance_errors))
-        print("left distance errors:",self.left_distance_errors)
-        print("right distance errors:",self.right_distance_errors)
-        print("left bearing errors:",self.left_bearing_errors)
-        print("right bearing errors:",self.right_bearing_errors)
+        # print("left distance errors:",self.left_distance_errors)
+        # print("right distance errors:",self.right_distance_errors)
+        # print("left bearing errors:",self.left_bearing_errors)
+        # print("right bearing errors:",self.right_bearing_errors)
         self.line_left_distance.set_data(x_left, self.left_distance_errors)
         self.line_right_distance.set_data(x_right, self.right_distance_errors)
         self.line_left_bearing.set_data(x_left, self.left_bearing_errors)
@@ -290,7 +330,19 @@ class PlotGeneratorServiceInstance:
 
         # Update the x-axis limits dynamically
         max_x = max(len(self.left_distance_errors), len(self.right_distance_errors))
-        self.ax.set_xlim(0, max_x)
+        self.ax1.set_xlim(0, max_x)
+
+        self.line_ego_x_var.set_data(np.arange(len(self.ego_x_var_list)), self.ego_x_var_list)
+        self.line_ego_y_var.set_data(np.arange(len(self.ego_y_var_list)), self.ego_y_var_list)
+        self.ax2.set_xlim(0, len(self.ego_x_var_list))
+
+        self.line_left_x_var.set_data(np.arange(len(self.left_x_var_list)), self.left_x_var_list)
+        self.line_left_y_var.set_data(np.arange(len(self.left_y_var_list)), self.left_y_var_list)
+        self.ax3.set_xlim(0, len(self.left_x_var_list))
+
+        self.line_right_x_var.set_data(np.arange(len(self.right_x_var_list)), self.right_x_var_list)
+        self.line_right_y_var.set_data(np.arange(len(self.right_y_var_list)), self.right_y_var_list)
+        self.ax4.set_xlim(0, len(self.right_x_var_list))
 
         return self.line_left_distance, self.line_right_distance, self.line_left_bearing, self.line_right_bearing
 
