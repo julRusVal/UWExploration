@@ -12,12 +12,37 @@ import matplotlib.animation as animation
 import tf
 import io
 
-
 class PlotGeneratorService:
-    
     def __init__(self):
         self.service = rospy.Service('/plot_generator', PlotGenerator, self.callback)
         rospy.loginfo("Plot Generator service initialized")
+
+        self.plot_instances_dict = {}
+    
+    def callback(self, req):
+        ego_odom_frame = req.ego.header.frame_id
+        if ego_odom_frame[0:5] == "hugin":
+            ego_id = int(ego_odom_frame[6])
+        else:
+            rospy.logerr("Vehicle model not recognized!")
+
+        try:
+            plot_instance = self.plot_instances_dict[ego_id]
+        except KeyError:
+            plot_instance = PlotGeneratorServiceInstance()
+            self.plot_instances_dict[ego_id] = plot_instance
+        plot_instance.callback(req)
+    
+        return PlotGeneratorResponse()
+
+
+
+class PlotGeneratorServiceInstance:
+    
+    def __init__(self):
+        # self.service = rospy.Service('/plot_generator', PlotGenerator, self.callback)
+        # rospy.loginfo("Plot Generator service initialized")
+
         # self.message_pub = rospy.Publisher('/rviz_message', MarkerArray, queue_size=1)
         self.gt_distance = np.array([None,None]) #left, right
         self.gt_ego_bearing = np.array([None,None])
@@ -49,12 +74,15 @@ class PlotGeneratorService:
 
         # Create the animation function
         self.ani = animation.FuncAnimation(self.fig, self.update_plot, frames=None, interval=200, blit=True)
-        # plt.show()
 
 
     def callback(self, req):
         """Generates plots"""
         print("Received request")
+        # print("left distance errors:",self.left_distance_errors)
+        # print("right distance errors:",self.right_distance_errors)
+        # print("left bearing errors:",self.left_bearing_errors)
+        # print("right bearing errors:",self.right_bearing_errors)
         # print(req)
         ego_pose_with_cov = req.ego
         left_pose_with_cov = req.left
@@ -119,7 +147,7 @@ class PlotGeneratorService:
         # else:
         #     rospy.logwarn("Time difference between ground truth and estimate is too large: %f",self.time_diff)
 
-        return PlotGeneratorResponse()
+        # return PlotGeneratorResponse()
 
     def update_gt(self,ego_id,left_id,right_id,timestamp):
         """Updates the ground truth values"""
@@ -142,8 +170,11 @@ class PlotGeneratorService:
         neighbour_pose.header.frame_id = neighbour_bl_frame
         neighbour_pose.header.stamp = rospy.Time(0) #timestamp
         # self.time_diff = abs(timestamp.to_sec() - neighbour_pose.header.stamp.to_sec())
-
-        neighbour_pose_ego_bl = self.listener.transformPose(ego_bl_frame,neighbour_pose)
+        try:
+            neighbour_pose_ego_bl = self.listener.transformPose(ego_bl_frame,neighbour_pose)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            rospy.logwarn("Error in transforming pose from %s to %s",neighbour_bl_frame,ego_bl_frame)
+            return 0, 0
 
         distance = np.sqrt(neighbour_pose_ego_bl.pose.position.x**2 + neighbour_pose_ego_bl.pose.position.y**2)
         ego_bearing = np.arctan2(neighbour_pose_ego_bl.pose.position.y,neighbour_pose_ego_bl.pose.position.x)
@@ -165,8 +196,11 @@ class PlotGeneratorService:
         neighbour_pose = PoseStamped()
         neighbour_pose.header = neighbour_pose_with_cov.header
         neighbour_pose.pose = neighbour_pose_with_cov.pose.pose
-        neighbour_pose_ego_odom = self.listener.transformPose(ego_odom_frame,neighbour_pose)
-
+        try:
+            neighbour_pose_ego_odom = self.listener.transformPose(ego_odom_frame,neighbour_pose)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            rospy.logwarn("Error in transforming pose from %s to %s",neighbour_pose.header.frame_id,ego_odom_frame)
+            return 0, 0
         distance = np.sqrt(abs(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)**2 + abs(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)**2)
         ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)
         return distance, ego_bearing
@@ -243,6 +277,6 @@ class PlotGeneratorService:
 if __name__ == '__main__':
     rospy.init_node('plot_generator_service')
     plot_generator = PlotGeneratorService()
-    plt.show()
+    # plt.show()
     rospy.spin()
     
