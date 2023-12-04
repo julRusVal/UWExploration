@@ -1027,7 +1027,8 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     bool zero_odom = abs(odom_msg->twist.twist.linear.x)  < tol && abs(odom_msg->twist.twist.linear.y) < tol && abs(odom_msg->twist.twist.linear.z) < tol &&
                     abs(odom_msg->twist.twist.angular.x) < tol && abs(odom_msg->twist.twist.angular.y) < tol && abs(odom_msg->twist.twist.angular.z) < tol;
 
-    ROS_INFO("zero_odom = %d", zero_odom);
+    // ROS_INFO("zero_odom = %d", zero_odom);
+    
     if (particle_sets_instantiated_ && !zero_odom)
     {
         RbpfSlam::odom_callback(odom_msg); //Prediction of ego particles
@@ -1058,6 +1059,15 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
             }
         }
         old_time_neigh_ = time_neigh_;
+    }
+    else if(zero_odom) //We still need to have correct delta_t when we start moving again
+    {
+        time_neigh_ = odom_msg->header.stamp.toSec();
+        old_time_neigh_ = time_neigh_;
+        
+        time_ = odom_msg->header.stamp.toSec();
+        old_time_ = time_;
+
     }
 }
 
