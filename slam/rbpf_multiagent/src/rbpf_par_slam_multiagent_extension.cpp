@@ -945,24 +945,39 @@ geometry_msgs::PoseWithCovariance RbpfSlamMultiExtension::average_pose_with_cov(
     pose.pose.position.x = mean_pose(0);
     pose.pose.position.y = mean_pose(1);
     pose.pose.position.z = mean_pose(2);
+    mean_quat.normalize();
     pose.pose.orientation.x = mean_quat.x();
     pose.pose.orientation.y = mean_quat.y();
     pose.pose.orientation.z = mean_quat.z();
     pose.pose.orientation.w = mean_quat.w();
 
+    double mean_roll, mean_pitch, mean_yaw;
+    tf::Quaternion q;
+    tf::quaternionMsgToTF(pose.pose.orientation, q);
+    tf::Matrix3x3(q).getRPY(mean_roll, mean_pitch, mean_yaw);
     // Compute covariance in translation
     for (const RbpfParticle& particle : particles)
     {
         covariances[0] += std::pow(particle.p_pose_(0) - mean_pose(0), 2);
         covariances[7] += std::pow(particle.p_pose_(1) - mean_pose(1), 2);
         covariances[14] += std::pow(particle.p_pose_(2) - mean_pose(2), 2);
+        
+        covariances[21] += std::pow(particle.p_pose_(3) - mean_roll, 2);
+        covariances[28] += std::pow(particle.p_pose_(4) - mean_pitch, 2);
+        covariances[35] += std::pow(particle.p_pose_(5) - mean_yaw, 2);
     }
     covariances[0] = covariances[0] / particles.size();
     covariances[7] = covariances[7] / particles.size();
     covariances[14] = covariances[14] / particles.size();
+    covariances[21] = covariances[21] / particles.size();
+    covariances[28] = covariances[28] / particles.size();
+    covariances[35] = covariances[35] / particles.size();
     pose.covariance[0] = covariances[0];
     pose.covariance[7] = covariances[7];
     pose.covariance[14] = covariances[14];
+    pose.covariance[21] = covariances[21];
+    pose.covariance[28] = covariances[28];
+    pose.covariance[35] = covariances[35];
     return pose;
 }
 
