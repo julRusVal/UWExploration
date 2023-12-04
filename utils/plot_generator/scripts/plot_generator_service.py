@@ -63,14 +63,14 @@ class PlotGeneratorServiceInstance:
         # cv2.resizeWindow("Errors Plot", 500, 500)
 
         # Create a figure and axis for the animation
-        self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 8))
+        self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 10))
         self.fig.suptitle('Position error and variance over time')
         self.line_left_distance, = self.ax1.plot([], [], label='Left Distance Error')
         self.line_right_distance, = self.ax1.plot([], [], label='Right Distance Error')
         self.line_left_bearing, = self.ax1.plot([], [], label='Left Bearing Error')
         self.line_right_bearing, = self.ax1.plot([], [], label='Right Bearing Error')
         self.ax1.set_xlabel('Callback Iteration')
-        self.ax1.set_ylabel('Normed Error')
+        self.ax1.set_ylabel('Error [m] or [deg]')
         self.ax1.legend()
         self.ax1.set_ylim(0, 1)
         self.ax1.set_title('Distance and Bearing Errors Over Time')
@@ -194,24 +194,24 @@ class PlotGeneratorServiceInstance:
         if left_id >= 0 and self.gt_distance[0] != None and self.distance[0] != None and self.gt_ego_bearing[0] != None and self.ego_bearing[0] != None:
             # print("gt_distance[0]:",self.gt_distance[0])
             # print("distance[0]:",self.distance[0])
-            left_error_distance = abs(self.gt_distance[0] - self.distance[0])/self.gt_distance[0]
-            left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])/self.gt_ego_bearing[0]
+            left_error_distance = abs(self.gt_distance[0] - self.distance[0])#/self.gt_distance[0]
+            left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])#/self.gt_ego_bearing[0]
             # error_distance[0] = left_error_distance
             # error_bearing[0] = left_error_bearing
             self.left_distance_errors.append(left_error_distance)
-            self.left_bearing_errors.append(left_error_bearing)
+            self.left_bearing_errors.append(np.rad2deg(left_error_bearing))
         # else:
         #     self.left_distance_errors.append(0)
         #     self.left_bearing_errors.append(0)
         if right_id >= 0 and self.gt_distance[1] != None and self.distance[1] != None and self.gt_ego_bearing[1] != None and self.ego_bearing[1] != None:
             # print("gt_distance[1]:",self.gt_distance[1])
             # print("distance[1]:",self.distance[1])
-            right_error_distance = abs(self.gt_distance[1] - self.distance[1])/self.gt_distance[1]
-            right_error_bearing = abs(self.gt_ego_bearing[1] - self.ego_bearing[1])/self.gt_ego_bearing[1]
+            right_error_distance = abs(self.gt_distance[1] - self.distance[1])#/self.gt_distance[1]
+            right_error_bearing = abs(self.gt_ego_bearing[1] - self.ego_bearing[1])#/self.gt_ego_bearing[1]
             # error_distance[1] = right_error_distance
             # error_bearing[1] = right_error_bearing
             self.right_distance_errors.append(right_error_distance)
-            self.right_bearing_errors.append(right_error_bearing)
+            self.right_bearing_errors.append(np.rad2deg(right_error_bearing))
         # else:
         #     self.right_distance_errors.append(0)
         #     self.right_bearing_errors.append(0)
@@ -304,6 +304,7 @@ class PlotGeneratorServiceInstance:
             return None, None
         distance = np.sqrt(abs(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)**2 + abs(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)**2)
         ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x) #CONTINUE HERE 2, the bearing valuues seem to be wrong. They oscillate weirdly.
+        # print("ego bearing:",ego_bearing)
         return distance, ego_bearing
     
     def update_absolute_errors(self,ego_pose_with_cov,left_pose_with_cov,right_pose_with_cov):
@@ -404,6 +405,14 @@ class PlotGeneratorServiceInstance:
         # Update the x-axis limits dynamically
         max_x = max(len(self.left_distance_errors), len(self.right_distance_errors))
         self.ax1.set_xlim(0, max_x)
+        y_max_list = [0]
+        if len(self.left_distance_errors) != 0:
+            y_max_list.append(max(self.left_distance_errors))
+            y_max_list.append(max(self.left_bearing_errors))
+        if len(self.right_distance_errors) != 0:
+            y_max_list.append(max(self.right_distance_errors))
+            y_max_list.append(max(self.right_bearing_errors))
+        self.ax1.set_ylim(0, max(y_max_list))
 
         self.line_ego_cov.set_data(np.arange(len(self.ego_cov_list)), self.ego_cov_list)
         self.line_left_cov.set_data(np.arange(len(self.left_cov_list)), self.left_cov_list)
@@ -424,8 +433,9 @@ class PlotGeneratorServiceInstance:
         self.line_left_abs_error.set_data(np.arange(len(self.left_abs_error)), self.left_abs_error)
         self.line_right_abs_error.set_data(np.arange(len(self.right_abs_error)), self.right_abs_error)
         self.ax3.set_xlim(0, len(self.ego_abs_error))
-        y_max_list = []
-        y_max_list.append(max(self.ego_abs_error))
+        y_max_list = [0]
+        if len(self.ego_abs_error) != 0:
+            y_max_list.append(max(self.ego_abs_error))
         if len(self.left_abs_error) != 0:
             y_max_list.append(max(self.left_abs_error))
         if len(self.right_abs_error) != 0:
