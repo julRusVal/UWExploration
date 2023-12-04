@@ -70,6 +70,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     RbpfSlamMultiExtension::setup_neighbours();
 
     //Neighbour prediction
+    odom_sub_.shutdown(); //shutdown the odom subscriber to handle the ego predction within this script instead. Allows for more flexibility regarding "zero" odom.
     nh_->param<string>(("odometry_topic"), odom_top_, "odom");
     odom_sub_neigh_ = nh_->subscribe(odom_top_, 100, &RbpfSlamMultiExtension::odom_callback, this);
      // Start timing now
@@ -1022,8 +1023,14 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     // }
     // ROS_INFO("frontal_direction_ = %d", frontal_direction_);
     // ROS_INFO("odom_callback");
-    if (particle_sets_instantiated_)
+    float tol = 0.001;
+    bool zero_odom = abs(odom_msg->twist.twist.linear.x)  < tol && abs(odom_msg->twist.twist.linear.y) < tol && abs(odom_msg->twist.twist.linear.z) < tol &&
+                    abs(odom_msg->twist.twist.angular.x) < tol && abs(odom_msg->twist.twist.angular.y) < tol && abs(odom_msg->twist.twist.angular.z) < tol;
+
+    ROS_INFO("zero_odom = %d", zero_odom);
+    if (particle_sets_instantiated_ && !zero_odom)
     {
+        RbpfSlam::odom_callback(odom_msg); //Prediction of ego particles
         
         time_neigh_ = odom_msg->header.stamp.toSec();
 
@@ -1047,6 +1054,7 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
                     // ROS_INFO("Predicting right neighbour");
                     RbpfSlamMultiExtension::predict(odom_cp, dt,particles_right_, pred_threads_vec_neigh_right_);
                 }
+
             }
         }
         old_time_neigh_ = time_neigh_;
