@@ -111,6 +111,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
 
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
     double compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat, const std::vector<double> &ego_cov_array, const std::vector<double> &neigh_cov_array);
+    std::pair<double,double> convert_cartesian_covariance_2_polar(const double x_cov, const double y_cov);
 
 
     void setup_neighbours();
