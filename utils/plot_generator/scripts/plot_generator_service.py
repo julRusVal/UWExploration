@@ -152,6 +152,7 @@ class PlotGeneratorServiceInstance:
         right_id = -1
         if ego_odom_frame[0:5] == "hugin":
             ego_id = int(ego_odom_frame[6])
+            print("ego_id:",ego_id)
             #use numpy to convert covariance arrayto 6x6 matrix and calcualte determinant
             # ego_cov_matrix = np.array(ego_pose_with_cov.pose.covariance).reshape(6,6)
             # ego_cov_det = np.linalg.det(ego_cov_matrix)
@@ -191,11 +192,14 @@ class PlotGeneratorServiceInstance:
 
         # error_distance = np.array([None,None])
         # error_bearing = np.array([None,None])
+        print("left_id:",left_id)
         if left_id >= 0 and self.gt_distance[0] != None and self.distance[0] != None and self.gt_ego_bearing[0] != None and self.ego_bearing[0] != None:
             # print("gt_distance[0]:",self.gt_distance[0])
             # print("distance[0]:",self.distance[0])
             left_error_distance = abs(self.gt_distance[0] - self.distance[0])#/self.gt_distance[0]
             left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])#/self.gt_ego_bearing[0]
+            print("left_error_distance:",left_error_distance)
+            print("left_error_bearing:",left_error_bearing)
             # error_distance[0] = left_error_distance
             # error_bearing[0] = left_error_bearing
             self.left_distance_errors.append(left_error_distance)
@@ -203,15 +207,20 @@ class PlotGeneratorServiceInstance:
         # else:
         #     self.left_distance_errors.append(0)
         #     self.left_bearing_errors.append(0)
+        print("right_id:",right_id)
         if right_id >= 0 and self.gt_distance[1] != None and self.distance[1] != None and self.gt_ego_bearing[1] != None and self.ego_bearing[1] != None:
             # print("gt_distance[1]:",self.gt_distance[1])
             # print("distance[1]:",self.distance[1])
             right_error_distance = abs(self.gt_distance[1] - self.distance[1])#/self.gt_distance[1]
             right_error_bearing = abs(self.gt_ego_bearing[1] - self.ego_bearing[1])#/self.gt_ego_bearing[1]
+            print("right_error_distance:",right_error_distance)
+            print("right_error_bearing:",right_error_bearing)
             # error_distance[1] = right_error_distance
             # error_bearing[1] = right_error_bearing
             self.right_distance_errors.append(right_error_distance)
             self.right_bearing_errors.append(np.rad2deg(right_error_bearing))
+        
+
         # else:
         #     self.right_distance_errors.append(0)
         #     self.right_bearing_errors.append(0)
@@ -276,9 +285,28 @@ class PlotGeneratorServiceInstance:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             rospy.logwarn("Error in transforming pose from %s to %s",neighbour_bl_frame,ego_bl_frame)
             return None, None, None, None
+        
+        # distance = np.sqrt(neighbour_pose_ego_bl.pose.position.x**2 + neighbour_pose_ego_bl.pose.position.y**2)
+        # ego_bearing = np.arctan2(neighbour_pose_ego_bl.pose.position.y,neighbour_pose_ego_bl.pose.position.x)
+        print("in get_gt")
+        # distance, ego_bearing = self.cartesian_to_polar(neighbour_pose_ego_bl.pose.position.x,neighbour_pose_ego_bl.pose.position.y)
 
-        distance = np.sqrt(neighbour_pose_ego_bl.pose.position.x**2 + neighbour_pose_ego_bl.pose.position.y**2)
-        ego_bearing = np.arctan2(neighbour_pose_ego_bl.pose.position.y,neighbour_pose_ego_bl.pose.position.x)
+        # self.time_diff = abs(timestamp.to_sec() - neighbour_pose.header.stamp.to_sec())
+        ego_odom_frame = "hugin_" + str(ego_id) + "/odom"
+        try:
+            neighbour_pose_ego_odom = self.listener.transformPose(ego_odom_frame,neighbour_pose_ego_bl)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            rospy.logwarn("Error in transforming pose from %s to %s",neighbour_pose_ego_bl.header.frame_id,ego_odom_frame)
+            return None, None, None, None
+        
+        try:
+            ego_pose_ego_odom = self.listener.transformPose(ego_odom_frame,ego_pose)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            rospy.logwarn("Error in transforming pose from %s to %s",ego_pose.header.frame_id,ego_odom_frame)
+            return None, None, None, None
+
+        distance, ego_bearing = self.cartesian_to_polar(neighbour_pose_ego_odom.pose.position.x-ego_pose_ego_odom.pose.position.x,neighbour_pose_ego_odom.pose.position.y-ego_pose_ego_odom.pose.position.y)
+        
         return distance, ego_bearing, ego_pose, neighbour_pose_ego_bl
 
     def update_estimates(self,ego_pose_with_cov,left_pose_with_cov,right_pose_with_cov):
@@ -302,10 +330,36 @@ class PlotGeneratorServiceInstance:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             rospy.logwarn("Error in transforming pose from %s to %s",neighbour_pose.header.frame_id,ego_odom_frame)
             return None, None
-        distance = np.sqrt(abs(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)**2 + abs(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)**2)
-        ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x) #CONTINUE HERE 2, the bearing valuues seem to be wrong. They oscillate weirdly.
+        # distance = np.sqrt(abs(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)**2 + abs(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)**2)
+        # ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x) #CONTINUE HERE 2, the bearing valuues seem to be wrong. They oscillate weirdly.
         # print("ego bearing:",ego_bearing)
+        print("in get_estimate")
+        distance, ego_bearing = self.cartesian_to_polar(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x,neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)
         return distance, ego_bearing
+    
+    def cartesian_to_polar(self,x,y):
+        """Converts cartesian coordinates to polar coordinates"""
+        print("x:",x)
+        print("y:",y)
+        if x < 1e-6:
+            x = 0
+        if y < 1e-6:
+            y = 0
+        
+        if x == 0 and y == 0:
+            return 0, 0
+        elif x == 0 and y > 0:
+            return y, np.pi/2
+        elif x == 0 and y < 0:
+            return y, -np.pi/2
+        elif x > 0 and y == 0:
+            return x, 0
+        elif x < 0 and y == 0:
+            return x, np.pi
+            
+        distance = np.sqrt(x**2 + y**2)
+        bearing = np.arctan2(y,x)
+        return distance, bearing
     
     def update_absolute_errors(self,ego_pose_with_cov,left_pose_with_cov,right_pose_with_cov):
         """Updates the absolute errors"""
