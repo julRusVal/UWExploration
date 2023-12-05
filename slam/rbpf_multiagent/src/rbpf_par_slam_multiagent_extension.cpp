@@ -332,7 +332,18 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
                 w.self_index = particle_m.index_;
                 w.neighbour_index = n_particle_phi.index_;
                 w.neighbour_location = neighbour_location;
-                w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle).cast<double>(), Eigen::Vector2f(range_hat, angle_hat).cast<double>());
+                // std::vector<double> ego_cov_array = RbpfSlamMultiExtension::average_pose_with_cov(particles_).covariance;
+                // std::vector<double> neigh_cov_array = RbpfSlamMultiExtension::average_pose_with_cov(*particles_neighbour).covariance;
+
+                // Assuming covariance is of type boost::array<double, 36>
+                geometry_msgs::PoseWithCovariance pose_with_cov = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
+                // Convert boost::array<double, 36> to std::vector<double>
+                std::vector<double> ego_cov_array(pose_with_cov.covariance.begin(), pose_with_cov.covariance.end());
+                geometry_msgs::PoseWithCovariance pose_with_cov_neigh = RbpfSlamMultiExtension::average_pose_with_cov(*particles_neighbour);
+                std::vector<double> neigh_cov_array(pose_with_cov_neigh.covariance.begin(), pose_with_cov_neigh.covariance.end());
+                // ROS_INFO("ego variance x,y,z = %f, %f, %f", ego_cov_array[0], ego_cov_array[7], ego_cov_array[14]);
+
+                w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle).cast<double>(), Eigen::Vector2f(range_hat, angle_hat).cast<double>(), ego_cov_array, neigh_cov_array);
                 weights.push_back(w);
                 //print the weight in the terminal
                 // ROS_INFO("w.value = %f", w.value);
@@ -354,7 +365,7 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
     return weights;
 }
 
-double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat)
+double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat, const std::vector<double> &ego_cov_array, const std::vector<double> &neigh_cov_array)
 {
     //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.
     //Determine the covariance matrices gp_var and fls_sigma. 
@@ -376,6 +387,8 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     return exp(logl);
     // return 0;
 }
+
+std::pair<double,double> RbpfSlamMultiExtension::convert_cartesion_covariance_2_polar(const 
 
 void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 {

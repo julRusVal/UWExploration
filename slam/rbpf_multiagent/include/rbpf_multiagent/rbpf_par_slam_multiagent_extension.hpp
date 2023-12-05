@@ -110,7 +110,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     void odom_callback(const nav_msgs::OdometryConstPtr& odom_msg);
 
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
-    double compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat);
+    double compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat, const std::vector<double> &ego_cov_array, const std::vector<double> &neigh_cov_array);
 
 
     void setup_neighbours();
