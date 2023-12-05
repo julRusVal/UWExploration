@@ -376,7 +376,18 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     // Eigen::VectorXd var_diag = Eigen::Vector2d(1e-9,1e-9); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise 
     // ROS_INFO("fls_measurement_std_range_ == 1e-9 = %d", fls_measurement_std_range_ == 1e-9); 
     // ROS_INFO("fls_measurement_std_angle_ == 1e-9 = %d", fls_measurement_std_angle_ == 1e-9);
-    Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_);
+    //pointer for x_cov
+    double ego_x_cov = ego_cov_array[0];
+    double ego_y_cov = ego_cov_array[7];
+    double neigh_x_cov = neigh_cov_array[0];
+    double neigh_y_cov = neigh_cov_array[7];
+    std::pair<double,double> p_ego = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(ego_x_cov, ego_y_cov); //TODO(): Check if this is correct and make sense
+    std::pair<double,double> p_neigh = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(neigh_x_cov, neigh_y_cov);
+    ROS_INFO("r_cov_ego = %f theta_cov_ego = %f", p_ego.first, p_ego.second);
+    ROS_INFO("x_cov_ego = %f y_cov_ego = %f", ego_x_cov, ego_y_cov);
+    ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
+    ROS_INFO("x_cov_neigh = %f y_cov_neigh = %f", neigh_x_cov, neigh_y_cov);
+    Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_) + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
     Eigen::MatrixXd var_mat = var_diag.asDiagonal();
     Eigen::VectorXd diff = (z - z_hat).array().transpose() * var_inv.array() * 
@@ -388,7 +399,23 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     // return 0;
 }
 
-std::pair<double,double> RbpfSlamMultiExtension::convert_cartesion_covariance_2_polar(const 
+std::pair<double,double> RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(const double x_cov, const double y_cov)
+{
+    double x_std = std::sqrt(x_cov);
+    double y_std = std::sqrt(y_cov);
+    if (x_cov <= 1e-6 && y_cov <= 1e-6)
+    {
+        ROS_WARN("Standard deviation is zero");
+        return std::make_pair(0,0);
+    }
+    double r_cov = x_cov + y_cov;
+    double theta_cov = std::pow(std::atan2(y_std, x_std),2);
+    // ROS_INFO("r = %f", r);
+    // ROS_INFO("theta = %f", theta);
+    // ROS_INFO("r_cov = %f", r_cov);
+    // ROS_INFO("theta_cov = %f", theta_cov);
+    return std::make_pair(r_cov, theta_cov);
+}
 
 void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 {
