@@ -34,8 +34,8 @@ class W2WPathPlanner(object):
         if self.nav_goal_frame is None or self.nav_goal_frame == '':
             rospy.logwarn("Goal has no frame id! Using map by default")
             self.nav_goal_frame = self.map_frame
-
-        r = rospy.Rate(10.)  # 10hz
+        # print("planner rate", self.rate)
+        r = rospy.Rate(self.rate)  #NOTE(by Koray): This value has to match the timer rate in auv_motion calling AUVMotion::updateMotion, arg called "odom_rate" in auv_environment.launch. This is handled autonmatically if all is launched through multi_agent.launch.
         counter = 0
         while not rospy.is_shutdown() and self.nav_goal is not None:
 
@@ -268,7 +268,10 @@ class W2WPathPlanner(object):
         self.thruster_top = rospy.get_param('~thruster_cmd', '/thruster')
         self.inclination_top = rospy.get_param('~inclination_cmd', '/inclination')
         self.as_name = rospy.get_param('~path_planner_as', 'path_planner')
-        
+        self.period = rospy.get_param("~odom_period",0.1)
+        self.rate = 1//self.period
+
+
         self.P_throttle = rospy.get_param('~P_throttle', 1.0)
         self.I_throttle = rospy.get_param('~I_throttle', 0.0)
         self.D_throttle = rospy.get_param('~D_throttle', 0.0)

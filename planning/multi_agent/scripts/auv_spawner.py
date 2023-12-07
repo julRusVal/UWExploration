@@ -26,6 +26,7 @@ class AUVSpawner():
         self.fls_max_range = rospy.get_param("~fls_max_range", 50) #meters
         self.fls_range_std = rospy.get_param("~fls_range_std") #meters
         self.fls_angle_std = rospy.get_param("~fls_angle_std") #radians
+        self.odom_period = rospy.get_param("~odom_period") #seconds
         rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~auv_launch_file',rospack.get_path('auv_model') + '/launch/auv_environment.launch')
 
@@ -127,6 +128,7 @@ class AUVSpawner():
                             "fls_angle_std:=" + str(self.fls_angle_std),
                             "vehicle_model:=" + self.vehicle_model,
                             "num_auvs:=" + str(self.num_auvs),
+                            "odom_rate:=" + str(self.odom_period), #odom_rate is actually period as defined in environment.launch...
                             ])
         rospy.loginfo(str("Spawned AUV: "+ str(namespace)) + str(" at x: " + str(x) + " y: " + str(y) + " z: " + str(z) + " roll: " + str(roll) + " pitch: " + str(pitch) + " yaw: " + str(yaw)))
 if __name__ == '__main__':

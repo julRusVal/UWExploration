@@ -18,6 +18,7 @@ class AUVNavigation():
         self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
         self.goal_tolerance = rospy.get_param('~goal_tolerance', 1.)
         self.time_sync = rospy.get_param('~time_sync', 'false')
+        self.odom_period = rospy.get_param('~odom_period')
 
         
 
@@ -36,6 +37,7 @@ class AUVNavigation():
                             "dubins_turning_radius:=" + str(self.dubins_turning_radius),
                             "goal_tolerance:=" + str(self.goal_tolerance),
                             "time_sync:=" + str(self.time_sync),
+                            "odom_period:=" + str(self.odom_period),
                           ])
             
             # rospy.sleep(3)

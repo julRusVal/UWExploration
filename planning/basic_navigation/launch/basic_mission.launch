@@ -18,7 +18,7 @@
 	<arg name="time_sync" default="false"/>
 	<!-- <arg name="wp_counter_topic" default="/$(arg namespace)/wp_counter"/> -->
 
-
+	<arg name="odom_period" default="0.1"/>
 
 
 
@@ -59,7 +59,7 @@
 					<param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
 					<param name="time_sync" value="$(arg time_sync)"/>
         			<param name="waypoint_follower_type" value="$(arg waypoint_follower_type)"/>
-
+					<param name="odom_period" value="$(arg odom_period)"/>
 					
 				</node>
 
