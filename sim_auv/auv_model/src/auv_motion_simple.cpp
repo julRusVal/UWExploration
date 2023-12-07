@@ -139,7 +139,7 @@ void AUVMotionModel::updateMotion(const ros::TimerEvent&){
 
     time_now_ = ros::Time::now();
     double dt = (time_now_ - time_prev_).toSec();
-
+    // ROS_INFO("dt in auv_motion: %f", dt);
     tf::Quaternion q_prev;
     tf::quaternionMsgToTF(prev_odom_.pose.pose.orientation, q_prev);
     tf::Matrix3x3 m(q_prev.normalized());
