@@ -164,6 +164,8 @@ class RbpfSlamMultiExtension: public RbpfSlam
     Eigen::Matrix4f oR2o_mat_;
     float plot_period_;
 
+    ros::Time latest_odom_stamp_;
+
     // std::vector<float> fls_meas_;
 
     // nav_msgs::Odometry odom_latest_neigh_;

@@ -42,7 +42,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     }
 
 
-    sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
+    // sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
 
     inducing_pts_sent = false;
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
@@ -381,8 +381,8 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     double ego_y_cov = ego_cov_array[7];
     double neigh_x_cov = neigh_cov_array[0];
     double neigh_y_cov = neigh_cov_array[7];
-    std::pair<double,double> p_ego = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(ego_x_cov, ego_y_cov); //TODO(): Check if this is correct and make sense
-    std::pair<double,double> p_neigh = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(neigh_x_cov, neigh_y_cov);
+    std::pair<double,double> p_ego = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(ego_x_cov, ego_y_cov);
+    std::pair<double,double> p_neigh = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(neigh_x_cov, neigh_y_cov); //TODO(): Check if this is correct and make sense);
     ROS_INFO("r_cov_ego = %f theta_cov_ego = %f", p_ego.first, p_ego.second);
     ROS_INFO("x_cov_ego = %f y_cov_ego = %f", ego_x_cov, ego_y_cov);
     ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
@@ -929,13 +929,13 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
     plot_generator::PlotGenerator srv;
     
     srv.request.ego.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_) + "/odom";
-    srv.request.ego.header.stamp = ros::Time::now();
+    srv.request.ego.header.stamp = latest_odom_stamp_;//ros::Time::now();
     srv.request.ego.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
 
     if (auv_id_left_)
     {
         srv.request.left.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_left_) + "/odom";
-        srv.request.left.header.stamp = ros::Time::now();
+        srv.request.left.header.stamp = latest_odom_stamp_;//ros::Time::now();
         srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
 
     }
@@ -946,7 +946,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
     if (auv_id_right_)
     {
         srv.request.right.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_right_) + "/odom";
-        srv.request.right.header.stamp = ros::Time::now();
+        srv.request.right.header.stamp = latest_odom_stamp_;//ros::Time::now();
         srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
     }
     else
@@ -1078,6 +1078,13 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     // }
     // ROS_INFO("frontal_direction_ = %d", frontal_direction_);
     // ROS_INFO("odom_callback");
+
+    // if (ros::Time::now().toSec() - t_plot_old_ > plot_period_)
+    // {
+    //     t_plot_old_ = ros::Time::now().toSec();
+    //     RbpfSlamMultiExtension::update_plots(ros::TimerEvent());
+    // }
+    
     float tol = 0.001;
     bool zero_odom = abs(odom_msg->twist.twist.linear.x)  < tol && abs(odom_msg->twist.twist.linear.y) < tol && abs(odom_msg->twist.twist.linear.z) < tol &&
                     abs(odom_msg->twist.twist.angular.x) < tol && abs(odom_msg->twist.twist.angular.y) < tol && abs(odom_msg->twist.twist.angular.z) < tol;
@@ -1086,6 +1093,7 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     
     if (particle_sets_instantiated_ && !zero_odom)
     {
+        latest_odom_stamp_ = odom_msg->header.stamp;
         RbpfSlam::odom_callback(odom_msg); //Prediction of ego particles
         
         time_neigh_ = odom_msg->header.stamp.toSec();

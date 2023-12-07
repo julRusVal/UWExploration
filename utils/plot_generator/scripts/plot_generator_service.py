@@ -271,19 +271,21 @@ class PlotGeneratorServiceInstance:
         ego_bl_frame = "hugin_" + str(ego_id) + "/base_link"
         ego_pose = PoseStamped()
         ego_pose.header.frame_id = ego_bl_frame
-        ego_pose.header.stamp = rospy.Time(0) #timestamp
+        ego_pose.header.stamp = timestamp #rospy.Time(0) 
 
         # self.time_diff = abs(timestamp.to_sec() - ego_pose.header.stamp.to_sec())
 
         neighbour_bl_frame = "hugin_" + str(neighbour_id) + "/base_link"
         neighbour_pose = PoseStamped()
         neighbour_pose.header.frame_id = neighbour_bl_frame
-        neighbour_pose.header.stamp = rospy.Time(0) #timestamp
+        neighbour_pose.header.stamp = timestamp #rospy.Time(0)
         # self.time_diff = abs(timestamp.to_sec() - neighbour_pose.header.stamp.to_sec())
         try:
             neighbour_pose_ego_bl = self.listener.transformPose(ego_bl_frame,neighbour_pose)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn("Error in transforming pose from %s to %s",neighbour_bl_frame,ego_bl_frame)
+            rospy.logwarn(e)
+            rospy.logwarn("In get_gt")
             return None, None, None, None
         
         # distance = np.sqrt(neighbour_pose_ego_bl.pose.position.x**2 + neighbour_pose_ego_bl.pose.position.y**2)
@@ -295,14 +297,18 @@ class PlotGeneratorServiceInstance:
         ego_odom_frame = "hugin_" + str(ego_id) + "/odom"
         try:
             neighbour_pose_ego_odom = self.listener.transformPose(ego_odom_frame,neighbour_pose_ego_bl)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn("Error in transforming pose from %s to %s",neighbour_pose_ego_bl.header.frame_id,ego_odom_frame)
+            rospy.logwarn(e)
+            rospy.logwarn("In get_gt")
             return None, None, None, None
         
         try:
             ego_pose_ego_odom = self.listener.transformPose(ego_odom_frame,ego_pose)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn("Error in transforming pose from %s to %s",ego_pose.header.frame_id,ego_odom_frame)
+            rospy.logwarn(e)
+            rospy.logwarn("In get_gt")
             return None, None, None, None
 
         distance, ego_bearing = self.cartesian_to_polar(neighbour_pose_ego_odom.pose.position.x-ego_pose_ego_odom.pose.position.x,neighbour_pose_ego_odom.pose.position.y-ego_pose_ego_odom.pose.position.y)
@@ -327,8 +333,10 @@ class PlotGeneratorServiceInstance:
         neighbour_pose.pose = neighbour_pose_with_cov.pose.pose
         try:
             neighbour_pose_ego_odom = self.listener.transformPose(ego_odom_frame,neighbour_pose)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn("Error in transforming pose from %s to %s",neighbour_pose.header.frame_id,ego_odom_frame)
+            rospy.logwarn(e)
+            rospy.logwarn("In get_estimate")
             return None, None
         # distance = np.sqrt(abs(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)**2 + abs(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)**2)
         # ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x) #CONTINUE HERE 2, the bearing valuues seem to be wrong. They oscillate weirdly.
@@ -380,15 +388,16 @@ class PlotGeneratorServiceInstance:
         if gt_pose_ego_bl is None:
             return
         pose = PoseStamped()
-        # pose.header = pose_with_cov.header
-        pose.header.stamp = rospy.Time(0) #NOTE extrapolation issues here
-        pose.header.frame_id = pose_with_cov.header.frame_id
+        pose.header = pose_with_cov.header
+        # pose.header.stamp = rospy.Time(0) #NOTE extrapolation issues here
+        # pose.header.frame_id = pose_with_cov.header.frame_id
         pose.pose = pose_with_cov.pose.pose
         try:
             pose_ego_bl = self.listener.transformPose(gt_pose_ego_bl.header.frame_id,pose)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn("Error in transforming pose from %s to %s",pose.header.frame_id,gt_pose_ego_bl.header.frame_id)
             rospy.logwarn(e)
+            rospy.logwarn("In get_absolute_error")
             return None
         error = np.sqrt(abs(pose_ego_bl.pose.position.x-gt_pose_ego_bl.pose.position.x)**2 + abs(pose_ego_bl.pose.position.y-gt_pose_ego_bl.pose.position.y)**2)
         return error
