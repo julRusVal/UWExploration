@@ -166,9 +166,12 @@ class RbpfSlamMultiExtension: public RbpfSlam
 
     ros::Time latest_odom_stamp_;
     double t_plot_old_;
+
+    bool particles_busy_ = false;
     // std::vector<float> fls_meas_;
 
     // nav_msgs::Odometry odom_latest_neigh_;
+    std::vector<std::thread> upd_threads_vec_fls_;
 
 
     

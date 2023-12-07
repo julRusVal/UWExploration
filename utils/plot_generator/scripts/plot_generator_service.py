@@ -481,7 +481,7 @@ class PlotGeneratorServiceInstance:
         self.line_left_cov.set_data(np.arange(len(self.left_cov_list)), self.left_cov_list)
         self.line_right_cov.set_data(np.arange(len(self.right_cov_list)), self.right_cov_list)
         self.ax2.set_xlim(0, len(self.ego_cov_list))
-        y_max_list = [0.0001] #sqrt0.0001 = 0.01. = 1cm uncertainty
+        y_max_list = [0] #sqrt0.0001 = 0.01. = 1cm uncertainty
         if len(self.ego_cov_list) != 0:
             y_max_list.append(max(self.ego_cov_list))
         if len(self.left_cov_list) != 0:

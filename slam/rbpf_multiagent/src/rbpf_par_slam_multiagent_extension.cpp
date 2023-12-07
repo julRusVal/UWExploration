@@ -42,7 +42,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     }
 
 
-    // sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
+    sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
 
     inducing_pts_sent = false;
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
@@ -83,9 +83,9 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     client_plots_ = nh_->serviceClient<plot_generator::PlotGenerator>("/plot_generator");
     // Timer for updating plots
     nh_->param<float>(("plot_period"), plot_period_, 1.0);
-    // if(plot_period_ != 0.){
-    //     timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
-    // }
+    if(plot_period_ != 0.){
+        timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
+    }
     t_plot_old_ = ros::Time::now().toSec();
     
 }   
@@ -207,6 +207,7 @@ bool RbpfSlamMultiExtension::empty_srv_multi(std_srvs::Empty::Request &req, std_
 
 void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
 {
+    // particles_busy_ = true;
     if (wp_counter_ % 2 == 0) //Only if facing anoher auv, not when travelling in the same direction
     {
         // fls_meas_(0) = fls_reading.range;
@@ -230,7 +231,8 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         {
             ROS_WARN("No frontal neighbour id available");
         }
-
+    // particles_busy_ = false;
+    
     }
     // int neighbour_id = RbpfSlamMultiExtension::identify_frontal_neighbour_id();
     // cout << "Received FLS reading" << endl;
@@ -388,7 +390,7 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     ROS_INFO("x_cov_ego = %f y_cov_ego = %f", ego_x_cov, ego_y_cov);
     ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
     ROS_INFO("x_cov_neigh = %f y_cov_neigh = %f", neigh_x_cov, neigh_y_cov);
-    Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_) + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
+    Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
     Eigen::MatrixXd var_mat = var_diag.asDiagonal();
     Eigen::VectorXd diff = (z - z_hat).array().transpose() * var_inv.array() * 
@@ -927,37 +929,44 @@ geometry_msgs::PoseArray RbpfSlamMultiExtension::particles_2_pose_array(const in
 
 void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
 {
-    plot_generator::PlotGenerator srv;
-    
-    srv.request.ego.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_) + "/odom";
-    srv.request.ego.header.stamp = latest_odom_stamp_;//ros::Time::now();
-    srv.request.ego.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
-
-    if (auv_id_left_)
+    if (!particles_busy_)
     {
-        srv.request.left.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_left_) + "/odom";
-        srv.request.left.header.stamp = latest_odom_stamp_;//ros::Time::now();
-        srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
+        plot_generator::PlotGenerator srv;
+        
+        srv.request.ego.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_) + "/odom";
+        srv.request.ego.header.stamp = latest_odom_stamp_;//ros::Time::now();
+        srv.request.ego.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
 
+        if (auv_id_left_)
+        {
+            srv.request.left.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_left_) + "/odom";
+            srv.request.left.header.stamp = latest_odom_stamp_;//ros::Time::now();
+            srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
+
+        }
+        else
+        {
+            srv.request.left.header.frame_id = "-1"; // -1 means no neighbour
+        }
+        if (auv_id_right_)
+        {
+            srv.request.right.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_right_) + "/odom";
+            srv.request.right.header.stamp = latest_odom_stamp_;//ros::Time::now();
+            srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
+        }
+        else
+        {
+            srv.request.right.header.frame_id = "-1"; // -1 means no neighbour
+        }
+
+        if (!client_plots_.call(srv))
+        {
+            ROS_ERROR("Failed to call plot generator service");
+        }
     }
     else
     {
-        srv.request.left.header.frame_id = "-1"; // -1 means no neighbour
-    }
-    if (auv_id_right_)
-    {
-        srv.request.right.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_right_) + "/odom";
-        srv.request.right.header.stamp = latest_odom_stamp_;//ros::Time::now();
-        srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
-    }
-    else
-    {
-        srv.request.right.header.frame_id = "-1"; // -1 means no neighbour
-    }
-
-    if (!client_plots_.call(srv))
-    {
-        ROS_ERROR("Failed to call plot generator service");
+        ROS_WARN("Particles are busy, not updating plots");
     }
 }
 
@@ -1090,12 +1099,13 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     // ROS_INFO("frontal_direction_ = %d", frontal_direction_);
     // ROS_INFO("odom_callback");
 
-    if (ros::Time::now().toSec() - t_plot_old_ > plot_period_)
-    {
-        t_plot_old_ = ros::Time::now().toSec();
-        RbpfSlamMultiExtension::update_plots(ros::TimerEvent());
-    }
-    
+    // if (ros::Time::now().toSec() - t_plot_old_ > plot_period_)
+    // {
+    //     t_plot_old_ = ros::Time::now().toSec();
+    //     RbpfSlamMultiExtension::update_plots(ros::TimerEvent());
+    // }
+    particles_busy_ = true;
+
     float tol = 0.001;
     bool zero_odom = abs(odom_msg->twist.twist.linear.x)  < tol && abs(odom_msg->twist.twist.linear.y) < tol && abs(odom_msg->twist.twist.linear.z) < tol &&
                     abs(odom_msg->twist.twist.angular.x) < tol && abs(odom_msg->twist.twist.angular.y) < tol && abs(odom_msg->twist.twist.angular.z) < tol;
@@ -1105,7 +1115,7 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     if (particle_sets_instantiated_ && !zero_odom)
     {
         latest_odom_stamp_ = odom_msg->header.stamp;
-        RbpfSlam::odom_callback(odom_msg); //Prediction of ego particles
+        // RbpfSlam::odom_callback(odom_msg); //Prediction of ego particles
         
         time_neigh_ = odom_msg->header.stamp.toSec();
 
@@ -1119,6 +1129,9 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
                 // float dt = float(time_ - old_time_); //HERE LOOK YAMANIAC
                 float dt = float(time_neigh_ - old_time_neigh_);
                 // ROS_INFO("namespace_ = %s", namespace_.c_str());
+
+                RbpfSlamMultiExtension::predict(odom_cp, dt, particles_, pred_threads_vec_);
+
                 if (auv_id_left_)
                 {
                     // ROS_INFO("Predicting left neighbour");
@@ -1143,6 +1156,7 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
         old_time_ = time_;
 
     }
+    particles_busy_ = false;
 }
 
 void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::vector<RbpfParticle>& particles, std::vector<std::thread>& pred_threads_vec)
@@ -1154,16 +1168,31 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // ROS_INFO("frame_id = %s", odom_t.header.frame_id.c_str());
     // ROS_INFO("auv_id_ = %d", *auv_id_);
     
+    std::vector<RbpfParticle> particles_copy = particles;
+    Eigen::Vector3f vel_rot, vel_p;
 
-    Eigen::Vector3f vel_rot = Eigen::Vector3f(odom_t.twist.twist.angular.x,
-                                              odom_t.twist.twist.angular.y,
-                                              -odom_t.twist.twist.angular.z);
+    if (&particles == &particles_) //Compare variable adresses
+    {
+        vel_rot = Eigen::Vector3f(odom_t.twist.twist.angular.x,
+                                                odom_t.twist.twist.angular.y,
+                                                odom_t.twist.twist.angular.z);
 
-    // Linear vel
-    Eigen::Vector3f vel_p = Eigen::Vector3f(odom_t.twist.twist.linear.x,
-                                            -odom_t.twist.twist.linear.y,
-                                            odom_t.twist.twist.linear.z);
+        // Linear vel
+        vel_p = Eigen::Vector3f(odom_t.twist.twist.linear.x,
+                                                odom_t.twist.twist.linear.y,
+                                                odom_t.twist.twist.linear.z);
+    }
+    else
+    {
+        vel_rot = Eigen::Vector3f(odom_t.twist.twist.angular.x,
+                                                odom_t.twist.twist.angular.y,
+                                                -odom_t.twist.twist.angular.z);
 
+        // Linear vel
+        vel_p = Eigen::Vector3f(odom_t.twist.twist.linear.x,
+                                                -odom_t.twist.twist.linear.y,
+                                                odom_t.twist.twist.linear.z);
+    }
     // Depth (read directly)
     float depth = odom_t.pose.pose.position.z;
     // ROS_INFO("size of particles = %d", particles.size());
@@ -1174,7 +1203,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
         // ROS_INFO("dt = %f", dt);
         // ROS_INFO("BEFORE pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
         pred_threads_vec.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
-                                    std::ref(particles.at(i)), std::ref(vel_rot), std::ref(vel_p),
+                                    std::ref(particles_copy.at(i)), std::ref(vel_rot), std::ref(vel_p),
                                     depth, dt, std::ref(rng_)));
         // ROS_INFO("AFTER pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
 
@@ -1191,6 +1220,8 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
 
     }
     pred_threads_vec.clear();
+
+    particles = particles_copy;
 
     // // Particle to compute DR without filtering
     // dr_particle_.at(0).motion_prediction(vel_rot, vel_p, depth, dt, rng_);
