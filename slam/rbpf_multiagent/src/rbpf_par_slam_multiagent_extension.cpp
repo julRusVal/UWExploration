@@ -83,9 +83,10 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     client_plots_ = nh_->serviceClient<plot_generator::PlotGenerator>("/plot_generator");
     // Timer for updating plots
     nh_->param<float>(("plot_period"), plot_period_, 1.0);
-    if(plot_period_ != 0.){
-        timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
-    }
+    // if(plot_period_ != 0.){
+    //     timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
+    // }
+    t_plot_old_ = ros::Time::now().toSec();
     
 }   
 
@@ -1018,6 +1019,16 @@ geometry_msgs::PoseWithCovariance RbpfSlamMultiExtension::average_pose_with_cov(
     pose.covariance[21] = covariances[21];
     pose.covariance[28] = covariances[28];
     pose.covariance[35] = covariances[35];
+    // if (covariances[0] > 1e-6)
+    // {   
+    //     ROS_INFO("namespace_ = %s", namespace_.c_str());
+    //     ROS_INFO("covariance x = %f", covariances[0]);
+    // }
+    // if (covariances[7] > 1e-6)
+    // {
+    //     ROS_INFO("namespace_ = %s", namespace_.c_str());
+    //     ROS_INFO("covariance y = %f", covariances[7]);
+    // }
     return pose;
 }
 
@@ -1079,11 +1090,11 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     // ROS_INFO("frontal_direction_ = %d", frontal_direction_);
     // ROS_INFO("odom_callback");
 
-    // if (ros::Time::now().toSec() - t_plot_old_ > plot_period_)
-    // {
-    //     t_plot_old_ = ros::Time::now().toSec();
-    //     RbpfSlamMultiExtension::update_plots(ros::TimerEvent());
-    // }
+    if (ros::Time::now().toSec() - t_plot_old_ > plot_period_)
+    {
+        t_plot_old_ = ros::Time::now().toSec();
+        RbpfSlamMultiExtension::update_plots(ros::TimerEvent());
+    }
     
     float tol = 0.001;
     bool zero_odom = abs(odom_msg->twist.twist.linear.x)  < tol && abs(odom_msg->twist.twist.linear.y) < tol && abs(odom_msg->twist.twist.linear.z) < tol &&

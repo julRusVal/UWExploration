@@ -152,7 +152,7 @@ class PlotGeneratorServiceInstance:
         right_id = -1
         if ego_odom_frame[0:5] == "hugin":
             ego_id = int(ego_odom_frame[6])
-            print("ego_id:",ego_id)
+            # print("ego_id:",ego_id)
             #use numpy to convert covariance arrayto 6x6 matrix and calcualte determinant
             # ego_cov_matrix = np.array(ego_pose_with_cov.pose.covariance).reshape(6,6)
             # ego_cov_det = np.linalg.det(ego_cov_matrix)
@@ -192,14 +192,14 @@ class PlotGeneratorServiceInstance:
 
         # error_distance = np.array([None,None])
         # error_bearing = np.array([None,None])
-        print("left_id:",left_id)
+        # print("left_id:",left_id)
         if left_id >= 0 and self.gt_distance[0] != None and self.distance[0] != None and self.gt_ego_bearing[0] != None and self.ego_bearing[0] != None:
             # print("gt_distance[0]:",self.gt_distance[0])
             # print("distance[0]:",self.distance[0])
             left_error_distance = abs(self.gt_distance[0] - self.distance[0])#/self.gt_distance[0]
             left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])#/self.gt_ego_bearing[0]
-            print("left_error_distance:",left_error_distance)
-            print("left_error_bearing:",left_error_bearing)
+            # print("left_error_distance:",left_error_distance)
+            # print("left_error_bearing:",left_error_bearing)
             # error_distance[0] = left_error_distance
             # error_bearing[0] = left_error_bearing
             self.left_distance_errors.append(left_error_distance)
@@ -207,14 +207,14 @@ class PlotGeneratorServiceInstance:
         # else:
         #     self.left_distance_errors.append(0)
         #     self.left_bearing_errors.append(0)
-        print("right_id:",right_id)
+        # print("right_id:",right_id)
         if right_id >= 0 and self.gt_distance[1] != None and self.distance[1] != None and self.gt_ego_bearing[1] != None and self.ego_bearing[1] != None:
             # print("gt_distance[1]:",self.gt_distance[1])
             # print("distance[1]:",self.distance[1])
             right_error_distance = abs(self.gt_distance[1] - self.distance[1])#/self.gt_distance[1]
             right_error_bearing = abs(self.gt_ego_bearing[1] - self.ego_bearing[1])#/self.gt_ego_bearing[1]
-            print("right_error_distance:",right_error_distance)
-            print("right_error_bearing:",right_error_bearing)
+            # print("right_error_distance:",right_error_distance)
+            # print("right_error_bearing:",right_error_bearing)
             # error_distance[1] = right_error_distance
             # error_bearing[1] = right_error_bearing
             self.right_distance_errors.append(right_error_distance)
@@ -290,7 +290,7 @@ class PlotGeneratorServiceInstance:
         
         # distance = np.sqrt(neighbour_pose_ego_bl.pose.position.x**2 + neighbour_pose_ego_bl.pose.position.y**2)
         # ego_bearing = np.arctan2(neighbour_pose_ego_bl.pose.position.y,neighbour_pose_ego_bl.pose.position.x)
-        print("in get_gt")
+        # print("in get_gt")
         # distance, ego_bearing = self.cartesian_to_polar(neighbour_pose_ego_bl.pose.position.x,neighbour_pose_ego_bl.pose.position.y)
 
         # self.time_diff = abs(timestamp.to_sec() - neighbour_pose.header.stamp.to_sec())
@@ -341,14 +341,14 @@ class PlotGeneratorServiceInstance:
         # distance = np.sqrt(abs(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x)**2 + abs(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)**2)
         # ego_bearing = np.arctan2(neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y,neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x) #CONTINUE HERE 2, the bearing valuues seem to be wrong. They oscillate weirdly.
         # print("ego bearing:",ego_bearing)
-        print("in get_estimate")
+        # print("in get_estimate")
         distance, ego_bearing = self.cartesian_to_polar(neighbour_pose_ego_odom.pose.position.x-ego_pose.pose.position.x,neighbour_pose_ego_odom.pose.position.y-ego_pose.pose.position.y)
         return distance, ego_bearing
     
     def cartesian_to_polar(self,x,y):
         """Converts cartesian coordinates to polar coordinates"""
-        print("x:",x)
-        print("y:",y)
+        # print("x:",x)
+        # print("y:",y)
         if x < 1e-6:
             x = 0
         if y < 1e-6:
@@ -481,7 +481,7 @@ class PlotGeneratorServiceInstance:
         self.line_left_cov.set_data(np.arange(len(self.left_cov_list)), self.left_cov_list)
         self.line_right_cov.set_data(np.arange(len(self.right_cov_list)), self.right_cov_list)
         self.ax2.set_xlim(0, len(self.ego_cov_list))
-        y_max_list = [0]
+        y_max_list = [0.0001] #sqrt0.0001 = 0.01. = 1cm uncertainty
         if len(self.ego_cov_list) != 0:
             y_max_list.append(max(self.ego_cov_list))
         if len(self.left_cov_list) != 0:
@@ -496,7 +496,7 @@ class PlotGeneratorServiceInstance:
         self.line_left_abs_error.set_data(np.arange(len(self.left_abs_error)), self.left_abs_error)
         self.line_right_abs_error.set_data(np.arange(len(self.right_abs_error)), self.right_abs_error)
         self.ax3.set_xlim(0, len(self.ego_abs_error))
-        y_max_list = [0]
+        y_max_list = [0.001]
         if len(self.ego_abs_error) != 0:
             y_max_list.append(max(self.ego_abs_error))
         if len(self.left_abs_error) != 0:
