@@ -5,6 +5,8 @@
 #include "rbpf_slam/rbpf_par_slam.h"
 #include "weight.hpp"
 
+#include<unistd.h>
+
 // Standard dependencies
 #include <fstream>
 #include <sstream>
@@ -173,6 +175,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     // nav_msgs::Odometry odom_latest_neigh_;
     std::vector<std::thread> upd_threads_vec_fls_;
 
+    int code_stage_ = 0;
 
     
     // void update_particles_weights(float &range, float &angle)

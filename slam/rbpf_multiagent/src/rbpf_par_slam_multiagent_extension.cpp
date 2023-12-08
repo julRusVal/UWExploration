@@ -41,7 +41,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
         timer_rbpf_.stop();
     }
 
-
+    // pcdebug
     sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
 
     inducing_pts_sent = false;
@@ -83,6 +83,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     client_plots_ = nh_->serviceClient<plot_generator::PlotGenerator>("/plot_generator");
     // Timer for updating plots
     nh_->param<float>(("plot_period"), plot_period_, 1.0);
+    //pcdebug
     if(plot_period_ != 0.){
         timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
     }
@@ -219,8 +220,9 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         {
         // log current time
         auto start = std::chrono::high_resolution_clock::now();
-        
+        ROS_INFO("before update_particles_weights");
         std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
+        ROS_INFO("before resample");
         RbpfSlamMultiExtension::resample(weights);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
@@ -283,9 +285,13 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
         for (const RbpfParticle& particle_m : particles_) //particle m
         {
             // ROS_INFO("4");
+            // std::lock_guard<std::mutex> lock(*particle_m.pc_mutex_);
 
             for (const RbpfParticle& n_particle_phi : *particles_neighbour) //neighbour particle phi
             {
+                // std::lock_guard<std::mutex> lock2(*n_particle_phi.pc_mutex_);
+
+
                 // ROS_INFO("5");
                 Eigen::Vector4f n_point_Nodom;//HOMOGENOUS neighbour point in neighbour odom frame
                 Eigen::Vector3f n_point; //neighbour point in self odom frame
@@ -339,10 +345,17 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
                 // std::vector<double> neigh_cov_array = RbpfSlamMultiExtension::average_pose_with_cov(*particles_neighbour).covariance;
 
                 // Assuming covariance is of type boost::array<double, 36>
-                geometry_msgs::PoseWithCovariance pose_with_cov = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
+                // ROS_INFO("namespace_ = %s, 1", namespace_.c_str());
+                code_stage_ = 1;
+                // geometry_msgs::PoseWithCovariance pose_with_cov = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
                 // Convert boost::array<double, 36> to std::vector<double>
+                geometry_msgs::PoseWithCovariance pose_with_cov;
                 std::vector<double> ego_cov_array(pose_with_cov.covariance.begin(), pose_with_cov.covariance.end());
-                geometry_msgs::PoseWithCovariance pose_with_cov_neigh = RbpfSlamMultiExtension::average_pose_with_cov(*particles_neighbour);
+                // ROS_INFO("namespace_ = %s, 2", namespace_.c_str());
+                code_stage_ = 2;
+                
+                // geometry_msgs::PoseWithCovariance pose_with_cov_neigh = RbpfSlamMultiExtension::average_pose_with_cov(*particles_neighbour);
+                geometry_msgs::PoseWithCovariance pose_with_cov_neigh;
                 std::vector<double> neigh_cov_array(pose_with_cov_neigh.covariance.begin(), pose_with_cov_neigh.covariance.end());
                 // ROS_INFO("ego variance x,y,z = %f, %f, %f", ego_cov_array[0], ego_cov_array[7], ego_cov_array[14]);
 
@@ -386,10 +399,10 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     double neigh_y_cov = neigh_cov_array[7];
     std::pair<double,double> p_ego = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(ego_x_cov, ego_y_cov);
     std::pair<double,double> p_neigh = RbpfSlamMultiExtension::convert_cartesian_covariance_2_polar(neigh_x_cov, neigh_y_cov); //TODO(): Check if this is correct and make sense);
-    ROS_INFO("r_cov_ego = %f theta_cov_ego = %f", p_ego.first, p_ego.second);
-    ROS_INFO("x_cov_ego = %f y_cov_ego = %f", ego_x_cov, ego_y_cov);
-    ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
-    ROS_INFO("x_cov_neigh = %f y_cov_neigh = %f", neigh_x_cov, neigh_y_cov);
+    // ROS_INFO("r_cov_ego = %f theta_cov_ego = %f", p_ego.first, p_ego.second);
+    // ROS_INFO("x_cov_ego = %f y_cov_ego = %f", ego_x_cov, ego_y_cov);
+    // ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
+    // ROS_INFO("x_cov_neigh = %f y_cov_neigh = %f", neigh_x_cov, neigh_y_cov);
     Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
     Eigen::MatrixXd var_mat = var_diag.asDiagonal();
@@ -408,7 +421,7 @@ std::pair<double,double> RbpfSlamMultiExtension::convert_cartesian_covariance_2_
     double y_std = std::sqrt(y_cov);
     if (x_cov <= 1e-6 && y_cov <= 1e-6)
     {
-        ROS_WARN("Standard deviation is zero");
+        // ROS_WARN("Standard deviation is zero");
         return std::make_pair(0,0);
     }
     double r_cov = x_cov + y_cov;
@@ -475,7 +488,11 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
     int j = 0;
 
     while(i < N)
-    {
+    {   
+        // if (j >= N)
+        // {
+        //     ROS_WARN("j >= N. j = %d, N = %d", j, N);
+        // }
         if(positions[i] < cum_sum[j])
         {
             indexes[i] = j;
@@ -485,6 +502,17 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
             j++;
     }
     // return indexes;
+
+    //TEMPORARY: TODO(): FIX RESAMPLING ABOVE, the j index grows out of bounds...
+    for (int i = 0; i < N; i++)
+    {
+        // if (indexes[i] >= N)
+        // {
+        //     ROS_WARN("Index out of bounds. indexes[%d] = %d, N = %d", i, indexes[i], N);
+        // }
+        indexes[i] = i;
+    }
+    // ------------------------------
     RbpfSlamMultiExtension::regenerate_particle_sets(indexes, weights);
 }
 
@@ -526,15 +554,17 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         const int i_self = w.self_index;
         const int i_neighbour = w.neighbour_index;
         if (i_self >= particles_.size() || i_neighbour >= particles_neighbour_ptr->size()) {
-            ROS_WARN("Index out of bounds");
+            ROS_WARN("Index out of bounds. i_self = %d, i_neighbour = %d, r = %d, i = %d, indexes.size() = %d", i_self, i_neighbour, r, i, indexes.size());
             continue;
         }
         if (k<pc_)
         {
+            // std::lock_guard<std::mutex> lock(*particles_.at(i_self).pc_mutex_);
             particles_self_new.emplace_back(particles_[i_self]);
         }
         if (k<pcn_)
         {
+            // std::lock_guard<std::mutex> lock(*particles_neighbour_ptr->at(i_neighbour).pc_mutex_);
             particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
         }
         // particle_votes[i_self] += 1;
@@ -580,10 +610,23 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     // }
     
 
-
-    particles_ = particles_self_new;
+    if (particles_self_new.size() == pc_)
+    {
+        particles_ = particles_self_new;
+    }
+    else
+    {
+        ROS_WARN("Resampling failed, too many or too few SELF particles regenerated!");
+    }
     if (particles_neighbour_ptr != nullptr) {
-        *particles_neighbour_ptr = particles_neighbour_new;
+        if (particles_neighbour_new.size() == pcn_)
+        {
+            *particles_neighbour_ptr = particles_neighbour_new;
+        }
+        else
+        {
+            ROS_WARN("Resampling failed, too many or too few NEIGHBOUR particles regenerated!");
+        }
     }
     ROS_INFO("Particles resampled!");
 
@@ -935,14 +978,21 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
         
         srv.request.ego.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_) + "/odom";
         srv.request.ego.header.stamp = latest_odom_stamp_;//ros::Time::now();
+        // ROS_INFO("before ego average_pose_with_cov");
+        // ROS_INFO("namespace_ = %s, 3", namespace_.c_str());
+        code_stage_ = 3;
         srv.request.ego.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
+        // ROS_INFO("after ego average_pose_with_cov");
 
         if (auv_id_left_)
         {
             srv.request.left.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_left_) + "/odom";
             srv.request.left.header.stamp = latest_odom_stamp_;//ros::Time::now();
+            // ROS_INFO("before left average_pose_with_cov");
+            // ROS_INFO("namespace_ = %s, 4", namespace_.c_str());
+            code_stage_ = 4;
             srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
-
+            // ROS_INFO("after left average_pose_with_cov");
         }
         else
         {
@@ -952,7 +1002,11 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
         {
             srv.request.right.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_right_) + "/odom";
             srv.request.right.header.stamp = latest_odom_stamp_;//ros::Time::now();
+            // ROS_INFO("before right average_pose_with_cov");
+            // ROS_INFO("namespace_ = %s, 5", namespace_.c_str());
+            code_stage_ = 5;
             srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
+            // ROS_INFO("after right average_pose_with_cov");
         }
         else
         {
@@ -980,6 +1034,7 @@ geometry_msgs::PoseWithCovariance RbpfSlamMultiExtension::average_pose_with_cov(
     // Compute mean pose
     for (const RbpfParticle& particle : particles)
     {
+        // std::lock_guard<std::mutex> lock(*particle.pc_mutex_);
         mean_pose += particle.p_pose_.head(3);
         Eigen::AngleAxisf rollAngle(particle.p_pose_(3), Eigen::Vector3f::UnitX());
         Eigen::AngleAxisf pitchAngle(particle.p_pose_(4), Eigen::Vector3f::UnitY());
@@ -1028,16 +1083,21 @@ geometry_msgs::PoseWithCovariance RbpfSlamMultiExtension::average_pose_with_cov(
     pose.covariance[21] = covariances[21];
     pose.covariance[28] = covariances[28];
     pose.covariance[35] = covariances[35];
-    // if (covariances[0] > 1e-6)
-    // {   
-    //     ROS_INFO("namespace_ = %s", namespace_.c_str());
-    //     ROS_INFO("covariance x = %f", covariances[0]);
-    // }
-    // if (covariances[7] > 1e-6)
-    // {
-    //     ROS_INFO("namespace_ = %s", namespace_.c_str());
-    //     ROS_INFO("covariance y = %f", covariances[7]);
-    // }
+    if (covariances[0] > 1e-6)
+    {   
+        // ROS_INFO("namespace_ = %s", namespace_.c_str());
+        ROS_ERROR("covariance x = %f namespace_ = %s code_stage_ = %d", covariances[0], namespace_.c_str(), code_stage_);
+        // ros::Duration(3).sleep();
+        // sleep(3);
+    }
+    if (covariances[7] > 1e-6)
+    {
+        // ROS_INFO("namespace_ = %s", namespace_.c_str());
+        // ROS_ERROR("covariance y = %f", covariances[7]);
+        ROS_ERROR("covariance y = %f namespace_ = %s code_stage_ = %d", covariances[7], namespace_.c_str(), code_stage_);
+        // ros::Duration(3).sleep();
+        // sleep(3);
+    }
     return pose;
 }
 
@@ -1171,8 +1231,11 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     std::vector<RbpfParticle> particles_copy = particles;
     Eigen::Vector3f vel_rot, vel_p;
 
+    int pc;
+
     if (&particles == &particles_) //Compare variable adresses
     {
+        pc = pc_;
         vel_rot = Eigen::Vector3f(odom_t.twist.twist.angular.x,
                                                 odom_t.twist.twist.angular.y,
                                                 odom_t.twist.twist.angular.z);
@@ -1184,6 +1247,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     }
     else
     {
+        pc = pcn_;
         vel_rot = Eigen::Vector3f(odom_t.twist.twist.angular.x,
                                                 odom_t.twist.twist.angular.y,
                                                 -odom_t.twist.twist.angular.z);
@@ -1198,10 +1262,11 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
     // ROS_INFO("size of particles = %d", particles.size());
     // ROS_INFO("vel_rot = %f, %f, %f", vel_rot(0), vel_rot(1), vel_rot(2));
     // ROS_INFO("vel_p = %f, %f, %f", vel_p(0), vel_p(1), vel_p(2));
-    for(int i = 0; i < pcn_; i++)
+    for(int i = 0; i < pc; i++)
     {
         // ROS_INFO("dt = %f", dt);
         // ROS_INFO("BEFORE pose of particle %d = %f, %f, %f", i, particles.at(i).p_pose_(0), particles.at(i).p_pose_(1), particles.at(i).p_pose_(2));
+        // std::lock_guard<std::mutex> lock(*particles.at(i).pc_mutex_);
         pred_threads_vec.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
                                     std::ref(particles_copy.at(i)), std::ref(vel_rot), std::ref(vel_p),
                                     depth, dt, std::ref(rng_)));
@@ -1209,7 +1274,7 @@ void RbpfSlamMultiExtension::predict(nav_msgs::Odometry odom_t, float dt, std::v
 
     }
 
-    for (int i = 0; i < pcn_; i++)
+    for (int i = 0; i < pc; i++)
     {
         // ROS_INFO("Joining thread %d", i);
         if (pred_threads_vec[i].joinable())
