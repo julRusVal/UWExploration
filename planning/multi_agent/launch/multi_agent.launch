@@ -20,7 +20,7 @@
     <arg name="fls_vertical_angle" default="30"/>
     <arg name="fls_max_range" default="50.0"/>
 
-    <arg name="odom_period" default="0.001"/>
+    <arg name="odom_period" default="0.01"/>
 
 
     <!-- Specific args for navigation -->
@@ -41,8 +41,8 @@
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
-    <arg name="particle_count" default="10"/>
-    <arg name="particle_count_neighbours" default="5"/>
+    <arg name="particle_count" default="1"/>
+    <arg name="particle_count_neighbours" default="1"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
     <arg name="rbpf_sensor_FLS" default="true"/>
