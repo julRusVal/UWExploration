@@ -220,9 +220,9 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         {
         // log current time
         auto start = std::chrono::high_resolution_clock::now();
-        ROS_INFO("before update_particles_weights");
+        ROS_INFO("before update_particles_weights, namespace_ = %s", namespace_.c_str());
         std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
-        ROS_INFO("before resample");
+        ROS_INFO("before resample, namespace_ = %s", namespace_.c_str());
         RbpfSlamMultiExtension::resample(weights);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
@@ -346,13 +346,13 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
 
                 // Assuming covariance is of type boost::array<double, 36>
                 // ROS_INFO("namespace_ = %s, 1", namespace_.c_str());
-                code_stage_ = 1;
+                // code_stage_ = 1;
                 // geometry_msgs::PoseWithCovariance pose_with_cov = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
                 // Convert boost::array<double, 36> to std::vector<double>
                 geometry_msgs::PoseWithCovariance pose_with_cov;
                 std::vector<double> ego_cov_array(pose_with_cov.covariance.begin(), pose_with_cov.covariance.end());
                 // ROS_INFO("namespace_ = %s, 2", namespace_.c_str());
-                code_stage_ = 2;
+                // code_stage_ = 2;
                 
                 // geometry_msgs::PoseWithCovariance pose_with_cov_neigh = RbpfSlamMultiExtension::average_pose_with_cov(*particles_neighbour);
                 geometry_msgs::PoseWithCovariance pose_with_cov_neigh;
@@ -466,7 +466,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
         weights_values.push_back(w.value);
     }
 
-    //Resample
+    // //Resample
     int N = weights.size();
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -484,24 +484,27 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 
     partial_sum(weights_values.begin(), weights_values.end(), cum_sum.begin()); //cumulative sum of weights starting from beginning to end, storing results in cum_sum - starting at beginning of cum_sum
 
-    int i = 0;
-    int j = 0;
+    
 
-    while(i < N)
-    {   
-        // if (j >= N)
-        // {
-        //     ROS_WARN("j >= N. j = %d, N = %d", j, N);
-        // }
-        if(positions[i] < cum_sum[j])
-        {
-            indexes[i] = j;
-            i++;
-        }
-        else
-            j++;
-    }
-    // return indexes;
+    // // THIS PART CASUES A CRASH!!!!!!!! NOTE() 1 
+    // int i = 0;
+    // int j = 0;
+    // while(i < N)
+    // {   
+    //     // if (j >= N)
+    //     // {
+    //     //     ROS_WARN("j >= N. j = %d, N = %d", j, N);
+    //     // }
+    //     if(positions[i] < cum_sum[j])
+    //     {
+    //         indexes[i] = j;
+    //         i++;
+    //     }
+    //     else
+    //         j++;
+    // }
+    // // return indexes;
+    // // ------------------------------
 
     //TEMPORARY: TODO(): FIX RESAMPLING ABOVE, the j index grows out of bounds...
     for (int i = 0; i < N; i++)
@@ -513,7 +516,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
         indexes[i] = i;
     }
     // ------------------------------
-    RbpfSlamMultiExtension::regenerate_particle_sets(indexes, weights);
+    RbpfSlamMultiExtension::regenerate_particle_sets(indexes, weights); // Source of spread NOTE() 2
 }
 
 void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights)
@@ -559,7 +562,7 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         }
         if (k<pc_)
         {
-            // std::lock_guard<std::mutex> lock(*particles_.at(i_self).pc_mutex_);
+            // std::lock_guard<std::mutex> lock(*particles_.at(i_self).pc_mutex_); //lock guard doesnt work the way I want/need it to
             particles_self_new.emplace_back(particles_[i_self]);
         }
         if (k<pcn_)
@@ -980,7 +983,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
         srv.request.ego.header.stamp = latest_odom_stamp_;//ros::Time::now();
         // ROS_INFO("before ego average_pose_with_cov");
         // ROS_INFO("namespace_ = %s, 3", namespace_.c_str());
-        code_stage_ = 3;
+        // code_stage_ = 3;
         srv.request.ego.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_);
         // ROS_INFO("after ego average_pose_with_cov");
 
@@ -990,7 +993,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
             srv.request.left.header.stamp = latest_odom_stamp_;//ros::Time::now();
             // ROS_INFO("before left average_pose_with_cov");
             // ROS_INFO("namespace_ = %s, 4", namespace_.c_str());
-            code_stage_ = 4;
+            // code_stage_ = 4;
             srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
             // ROS_INFO("after left average_pose_with_cov");
         }
@@ -1004,7 +1007,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
             srv.request.right.header.stamp = latest_odom_stamp_;//ros::Time::now();
             // ROS_INFO("before right average_pose_with_cov");
             // ROS_INFO("namespace_ = %s, 5", namespace_.c_str());
-            code_stage_ = 5;
+            // code_stage_ = 5;
             srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
             // ROS_INFO("after right average_pose_with_cov");
         }

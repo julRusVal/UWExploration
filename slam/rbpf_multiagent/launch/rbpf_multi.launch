@@ -21,8 +21,8 @@
 	<arg name="yaw" default="0.0"/> -->
 
   <!-- RBPF params  -->
-  <arg name="particle_count"                    default="10"/> <!--50 -->
-  <arg name="particle_count_neighbours" default="5"/>
+  <arg name="particle_count"                    default="1"/> <!--50 -->
+  <arg name="particle_count_neighbours" default="1"/>
   <arg name="num_particle_handlers"             default="1"/> 
   <arg name="survey_finished_top" default="/$(arg mode)/survey_finished"/>
   
