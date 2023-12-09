@@ -42,7 +42,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     }
 
     // pcdebug
-    sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
+    // sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
 
     inducing_pts_sent = false;
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
@@ -521,6 +521,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 
 void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights)
 {
+    //continue in here, comment out stuff and find out what causes the spread
     std::vector<RbpfParticle> particles_self_new;
     std::vector<RbpfParticle> particles_neighbour_new;
 
@@ -540,10 +541,15 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     } else if (weights[0].neighbour_location == "right") {
         particles_neighbour_ptr = &particles_right_;
     } else {
-        ROS_WARN("No neighbour location available");
+        ROS_WARN("No neighbour location available. Neighbour pointer is nullptr");
     }
 
-    
+    // std::vector<RbpfParticle> particles_copy_self = particles_;
+    // std::vector<RbpfParticle> particles_copy_neighbour = *particles_neighbour_ptr;
+
+    std::vector<int> dupes_s; //self
+    std::vector<int> dupes_n; //neighbour
+
 
     for (int k=0; k < indexes.size(); k++)
     {   
@@ -552,23 +558,37 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         std::mt19937 gen(rd());
         std::uniform_int_distribution<> dis(0, indexes.size()-1);
         int r = dis(gen);
+        if (r >= indexes.size())
+        {
+            ROS_WARN("r >= indexes.size()");//. r = %d, indexes.size() = %d", r, indexes.size());
+        }
         int i = indexes[r];
+        if (i >= weights.size())
+        {
+            ROS_WARN("i >= weights.size()");//. i = %d, weights.size() = %d", i, weights.size());
+        }
         const Weight w = weights[i];
         const int i_self = w.self_index;
         const int i_neighbour = w.neighbour_index;
+
+
         if (i_self >= particles_.size() || i_neighbour >= particles_neighbour_ptr->size()) {
-            ROS_WARN("Index out of bounds. i_self = %d, i_neighbour = %d, r = %d, i = %d, indexes.size() = %d", i_self, i_neighbour, r, i, indexes.size());
+            ROS_WARN("Index out of bounds");//. i_self = %d, i_neighbour = %d, r = %d, i = %d, indexes.size() = %d", i_self, i_neighbour, r, i, indexes.size());
             continue;
         }
         if (k<pc_)
         {
             // std::lock_guard<std::mutex> lock(*particles_.at(i_self).pc_mutex_); //lock guard doesnt work the way I want/need it to
-            particles_self_new.emplace_back(particles_[i_self]);
+            // particles_self_new.emplace_back(particles_[i_self]);
+            // particles_self_new.emplace_back(particles_copy_self[i_self]);
+            dupes_s.push_back(i_self);
         }
         if (k<pcn_)
         {
             // std::lock_guard<std::mutex> lock(*particles_neighbour_ptr->at(i_neighbour).pc_mutex_);
-            particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
+            // particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
+            // particles_neighbour_new.emplace_back((particles_copy_neighbour)[i_neighbour]);
+            dupes_n.push_back(i_neighbour);
         }
         // particle_votes[i_self] += 1;
         // particle_votes_neighbour[i_neighbour] += 1;
@@ -585,6 +605,9 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         //     ROS_WARN("No neighbour location available");
         // }
     }
+
+    RbpfSlamMultiExtension::replace_lost_particles(dupes_s, &particles_);
+    RbpfSlamMultiExtension::replace_lost_particles(dupes_n, particles_neighbour_ptr);
 
     //normalize votes
     // int self_sum = std::accumulate(particle_votes.begin(), particle_votes.end(), 0);
@@ -612,26 +635,41 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     //     particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i]);
     // }
     
+    // Add noise to particles to avoid loss of variance. TODO() To the noise addition of the copy particle sets before assigning to global sets
+    for(int i = 0; i < pc_; i++)
+    {
+        particles_[i].add_noise(res_noise_cov_);
+    }
+    
+    for(int i = 0; i < pcn_; i++)
+    {
+        //Use the neighbour pointer
+        if (particles_neighbour_ptr != nullptr) {
+            particles_neighbour_ptr->at(i).add_noise(res_noise_cov_);
+        }
+    }
 
-    if (particles_self_new.size() == pc_)
-    {
-        particles_ = particles_self_new;
-    }
-    else
-    {
-        ROS_WARN("Resampling failed, too many or too few SELF particles regenerated!");
-    }
-    if (particles_neighbour_ptr != nullptr) {
-        if (particles_neighbour_new.size() == pcn_)
-        {
-            *particles_neighbour_ptr = particles_neighbour_new;
-        }
-        else
-        {
-            ROS_WARN("Resampling failed, too many or too few NEIGHBOUR particles regenerated!");
-        }
-    }
-    ROS_INFO("Particles resampled!");
+    // //Reassign particles
+    // if (particles_self_new.size() == pc_)
+    // {
+    //     particles_ = particles_self_new;
+    // }
+    // else
+    // {
+    //     ROS_WARN("Resampling failed, too many or too few SELF particles regenerated!");
+    // }
+    // if (particles_neighbour_ptr != nullptr) {
+    //     if (particles_neighbour_new.size() == pcn_)
+    //     {
+    //         *particles_neighbour_ptr = particles_neighbour_new;
+    //     }
+    //     else
+    //     {
+    //         ROS_WARN("Resampling failed, too many or too few NEIGHBOUR particles regenerated!");
+    //     }
+    // }
+    // ROS_INFO("Particles resampled!");
+
 
     if (particles_.size() != pc_)
     {
@@ -654,22 +692,61 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         ROS_WARN("RIGHT neighbour particles generated, they should NOT exist!");
     }
 
-    //Add noise to particles to avoid loss of variance
-    for(int i = 0; i < pc_; i++)
-    {
-        particles_[i].add_noise(res_noise_cov_);
-    }
+    // //Add noise to particles to avoid loss of variance. TODO() To the noise addition of the copy particle sets before assigning to global sets
+    // for(int i = 0; i < pc_; i++)
+    // {
+    //     particles_[i].add_noise(res_noise_cov_);
+    // }
     
-    for(int i = 0; i < pcn_; i++)
-    {
-        //Use the neighbour pointer
-        if (particles_neighbour_ptr != nullptr) {
-            (*particles_neighbour_ptr)[i].add_noise(res_noise_cov_);
-        }
-    }
+    // for(int i = 0; i < pcn_; i++)
+    // {
+    //     //Use the neighbour pointer
+    //     if (particles_neighbour_ptr != nullptr) {
+    //         (*particles_neighbour_ptr)[i].add_noise(res_noise_cov_);
+    //     }
+    // }
 
 
 }
+
+void RbpfSlamMultiExtension::replace_lost_particles(std::vector<int>& dupes, std::vector<RbpfParticle>* particles_ptr)
+{
+    // ROS_INFO("inside replace_lost_particles");
+    std::vector<int> dupe_stack = dupes;
+    for(int i=0; i < dupes.size(); i++)
+    {
+        // if i is in dupes delete one instance of the value i inside dupe_stack
+        std::vector<int>::iterator it = std::find(dupe_stack.begin(), dupe_stack.end(), i);
+        bool found = it != dupe_stack.end(); //find returns end if i is not found
+        if (found) 
+        {
+            // int index_i = it - dupe_stack.begin();
+            // dupe_stack.erase(dupe_stack.begin() + index_i);
+            dupe_stack.erase(it);
+        } 
+    }
+
+    for(int i=0; i < dupes.size(); i++)
+    {
+        // if i is in dupes delete one instance of the value i inside dupe_stack
+        std::vector<int>::iterator it = std::find(dupes.begin(), dupes.end(), i);
+        bool found = it != dupes.end(); //find returns end if i is not found
+        if (!found) //find returns end if i is not found
+        {
+            if (dupe_stack.empty())
+            {
+                ROS_WARN("dupe_stack is empty");
+            }
+            else
+            {
+                int p = dupe_stack.back();
+                dupe_stack.pop_back();
+                particles_ptr->at(i) = particles_ptr->at(p);
+            }
+        } 
+    }
+}
+
 std::vector<int> RbpfSlamMultiExtension::resample_particle_votes(std::vector<int> votes)
 {
     
