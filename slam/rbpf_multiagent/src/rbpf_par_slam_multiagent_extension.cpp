@@ -42,7 +42,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     }
 
     // pcdebug
-    // sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
+    sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
 
     inducing_pts_sent = false;
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
@@ -410,8 +410,22 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
                             (z - z_hat).array();
     double logl = -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))) 
                   -(1 / 2.0) * diff.array().sum();
-
-    return exp(logl);
+    double exp_logl = exp(logl);
+    if (std::isnan(logl))
+    {
+        ROS_WARN("logl is nan. Check your covariance matrices, probably not invertible...");
+    }
+    // if (exp_logl < 1e-12)
+    // {
+    //     ROS_WARN("exp_logl is zero. Check your covariance matrix, probably the inverse is too large due to small values in the diagonal. The second term in logl is probably exploding...");
+    //     ROS_ERROR("logl = %f", logl);
+    //     ROS_ERROR("exp(logl) = %f", exp(logl));
+    // }
+    // // ROS_ERROR("term 1 = %f", -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))));
+    // ROS_ERROR("term 2 = %f", -(1 / 2.0) * diff.array().sum());
+    // ROS_ERROR("logl = %f", logl);
+    // ROS_ERROR("exp(logl) = %f", exp(logl));
+    return exp_logl;
     // return 0;
 }
 
@@ -452,6 +466,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
     for (const Weight& w : weights)
     {
         sum += w.value;
+        // ROS_WARN("w.value = %f", w.value);
     }
 
     if (sum == 0)
@@ -468,6 +483,11 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 
     // //Resample
     int N = weights.size();
+    if (N <=0)
+    {
+        ROS_WARN("N <= 0");
+    }
+
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<double> dis(0, 1);
@@ -484,38 +504,47 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 
     partial_sum(weights_values.begin(), weights_values.end(), cum_sum.begin()); //cumulative sum of weights starting from beginning to end, storing results in cum_sum - starting at beginning of cum_sum
 
-    
-
-    // // THIS PART CASUES A CRASH!!!!!!!! NOTE() 1 
-    // int i = 0;
-    // int j = 0;
-    // while(i < N)
-    // {   
-    //     // if (j >= N)
-    //     // {
-    //     //     ROS_WARN("j >= N. j = %d, N = %d", j, N);
-    //     // }
-    //     if(positions[i] < cum_sum[j])
-    //     {
-    //         indexes[i] = j;
-    //         i++;
-    //     }
-    //     else
-    //         j++;
-    // }
-    // // return indexes;
-    // // ------------------------------
-
-    //TEMPORARY: TODO(): FIX RESAMPLING ABOVE, the j index grows out of bounds...
-    for (int i = 0; i < N; i++)
+    for(int i = 0; i < N; i++)
     {
-        // if (indexes[i] >= N)
-        // {
-        //     ROS_WARN("Index out of bounds. indexes[%d] = %d, N = %d", i, indexes[i], N);
-        // }
-        indexes[i] = i;
+        // ROS_WARN("cum_sum[%d] = %f", i, cum_sum[i]);
+        // ROS_WARN("rand_n = %f", rand_n);
+        // ROS_WARN("positions[%d] = %f", i, positions[i]);
+        // ROS_WARN("range[%d] = %d", i, range[i]);
+        // ROS_WARN("weights_values[%d] = %f", i, weights_values[i]);
     }
+    // THIS PART CASUES A CRASH!!!!!!!! NOTE() 1 
+    int i = 0;
+    int j = 0;
+    while(i < N)
+    {   
+        // ROS_WARN("j = %d, N = %d, i = %d", j, N, i);
+        // ROS_WARN("positions[i] = %f, cum_sum[j] = %f", positions[i], cum_sum[j]);
+        // ROS_WARN("indexes[i] = %d", indexes[i]);
+        if (j >= N)
+        {
+            ROS_ERROR("j >= N. j = %d, N = %d, i = %d", j, N, i);
+        }
+        if(positions[i] < cum_sum[j])
+        {
+            indexes[i] = j;
+            i++;
+        }
+        else
+            j++;
+    }
+    // return indexes;
     // ------------------------------
+
+    // //TEMPORARY: TODO(): FIX RESAMPLING ABOVE, the j index grows out of bounds...
+    // for (int i = 0; i < N; i++)
+    // {
+    //     // if (indexes[i] >= N)
+    //     // {
+    //     //     ROS_WARN("Index out of bounds. indexes[%d] = %d, N = %d", i, indexes[i], N);
+    //     // }
+    //     indexes[i] = i;
+    // }
+    // // ------------------------------
     RbpfSlamMultiExtension::regenerate_particle_sets(indexes, weights); // Source of spread NOTE() 2
 }
 
@@ -1163,21 +1192,21 @@ geometry_msgs::PoseWithCovariance RbpfSlamMultiExtension::average_pose_with_cov(
     pose.covariance[21] = covariances[21];
     pose.covariance[28] = covariances[28];
     pose.covariance[35] = covariances[35];
-    if (covariances[0] > 1e-6)
-    {   
-        // ROS_INFO("namespace_ = %s", namespace_.c_str());
-        ROS_ERROR("covariance x = %f namespace_ = %s code_stage_ = %d", covariances[0], namespace_.c_str(), code_stage_);
-        // ros::Duration(3).sleep();
-        // sleep(3);
-    }
-    if (covariances[7] > 1e-6)
-    {
-        // ROS_INFO("namespace_ = %s", namespace_.c_str());
-        // ROS_ERROR("covariance y = %f", covariances[7]);
-        ROS_ERROR("covariance y = %f namespace_ = %s code_stage_ = %d", covariances[7], namespace_.c_str(), code_stage_);
-        // ros::Duration(3).sleep();
-        // sleep(3);
-    }
+    // if (covariances[0] > 1e-6)
+    // {   
+    //     // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    //     ROS_ERROR("covariance x = %f namespace_ = %s code_stage_ = %d", covariances[0], namespace_.c_str(), code_stage_);
+    //     // ros::Duration(3).sleep();
+    //     // sleep(3);
+    // }
+    // if (covariances[7] > 1e-6)
+    // {
+    //     // ROS_INFO("namespace_ = %s", namespace_.c_str());
+    //     // ROS_ERROR("covariance y = %f", covariances[7]);
+    //     ROS_ERROR("covariance y = %f namespace_ = %s code_stage_ = %d", covariances[7], namespace_.c_str(), code_stage_);
+    //     // ros::Duration(3).sleep();
+    //     // sleep(3);
+    // }
     return pose;
 }
 
