@@ -220,14 +220,14 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         {
         // log current time
         auto start = std::chrono::high_resolution_clock::now();
-        ROS_INFO("before update_particles_weights, namespace_ = %s", namespace_.c_str());
+        // ROS_INFO("before update_particles_weights, namespace_ = %s", namespace_.c_str());
         std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
-        ROS_INFO("before resample, namespace_ = %s", namespace_.c_str());
+        // ROS_INFO("before resample, namespace_ = %s", namespace_.c_str());
         RbpfSlamMultiExtension::resample(weights);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
         // ROS_INFO("Time for resampling: %d", duration.count());
-        std::cout << "Duration of resampling step: " << duration.count() << " seconds" << std::endl;
+        // std::cout << "Duration of resampling step: " << duration.count() << " seconds" << std::endl;
         }
         else
         {
@@ -420,6 +420,9 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     //     ROS_WARN("exp_logl is zero. Check your covariance matrix, probably the inverse is too large due to small values in the diagonal. The second term in logl is probably exploding...");
     //     ROS_ERROR("logl = %f", logl);
     //     ROS_ERROR("exp(logl) = %f", exp(logl));
+    //     ROS_ERROR("n = %f", n);
+    //     ROS_ERROR("z = %f, %f", z(0), z(1));
+    //     ROS_ERROR("z_hat = %f, %f", z_hat(0), z_hat(1));
     // }
     // // ROS_ERROR("term 1 = %f", -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))));
     // ROS_ERROR("term 2 = %f", -(1 / 2.0) * diff.array().sum());
@@ -472,6 +475,10 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
     if (sum == 0)
     {
         ROS_WARN("Sum of weights is zero");
+        for (Weight& w : weights)
+        {
+            ROS_WARN("w.value = %f", w.value);
+        }
         return;
     }
 
