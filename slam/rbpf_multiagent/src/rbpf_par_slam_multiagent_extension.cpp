@@ -385,6 +385,7 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
 {
     //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.
     //Determine the covariance matrices gp_var and fls_sigma. 
+    Eigen::VectorXd z_hat_exact = z.array()+0.1;
     double n = double(z.cols());
     double PI = std::acos(-1.0);
     // Eigen::VectorXd var_diag = gp_var.array() + std::pow(mbes_sigma, 2);
@@ -406,24 +407,31 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
     Eigen::MatrixXd var_mat = var_diag.asDiagonal();
-    Eigen::VectorXd diff = (z - z_hat).array().transpose() * var_inv.array() * 
-                            (z - z_hat).array();
+    Eigen::VectorXd diff = (z - z_hat_exact).array().transpose() * var_inv.array() * 
+                            (z - z_hat_exact).array();
     double logl = -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))) 
                   -(1 / 2.0) * diff.array().sum();
     double exp_logl = exp(logl);
+    // ROS_ERROR("z-z_hat_exact = %f, %f", z(0)-z_hat_exact(0), z(1)-z_hat_exact(1));
+
     if (std::isnan(logl))
     {
         ROS_WARN("logl is nan. Check your covariance matrices, probably not invertible...");
     }
-    // if (exp_logl < 1e-12)
-    // {
-    //     ROS_WARN("exp_logl is zero. Check your covariance matrix, probably the inverse is too large due to small values in the diagonal. The second term in logl is probably exploding...");
-    //     ROS_ERROR("logl = %f", logl);
-    //     ROS_ERROR("exp(logl) = %f", exp(logl));
-    //     ROS_ERROR("n = %f", n);
-    //     ROS_ERROR("z = %f, %f", z(0), z(1));
-    //     ROS_ERROR("z_hat = %f, %f", z_hat(0), z_hat(1));
-    // }
+    if (exp_logl < 1e-12)
+    {
+        ROS_WARN("exp_logl is zero.");
+        ROS_ERROR("logl = %f", logl);
+        ROS_ERROR("exp(logl) = %f", exp(logl));
+        ROS_ERROR("n = %f", n);
+        ROS_ERROR("z = %f, %f", z(0), z(1));
+        ROS_ERROR("z_hat_exact = %f, %f", z_hat_exact(0), z_hat_exact(1));
+        ROS_ERROR("z-z_hat_exact = %f, %f", z(0)-z_hat_exact(0), z(1)-z_hat_exact(1));
+        ROS_ERROR("var_diag = %f, %f", var_diag(0), var_diag(1));
+        ROS_ERROR("var_inv = %f, %f", var_inv(0), var_inv(1));
+        ROS_ERROR("var_inv = %f, %f", var_inv(2), var_inv(3));
+        ROS_ERROR("var_det = %f", var_mat.determinant());
+    }
     // // ROS_ERROR("term 1 = %f", -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))));
     // ROS_ERROR("term 2 = %f", -(1 / 2.0) * diff.array().sum());
     // ROS_ERROR("logl = %f", logl);
@@ -470,7 +478,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
     {
         sum += w.value;
         // ROS_WARN("w.value = %f", w.value);
-        ROS_WARN("nampespace_ = %s w.value = %f, w.self_index = %d, w.neighbour_index = %d, w.neighbour_location = %s", namespace_.c_str(), w.value, w.self_index, w.neighbour_index, w.neighbour_location.c_str());
+        // ROS_WARN("nampespace_ = %s w.value = %f, w.self_index = %d, w.neighbour_index = %d, w.neighbour_location = %s", namespace_.c_str(), w.value, w.self_index, w.neighbour_index, w.neighbour_location.c_str());
     }
 
     if (sum == 0)
@@ -781,6 +789,7 @@ void RbpfSlamMultiExtension::replace_lost_particles(std::vector<int>& dupes, std
                 // particles_ptr->at(i) = particles_ptr->at(p);
                 // particles_ptr->at(i).index_ = i;
                 particles_ptr->at(i).p_pose_ = particles_ptr->at(p).p_pose_;
+                //TODO(): Include below to allow SVGP to work when enabled.
                 // particles_ptr->at(i).pos_history_ = particles_ptr->at(p).pos_history_;
                 // particles_ptr->at(i).rot_history_ = particles_ptr->at(p).rot_history_;
             }
