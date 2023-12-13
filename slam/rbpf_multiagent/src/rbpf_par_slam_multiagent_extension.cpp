@@ -470,6 +470,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
     {
         sum += w.value;
         // ROS_WARN("w.value = %f", w.value);
+        ROS_WARN("nampespace_ = %s w.value = %f, w.self_index = %d, w.neighbour_index = %d, w.neighbour_location = %s", namespace_.c_str(), w.value, w.self_index, w.neighbour_index, w.neighbour_location.c_str());
     }
 
     if (sum == 0)
@@ -777,7 +778,11 @@ void RbpfSlamMultiExtension::replace_lost_particles(std::vector<int>& dupes, std
             {
                 int p = dupe_stack.back();
                 dupe_stack.pop_back();
-                particles_ptr->at(i) = particles_ptr->at(p);
+                // particles_ptr->at(i) = particles_ptr->at(p);
+                // particles_ptr->at(i).index_ = i;
+                particles_ptr->at(i).p_pose_ = particles_ptr->at(p).p_pose_;
+                // particles_ptr->at(i).pos_history_ = particles_ptr->at(p).pos_history_;
+                // particles_ptr->at(i).rot_history_ = particles_ptr->at(p).rot_history_;
             }
         } 
     }
