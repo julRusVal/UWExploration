@@ -408,7 +408,8 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     // ROS_INFO("x_cov_ego = %f y_cov_ego = %f", ego_x_cov, ego_y_cov);
     // ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
     // ROS_INFO("x_cov_neigh = %f y_cov_neigh = %f", neigh_x_cov, neigh_y_cov);
-    Eigen::VectorXd var_diag = Eigen::Vector2d(std::pow(fls_measurement_std_range_,2),std::pow(fls_measurement_std_angle_,2)) + Eigen::Vector2d(std::pow(max_throttle_*time_diff*2,2),0);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
+    Eigen::VectorXd var_diag = Eigen::Vector2d(std::pow(fls_measurement_std_range_,2),std::pow(fls_measurement_std_angle_,2)) + Eigen::Vector2d(std::pow(max_throttle_*time_diff*2,2),0)+ Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
+    ROS_WARN("ego_r_cov = %f, ego_theta_cov = %f, neigh_r_cov = %f, neigh_theta_cov = %f", p_ego.first, p_ego.second, p_neigh.first, p_neigh.second);
     // Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_) + Eigen::Vector2d(std::pow(max_throttle_*time_diff*2,2),0);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
     
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
