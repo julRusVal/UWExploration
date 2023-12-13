@@ -32,6 +32,8 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     // nh_->param("fls_measurement_std", fls_measurement_std_, vector<float>());
     nh_->param<double>(("fls_range_std"), fls_measurement_std_range_, 0.01);
     nh_->param<double>(("fls_angle_std"), fls_measurement_std_angle_, 0.01);
+    nh_->param<double>(("max_throttle"), max_throttle_,3);
+
 
 
     // nh_mb_->param<float>(("rbpf_period"), rbpf_period_, 0.3);
@@ -208,6 +210,8 @@ bool RbpfSlamMultiExtension::empty_srv_multi(std_srvs::Empty::Request &req, std_
 
 void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
 {
+    ROS_WARN("time diff = %f", ros::Time::now().toSec() - fls_reading.header.stamp.toSec());
+    ros::Time timestamp = fls_reading.header.stamp;
     // particles_busy_ = true;
     if (wp_counter_ % 2 == 0) //Only if facing anoher auv, not when travelling in the same direction
     {
@@ -221,13 +225,13 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         // log current time
         auto start = std::chrono::high_resolution_clock::now();
         // ROS_INFO("before update_particles_weights, namespace_ = %s", namespace_.c_str());
-        std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_);
+        std::vector<Weight> weights = RbpfSlamMultiExtension::update_particles_weights(fls_reading.range.data, fls_reading.angle.data, frontal_neighbour_id_, timestamp);
         // ROS_INFO("before resample, namespace_ = %s", namespace_.c_str());
         RbpfSlamMultiExtension::resample(weights);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
         // ROS_INFO("Time for resampling: %d", duration.count());
-        // std::cout << "Duration of resampling step: " << duration.count() << " seconds" << std::endl;
+        std::cout << "Duration of resampling step: " << duration.count() << " seconds" << std::endl;
         }
         else
         {
@@ -244,7 +248,7 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
 
 }
 
-std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id)
+std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id, const ros::Time timestamp)
 {
     // ROS_INFO("namespace_ = %s", namespace_.c_str());
     // ROS_INFO("Updating particle weights using FLS measurement");
@@ -291,7 +295,6 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
             {
                 // std::lock_guard<std::mutex> lock2(*n_particle_phi.pc_mutex_);
 
-
                 // ROS_INFO("5");
                 Eigen::Vector4f n_point_Nodom;//HOMOGENOUS neighbour point in neighbour odom frame
                 Eigen::Vector3f n_point; //neighbour point in self odom frame
@@ -303,7 +306,8 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
                 n_point = ((*oN2o_mat_ptr) * n_point_Nodom).head(3); 
                 s_point = particle_m.p_pose_.head(3); 
                 float heading = particle_m.p_pose_(5); // in self odom frame
-                float range_hat = (n_point.head(2) - s_point.head(2)).norm();
+                double time_diff = ros::Time::now().toSec() - timestamp.toSec();
+                float range_hat = (n_point.head(2) - s_point.head(2)).norm();//+5*time_diff*2;
                 // float phi = std::atan2(n_point(1) - s_point(1), n_point(0) - s_point(0)) - PI/2;
                 float phi = std::atan2(n_point(1) - s_point(1), n_point(0) - s_point(0));
                 // float angle_hat = (-heading - phi - PI/2);
@@ -359,7 +363,7 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
                 std::vector<double> neigh_cov_array(pose_with_cov_neigh.covariance.begin(), pose_with_cov_neigh.covariance.end());
                 // ROS_INFO("ego variance x,y,z = %f, %f, %f", ego_cov_array[0], ego_cov_array[7], ego_cov_array[14]);
 
-                w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle).cast<double>(), Eigen::Vector2f(range_hat, angle_hat).cast<double>(), ego_cov_array, neigh_cov_array);
+                w.value = RbpfSlamMultiExtension::compute_weight(Eigen::Vector2f(range, angle).cast<double>(), Eigen::Vector2f(range_hat, angle_hat).cast<double>(), ego_cov_array, neigh_cov_array,time_diff);
                 weights.push_back(w);
                 //print the weight in the terminal
                 // ROS_INFO("w.value = %f", w.value);
@@ -381,11 +385,11 @@ std::vector<Weight> RbpfSlamMultiExtension::update_particles_weights(const float
     return weights;
 }
 
-double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat, const std::vector<double> &ego_cov_array, const std::vector<double> &neigh_cov_array)
+double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat, const std::vector<double> &ego_cov_array, const std::vector<double> &neigh_cov_array, const double &time_diff)
 {
     //see log_pdf_uncorrelated in rbpf_particle.cpp adn combine with whiteboard notes.
     //Determine the covariance matrices gp_var and fls_sigma. 
-    Eigen::VectorXd z_hat_exact = z.array()+0.1;
+    Eigen::VectorXd z_hat_exact = z_hat;//z.array()+0.001;
     double n = double(z.cols());
     double PI = std::acos(-1.0);
     // Eigen::VectorXd var_diag = gp_var.array() + std::pow(mbes_sigma, 2);
@@ -404,7 +408,9 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     // ROS_INFO("x_cov_ego = %f y_cov_ego = %f", ego_x_cov, ego_y_cov);
     // ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
     // ROS_INFO("x_cov_neigh = %f y_cov_neigh = %f", neigh_x_cov, neigh_y_cov);
-    Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
+    Eigen::VectorXd var_diag = Eigen::Vector2d(std::pow(fls_measurement_std_range_,2),std::pow(fls_measurement_std_angle_,2)) + Eigen::Vector2d(std::pow(max_throttle_*time_diff*2,2),0);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
+    // Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_) + Eigen::Vector2d(std::pow(max_throttle_*time_diff*2,2),0);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
+    
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
     Eigen::MatrixXd var_mat = var_diag.asDiagonal();
     Eigen::VectorXd diff = (z - z_hat_exact).array().transpose() * var_inv.array() * 
@@ -431,6 +437,9 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
         ROS_ERROR("var_inv = %f, %f", var_inv(0), var_inv(1));
         ROS_ERROR("var_inv = %f, %f", var_inv(2), var_inv(3));
         ROS_ERROR("var_det = %f", var_mat.determinant());
+        ROS_ERROR("added time noise = %f", std::pow(max_throttle_*time_diff*2,2));
+        ROS_ERROR("max_throttle_ = %f", max_throttle_);
+        ROS_ERROR("time_diff = %f", time_diff);
     }
     // // ROS_ERROR("term 1 = %f", -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))));
     // ROS_ERROR("term 2 = %f", -(1 / 2.0) * diff.array().sum());

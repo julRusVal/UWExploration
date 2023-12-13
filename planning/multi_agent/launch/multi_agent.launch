@@ -185,6 +185,8 @@
             <param name="rbpf_sensor_MBES" value="$(arg rbpf_sensor_MBES)"/>
             <param name="survey_area_topic" value="$(arg survey_area_topic)"/>
             <param name="num_auvs" value="$(arg num_auvs)"/>
+            <param name="max_throttle" value="$(arg max_throttle)"/>
+
             <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
 
             

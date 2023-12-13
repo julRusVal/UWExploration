@@ -112,7 +112,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     void odom_callback(const nav_msgs::OdometryConstPtr& odom_msg);
 
     bool empty_srv_multi(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
-    double compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat, const std::vector<double> &ego_cov_array, const std::vector<double> &neigh_cov_array);
+    double compute_weight(const Eigen::VectorXd &z, const Eigen::VectorXd &z_hat, const std::vector<double> &ego_cov_array, const std::vector<double> &neigh_cov_array,const double &time_diff);
     std::pair<double,double> convert_cartesian_covariance_2_polar(const double x_cov, const double y_cov);
 
 
@@ -123,7 +123,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     geometry_msgs::PoseArray particles_2_pose_array(const int& id, const std::vector<RbpfParticle>& particles);
     void pub_markers(const geometry_msgs::PoseArray& array_msg, const ros::Publisher& publisher);
     void predict(nav_msgs::Odometry odom_t, float dt, std::vector<RbpfParticle>& particles,std::vector<std::thread>& pred_threads_vec);
-    std::vector<Weight> update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id);
+    std::vector<Weight> update_particles_weights(const float &range, const float &angle, const int *fls_neighbour_id, const ros::Time timestamp);
     void resample(std::vector<Weight> &weights);
     void regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights);
     std::vector<int> resample_particle_votes(std::vector<int> votes);
@@ -176,7 +176,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     std::vector<std::thread> upd_threads_vec_fls_;
 
     int code_stage_ = 0;
-
+    double max_throttle_;
     
     // void update_particles_weights(float &range, float &angle)
 

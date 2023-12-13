@@ -55,7 +55,7 @@
   <arg name="survey_area_topic" default="/multi_agent/survey_area"/>
   <arg name="num_auvs" default="1"/>
   <arg name="vehicle_model" default="hugin"/>
-
+  <arg name="max_throttle"/>
   <!-- <arg name="color_seed" default="0"/> -->
 
 
@@ -96,7 +96,7 @@
         <!-- <rosparam param="fls_measurement_std">[0.1, 0.1]</rosparam> -->
         <!-- <param name="fls_range_std"                         value="0.000000001" />
         <param name="fls_angle_std"                         value="0.000000001" /> -->
-        <param name="fls_range_std"                         value="0.000001" />  <!-- Lower limit is 0.1 with zero noise until weights get too small-->
+        <param name="fls_range_std"                         value="0.001" />  <!-- Lower limit is 0.1 with zero noise until weights get too small-->
         <param name="fls_angle_std"                         value="0.00174533" /> <!-- 0.1 deg -->
         <param name="odometry_topic"                          value="$(arg odometry_topic)" />
         <param name="mbes_pings_topic"                        value="$(arg mbes_pings_topic)" />
@@ -137,7 +137,7 @@
         <param name="vehicle_model" value="$(arg vehicle_model)"/>
         <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" />
         <param name="z_hat_viz_top"  value="/$(arg namespace)/z_hat_marker" />
-
+        <param name="max_throttle"  value="$(arg max_throttle)" />
 
 
 
