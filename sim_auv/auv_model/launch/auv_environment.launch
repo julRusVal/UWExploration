@@ -37,7 +37,7 @@
     <arg name="fls_max_range" default="50.0"/>
     <arg name="fls_range_std" default="0.001"/>
 	<arg name="fls_angle_std" default="0.001"/>
-
+	<arg name="fls_meas_period" default="0.1"/>
     <arg name="num_auvs" default="1"/>
 
 
@@ -113,6 +113,7 @@
 				<arg name="fls_range_std" value="$(arg fls_range_std)"/>
 				<arg name="fls_angle_std" value="$(arg fls_angle_std)"/>
 				<arg name="num_auvs" value="$(arg num_auvs)"/>
+				<arg name="fls_meas_period" value="$(arg fls_meas_period)"/>
 			</include>
 		</group>
 	

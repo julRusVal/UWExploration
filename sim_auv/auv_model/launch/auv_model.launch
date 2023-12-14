@@ -36,7 +36,7 @@
     <arg name="fls_max_range" default="50.0"/>
     <arg name="fls_range_std" default="0.001"/>
 	<arg name="fls_angle_std" default="0.001"/>
-
+    <arg name="fls_meas_period" default="0.1"/>
 
 
     <!-- Hugin model -->
@@ -66,7 +66,7 @@
         <param name="n_beams_mbes" value="$(arg n_beams_mbes)" />
         <param name="synch_topic" value="/$(arg app)/synch" />
         <param name="fls_meas_topic" value="/sim/$(arg namespace)/fls_measurement" />
-
+        <param name="fls_meas_period" value="$(arg fls_meas_period)" />
     </node>
 
     <node pkg="auv_model" type="auv_mbes_model.py" name="auv_mbes_model" output="screen">
@@ -95,6 +95,7 @@
         <param name="fls_enable_topic" value="/$(arg namespace)/fls_sim_enable" />
         <param name="scan_area_marker_topic" value="/sim/$(arg namespace)/fls_scan_area" />
         <param name="namespace" value="$(arg namespace)" />
+        
         
 
     </node>

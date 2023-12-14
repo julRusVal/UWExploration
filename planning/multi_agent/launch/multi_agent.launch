@@ -104,6 +104,7 @@
         <param name="fls_max_range" value="$(arg fls_max_range)"/>
         <param name="fls_range_std" value="0.0"/> <!-- 0.1 meter -->
         <param name="fls_angle_std" value="0.0"/> <!-- 1 degree = 0.0174532925 radians -->
+        <param name="fls_meas_period" value="0.1"/> <!-- seconds -->
         <param name="odom_period" value="$(arg odom_period)"/>
         
     </node>

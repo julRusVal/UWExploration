@@ -11,7 +11,7 @@ int main(int argc, char** argv){
     double rate_odom, rate_meas,rate_fls_meas;
     nh.param<double>("odom_rate", rate_odom, 1);
     nh.param<double>("meas_rate", rate_meas, 1);
-    nh.param<double>("fls_meas_rate", rate_fls_meas, 0.001);
+    nh.param<double>("fls_meas_period", rate_fls_meas, 0.01);
 
 
     AUVMotionModel* auv_mm = new AUVMotionModel(ros::this_node::getName(), nh);
