@@ -41,7 +41,7 @@
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
-    <arg name="particle_count" default="30"/>
+    <arg name="particle_count" default="40"/>
     <arg name="particle_count_neighbours" default="40"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>

@@ -130,6 +130,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     void pub_estimated_measurement_to_rviz(const Eigen::Vector3f& start, const Eigen::Vector3f& end, const std::string frame_id);
     geometry_msgs::PoseWithCovariance average_pose_with_cov(const std::vector<RbpfParticle> particles);
     void replace_lost_particles(std::vector<int>& dupes, std::vector<RbpfParticle>* particles_ptr);
+    double calc_ESS(const std::vector<Weight> &weights);
 
     ros::Subscriber sub_fls_meas_;
     ros::Subscriber odom_sub_neigh_;
