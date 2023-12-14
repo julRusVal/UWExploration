@@ -177,6 +177,9 @@ class RbpfSlamMultiExtension: public RbpfSlam
 
     int code_stage_ = 0;
     double max_throttle_;
+
+    double ESS_ego_;
+    double ESS_neigh_;
     
     // void update_particles_weights(float &range, float &angle)
 

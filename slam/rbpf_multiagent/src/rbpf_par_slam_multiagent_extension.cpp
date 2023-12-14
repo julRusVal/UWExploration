@@ -210,7 +210,7 @@ bool RbpfSlamMultiExtension::empty_srv_multi(std_srvs::Empty::Request &req, std_
 
 void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
 {
-    ROS_WARN("time diff = %f", ros::Time::now().toSec() - fls_reading.header.stamp.toSec());
+    // ROS_WARN("time diff = %f", ros::Time::now().toSec() - fls_reading.header.stamp.toSec());
     ros::Time timestamp = fls_reading.header.stamp;
     // particles_busy_ = true;
     if (wp_counter_ % 2 == 0) //Only if facing anoher auv, not when travelling in the same direction
@@ -409,7 +409,7 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     // ROS_INFO("r_cov_neigh = %f theta_cov_neigh = %f", p_neigh.first, p_neigh.second);
     // ROS_INFO("x_cov_neigh = %f y_cov_neigh = %f", neigh_x_cov, neigh_y_cov);
     Eigen::VectorXd var_diag = Eigen::Vector2d(std::pow(fls_measurement_std_range_,2),std::pow(fls_measurement_std_angle_,2)) + Eigen::Vector2d(std::pow(max_throttle_*time_diff*2,2),0)+ Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
-    ROS_WARN("ego_r_cov = %f, ego_theta_cov = %f, neigh_r_cov = %f, neigh_theta_cov = %f", p_ego.first, p_ego.second, p_neigh.first, p_neigh.second);
+    // ROS_WARN("ego_r_cov = %f, ego_theta_cov = %f, neigh_r_cov = %f, neigh_theta_cov = %f", p_ego.first, p_ego.second, p_neigh.first, p_neigh.second);
     // Eigen::VectorXd var_diag = Eigen::Vector2d(fls_measurement_std_range_,fls_measurement_std_angle_) + Eigen::Vector2d(std::pow(max_throttle_*time_diff*2,2),0);// + Eigen::Vector2d(p_ego.first, p_ego.second) + Eigen::Vector2d(p_neigh.first, p_neigh.second); // Add spread in x and y converted to range and angle of self particle set + neighbour particle set + FLS sensor noise
     
     Eigen::MatrixXd var_inv = var_diag.cwiseInverse().asDiagonal();
@@ -425,23 +425,23 @@ double RbpfSlamMultiExtension::compute_weight(const Eigen::VectorXd &z, const Ei
     {
         ROS_WARN("logl is nan. Check your covariance matrices, probably not invertible...");
     }
-    if (exp_logl < 1e-12)
-    {
-        ROS_WARN("exp_logl is zero.");
-        ROS_ERROR("logl = %f", logl);
-        ROS_ERROR("exp(logl) = %f", exp(logl));
-        ROS_ERROR("n = %f", n);
-        ROS_ERROR("z = %f, %f", z(0), z(1));
-        ROS_ERROR("z_hat_exact = %f, %f", z_hat_exact(0), z_hat_exact(1));
-        ROS_ERROR("z-z_hat_exact = %f, %f", z(0)-z_hat_exact(0), z(1)-z_hat_exact(1));
-        ROS_ERROR("var_diag = %f, %f", var_diag(0), var_diag(1));
-        ROS_ERROR("var_inv = %f, %f", var_inv(0), var_inv(1));
-        ROS_ERROR("var_inv = %f, %f", var_inv(2), var_inv(3));
-        ROS_ERROR("var_det = %f", var_mat.determinant());
-        ROS_ERROR("added time noise = %f", std::pow(max_throttle_*time_diff*2,2));
-        ROS_ERROR("max_throttle_ = %f", max_throttle_);
-        ROS_ERROR("time_diff = %f", time_diff);
-    }
+    // if (exp_logl < 1e-12)
+    // {
+    //     ROS_WARN("exp_logl is zero.");
+    //     ROS_ERROR("logl = %f", logl);
+    //     ROS_ERROR("exp(logl) = %f", exp(logl));
+    //     ROS_ERROR("n = %f", n);
+    //     ROS_ERROR("z = %f, %f", z(0), z(1));
+    //     ROS_ERROR("z_hat_exact = %f, %f", z_hat_exact(0), z_hat_exact(1));
+    //     ROS_ERROR("z-z_hat_exact = %f, %f", z(0)-z_hat_exact(0), z(1)-z_hat_exact(1));
+    //     ROS_ERROR("var_diag = %f, %f", var_diag(0), var_diag(1));
+    //     ROS_ERROR("var_inv = %f, %f", var_inv(0), var_inv(1));
+    //     ROS_ERROR("var_inv = %f, %f", var_inv(2), var_inv(3));
+    //     ROS_ERROR("var_det = %f", var_mat.determinant());
+    //     ROS_ERROR("added time noise = %f", std::pow(max_throttle_*time_diff*2,2));
+    //     ROS_ERROR("max_throttle_ = %f", max_throttle_);
+    //     ROS_ERROR("time_diff = %f", time_diff);
+    // }
     // // ROS_ERROR("term 1 = %f", -(n / 2.) * std::log(2*PI*std::pow(var_mat.determinant(),(1/n))));
     // ROS_ERROR("term 2 = %f", -(1 / 2.0) * diff.array().sum());
     // ROS_ERROR("logl = %f", logl);
@@ -507,6 +507,22 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
         weights_values.push_back(w.value);
     }
 
+    if (pc_ > pcn_)
+    {
+        ESS_ego_ = 1/inner_product(begin(weights_values), end(weights_values), begin(weights_values), 0.0); //https://www.stats.ox.ac.uk/~doucet/doucet_johansen_tutorialPF2011.pdf
+        ESS_neigh_ = 1/inner_product(begin(weights_values), begin(weights_values)+pcn_, begin(weights_values), 0.0);
+    }
+    else if (pcn_ > pc_)
+    {
+        ESS_ego_ = 1/inner_product(begin(weights_values), begin(weights_values)+pc_, begin(weights_values), 0.0);
+        ESS_neigh_ = 1/inner_product(begin(weights_values), end(weights_values), begin(weights_values), 0.0);
+    }
+    else
+    {
+        ESS_ego_ = 1/inner_product(begin(weights_values), begin(weights_values), begin(weights_values), 0.0);
+        ESS_neigh_ = 1/inner_product(begin(weights_values), begin(weights_values), begin(weights_values), 0.0);
+    }
+
     // //Resample
     int N = weights.size();
     if (N <=0)
@@ -538,7 +554,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
         // ROS_WARN("range[%d] = %d", i, range[i]);
         // ROS_WARN("weights_values[%d] = %f", i, weights_values[i]);
     }
-    // THIS PART CASUES A CRASH!!!!!!!! NOTE() 1 
+    
     int i = 0;
     int j = 0;
     while(i < N)
@@ -571,7 +587,7 @@ void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
     //     indexes[i] = i;
     // }
     // // ------------------------------
-    RbpfSlamMultiExtension::regenerate_particle_sets(indexes, weights); // Source of spread NOTE() 2
+    RbpfSlamMultiExtension::regenerate_particle_sets(indexes, weights); 
 }
 
 void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes,const std::vector<Weight> &weights)
@@ -660,9 +676,35 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
         //     ROS_WARN("No neighbour location available");
         // }
     }
+    if (ESS_ego_ < std::round(pc_/2))
+    {
+        RbpfSlamMultiExtension::replace_lost_particles(dupes_s, &particles_);
+        // Add noise to particles to avoid loss of variance. TODO() To the noise addition of the copy particle sets before assigning to global sets
+        for(int i = 0; i < pc_; i++)
+        {
+            particles_[i].add_noise(res_noise_cov_);
+        }
+    }
+    else
+    {
+        ROS_INFO(" Not resampling ego particles: ESS_ego_ = %f !< %f", ESS_ego_, std::round(pc_/2));
+    }
 
-    RbpfSlamMultiExtension::replace_lost_particles(dupes_s, &particles_);
-    RbpfSlamMultiExtension::replace_lost_particles(dupes_n, particles_neighbour_ptr);
+    if (ESS_neigh_ < std::round(pcn_/2))
+    {
+        RbpfSlamMultiExtension::replace_lost_particles(dupes_n, particles_neighbour_ptr);
+        for(int i = 0; i < pcn_; i++)
+        {
+            //Use the neighbour pointer
+            if (particles_neighbour_ptr != nullptr) {
+                particles_neighbour_ptr->at(i).add_noise(res_noise_cov_);
+            }
+        }
+    }
+    else
+    {
+        ROS_INFO("Not resampling neighbour particles: ESS_neigh_ = %f !< %f", ESS_neigh_, std::round(pcn_/2));
+    }
 
     //normalize votes
     // int self_sum = std::accumulate(particle_votes.begin(), particle_votes.end(), 0);
@@ -690,19 +732,9 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     //     particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i]);
     // }
     
-    // Add noise to particles to avoid loss of variance. TODO() To the noise addition of the copy particle sets before assigning to global sets
-    for(int i = 0; i < pc_; i++)
-    {
-        particles_[i].add_noise(res_noise_cov_);
-    }
     
-    for(int i = 0; i < pcn_; i++)
-    {
-        //Use the neighbour pointer
-        if (particles_neighbour_ptr != nullptr) {
-            particles_neighbour_ptr->at(i).add_noise(res_noise_cov_);
-        }
-    }
+    
+    
 
     // //Reassign particles
     // if (particles_self_new.size() == pc_)
