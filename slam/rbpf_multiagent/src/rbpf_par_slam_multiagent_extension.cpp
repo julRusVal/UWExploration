@@ -46,8 +46,9 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     }
 
     // pcdebug
-    sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
-
+    if(rbpf_sensor_FLS){
+        sub_fls_meas_ = nh_->subscribe(fls_meas_topic, rbpf_period_, &RbpfSlamMultiExtension::rbpf_update_fls_cb, this);
+    }
     inducing_pts_sent = false;
     nh_->param<string>(("survey_area_topic"), survey_area_topic, "/multi_agent/survey_area");
     survey_area_sub_ = nh_->subscribe(survey_area_topic, 1, &RbpfSlamMultiExtension::survey_area_cb, this);
