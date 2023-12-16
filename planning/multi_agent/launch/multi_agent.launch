@@ -41,12 +41,13 @@
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
-    <arg name="particle_count" default="2"/>
-    <arg name="particle_count_neighbours" default="2"/>
+    <arg name="particle_count" default="30"/>
+    <arg name="particle_count_neighbours" default="30"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
     <arg name="rbpf_sensor_FLS" default="true"/>
     <arg name="rbpf_sensor_MBES" default="false"/>
+    <arg name="comms_enabled" default="false"/>
 
 
 
@@ -187,6 +188,7 @@
             <param name="survey_area_topic" value="$(arg survey_area_topic)"/>
             <param name="num_auvs" value="$(arg num_auvs)"/>
             <param name="max_throttle" value="$(arg max_throttle)"/>
+            <param name="comms_enabled" value="$(arg comms_enabled)"/>
 
             <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
 

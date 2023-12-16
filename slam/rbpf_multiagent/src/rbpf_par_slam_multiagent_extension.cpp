@@ -34,6 +34,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<double>(("fls_angle_std"), fls_measurement_std_angle_, 0.01);
     nh_->param<double>(("max_throttle"), max_throttle_,3);
     nh_->param<double>(("particle_spread_std_factor"), particle_spread_std_factor_, 1.0);
+    nh_->param<bool>(("comms_enabled"), comms_enabled_, false);
 
 
 
@@ -91,8 +92,90 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
         timer_generate_plots = nh_->createTimer(ros::Duration(plot_period_), &RbpfSlamMultiExtension::update_plots, this, false);
     }
     t_plot_old_ = ros::Time::now().toSec();
-    
+
+    //Setup particle sharing over comms
+    if (comms_enabled_)
+    {
+        string ego_particles_topic = "/multi_agent/particles_" + namespace_;
+        timer_pub_particles_ = nh_->createTimer(ros::Duration(0.5), &RbpfSlamMultiExtension::pub_particles_cb, this, false);
+        pub_particles_ = nh_->advertise<geometry_msgs::PoseArray>(ego_particles_topic, 0); //TODO: fix message type
+
+        if (auv_id_left_)
+        {
+            string neighbour_left_particles_topic = "/multi_agent/particles_" + vehicle_model_ + "_" + std::to_string(*auv_id_left_);
+            sub_particles_left_ = nh_->subscribe(neighbour_left_particles_topic, 1, &RbpfSlamMultiExtension::sub_particles_left_cb, this);
+        }
+        if (auv_id_right_)
+        {   
+            string neighbour_right_particles_topic = "/multi_agent/particles_" + vehicle_model_ + "_" + std::to_string(*auv_id_right_);
+            sub_particles_right_ = nh_->subscribe(neighbour_right_particles_topic, 1, &RbpfSlamMultiExtension::sub_particles_right_cb, this);
+        }
+    }
 }   
+
+void RbpfSlamMultiExtension::pub_particles_cb(const ros::TimerEvent& event)
+{
+    if(true)//(wp_counter_ % 2 != 0) //AUVs not facing each other, instead travelling "next to each other"
+    {
+        geometry_msgs::PoseArray pose_array_msg;
+        pose_array_msg.header.frame_id = odom_frame_;
+        pose_array_msg.header.stamp = ros::Time::now();
+        for (const RbpfParticle& particle_m : particles_) //particle m
+        {  
+            geometry_msgs::Pose pose_msg;
+            pose_msg.position.x = particle_m.p_pose_(0);
+            pose_msg.position.y = particle_m.p_pose_(1);
+            pose_msg.position.z = particle_m.p_pose_(2);
+            float roll = particle_m.p_pose_(3);
+            float pitch = particle_m.p_pose_(4);
+            float yaw = particle_m.p_pose_(5);
+            tf2::Quaternion q;
+            q.setRPY(roll, pitch, yaw);
+            pose_msg.orientation.x = q.x();
+            pose_msg.orientation.y = q.y();
+            pose_msg.orientation.z = q.z();
+            pose_msg.orientation.w = q.w();
+            pose_array_msg.poses.push_back(pose_msg);
+        }
+        pub_particles_.publish(pose_array_msg);
+    }
+}
+
+void RbpfSlamMultiExtension::sub_particles_left_cb(const geometry_msgs::PoseArray& pose_array_msg)
+{
+    RbpfSlamMultiExtension::update_particles_poses_from_pose_array(pose_array_msg, particles_left_);
+}
+
+void RbpfSlamMultiExtension::sub_particles_right_cb(const geometry_msgs::PoseArray& pose_array_msg)
+{
+    RbpfSlamMultiExtension::update_particles_poses_from_pose_array(pose_array_msg, particles_right_);
+}
+
+void RbpfSlamMultiExtension::update_particles_poses_from_pose_array(const geometry_msgs::PoseArray& pose_array_msg, std::vector<RbpfParticle>& particles)
+{
+    
+    if (pose_array_msg.poses.size() == particles.size())
+    {
+        for (int i = 0; i < pose_array_msg.poses.size(); i++)
+        {
+            particles[i].p_pose_(0) = pose_array_msg.poses[i].position.x;
+            particles[i].p_pose_(1) = pose_array_msg.poses[i].position.y;
+            particles[i].p_pose_(2) = pose_array_msg.poses[i].position.z;
+            tf2::Quaternion q(pose_array_msg.poses[i].orientation.x, pose_array_msg.poses[i].orientation.y, pose_array_msg.poses[i].orientation.z, pose_array_msg.poses[i].orientation.w);
+            tf2::Matrix3x3 m(q);
+            double roll, pitch, yaw;
+            m.getRPY(roll, pitch, yaw);
+            // m.getRPY(particles[i].p_pose_(3), particles[i].p_pose_(4), particles[i].p_pose_(5));
+            particles[i].p_pose_(3) = roll;
+            particles[i].p_pose_(4) = pitch;
+            particles[i].p_pose_(5) = yaw;
+        }
+    }
+    else
+    {
+        ROS_WARN("pose_array_msg.poses.size() != particles.size()");
+    }
+}
 
 // TODO: connect to topic with survey area boundaries
 void RbpfSlamMultiExtension::survey_area_cb(const visualization_msgs::MarkerArray& marker_array)

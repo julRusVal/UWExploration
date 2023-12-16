@@ -97,6 +97,10 @@ class RbpfSlamMultiExtension: public RbpfSlam
     ros::Timer timer_neighbours_rviz_;
     ros::Timer timer_generate_plots;
     ros::ServiceServer srv_server_multi_;
+    ros::Publisher pub_particles_;
+    ros::Subscriber sub_particles_left_;
+    ros::Subscriber sub_particles_right_;
+    ros::Timer timer_pub_particles_;
 
 
 
@@ -131,6 +135,10 @@ class RbpfSlamMultiExtension: public RbpfSlam
     geometry_msgs::PoseWithCovariance average_pose_with_cov(const std::vector<RbpfParticle> particles);
     void replace_lost_particles(std::vector<int>& dupes, std::vector<RbpfParticle>* particles_ptr);
     double calc_ESS(const std::vector<Weight> &weights);
+    void pub_particles_cb(const ros::TimerEvent& event);
+    void sub_particles_left_cb(const geometry_msgs::PoseArray& pose_array_msg);
+    void sub_particles_right_cb(const geometry_msgs::PoseArray& pose_array_msg);
+    void update_particles_poses_from_pose_array(const geometry_msgs::PoseArray& pose_array_msg, std::vector<RbpfParticle>& particles);
 
     ros::Subscriber sub_fls_meas_;
     ros::Subscriber odom_sub_neigh_;
@@ -183,6 +191,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
     double ESS_neigh_;
     double particle_spread_std_factor_;
     
+    bool comms_enabled_;
     // void update_particles_weights(float &range, float &angle)
 
 
