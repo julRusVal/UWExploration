@@ -34,7 +34,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<double>(("fls_angle_std"), fls_measurement_std_angle_, 0.01);
     nh_->param<double>(("max_throttle"), max_throttle_,3);
     nh_->param<double>(("particle_spread_std_factor"), particle_spread_std_factor_, 1.0);
-    nh_->param<bool>(("comms_enabled"), comms_enabled_, false);
+    nh_->param<string>(("comms_type"), comms_type_, "disabled");
 
 
 
@@ -94,7 +94,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     t_plot_old_ = ros::Time::now().toSec();
 
     //Setup particle sharing over comms
-    if (comms_enabled_)
+    if (comms_type_ != "disabled")
     {
         string ego_particles_topic = "/multi_agent/particles_" + namespace_;
         timer_pub_particles_ = nh_->createTimer(ros::Duration(0.5), &RbpfSlamMultiExtension::pub_particles_cb, this, false);
@@ -115,7 +115,7 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
 
 void RbpfSlamMultiExtension::pub_particles_cb(const ros::TimerEvent& event)
 {
-    if(true)//(wp_counter_ % 2 != 0) //AUVs not facing each other, instead travelling "next to each other"
+    if(wp_counter_ % 2 != 0 || comms_type_ == "unlimited") //AUVs not facing each other, instead travelling "next to each other"
     {
         geometry_msgs::PoseArray pose_array_msg;
         pose_array_msg.header.frame_id = odom_frame_;
@@ -143,12 +143,20 @@ void RbpfSlamMultiExtension::pub_particles_cb(const ros::TimerEvent& event)
 
 void RbpfSlamMultiExtension::sub_particles_left_cb(const geometry_msgs::PoseArray& pose_array_msg)
 {
-    RbpfSlamMultiExtension::update_particles_poses_from_pose_array(pose_array_msg, particles_left_);
+    if(frontal_direction_ == -1 || comms_type_ == "unlimited") //Latest frontal AUV was the one on the left, now weŕe travelling along side the left AUV
+    {
+        ROS_INFO("namespace_ = %s replacing particles_left_", namespace_.c_str());
+        RbpfSlamMultiExtension::update_particles_poses_from_pose_array(pose_array_msg, particles_left_);
+    }
 }
 
 void RbpfSlamMultiExtension::sub_particles_right_cb(const geometry_msgs::PoseArray& pose_array_msg)
 {
-    RbpfSlamMultiExtension::update_particles_poses_from_pose_array(pose_array_msg, particles_right_);
+    if(frontal_direction_ == 1 || comms_type_ == "unlimited") //Latest frontal AUV was the one on the right, now weŕe travelling along side the right AUV
+    {
+        ROS_INFO("namespace_ = %s replacing particles_right_", namespace_.c_str());
+        RbpfSlamMultiExtension::update_particles_poses_from_pose_array(pose_array_msg, particles_right_);
+    }
 }
 
 void RbpfSlamMultiExtension::update_particles_poses_from_pose_array(const geometry_msgs::PoseArray& pose_array_msg, std::vector<RbpfParticle>& particles)

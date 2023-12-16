@@ -47,7 +47,7 @@
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
     <arg name="rbpf_sensor_FLS" default="true"/>
     <arg name="rbpf_sensor_MBES" default="false"/>
-    <arg name="comms_enabled" default="false"/>
+    <arg name="comms_type" default="disabled"/> <!-- 'disabled', 'realistic', 'unlimited' -->
 
 
 
@@ -188,7 +188,7 @@
             <param name="survey_area_topic" value="$(arg survey_area_topic)"/>
             <param name="num_auvs" value="$(arg num_auvs)"/>
             <param name="max_throttle" value="$(arg max_throttle)"/>
-            <param name="comms_enabled" value="$(arg comms_enabled)"/>
+            <param name="comms_type" value="$(arg comms_type)"/>
 
             <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
 

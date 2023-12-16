@@ -21,7 +21,7 @@ class RbpfSetup():
         self.rbpf_sensor_MBES = rospy.get_param('~rbpf_sensor_MBES',False)
         self.survey_area_topic = rospy.get_param('survey_area_topic', '/multi_agent/survey_area')
         self.max_throttle = rospy.get_param('~max_throttle')
-        self.comms_enabled = rospy.get_param('~comms_enabled',False)
+        self.comms_type = rospy.get_param('~comms_type',"disabled")
         self.i = 0
         
 
@@ -64,7 +64,7 @@ class RbpfSetup():
                             "num_auvs:=" + str(self.num_auvs),
                             "vehicle_model:=" + self.vehicle_model,
                             "max_throttle:=" + str(self.max_throttle),
-                            "comms_enabled:=" + str(self.comms_enabled),
+                            "comms_type:=" + str(self.comms_type),
                           ])
             
             while time.time() - t < 2:

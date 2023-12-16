@@ -56,7 +56,7 @@
   <arg name="num_auvs" default="1"/>
   <arg name="vehicle_model" default="hugin"/>
   <arg name="max_throttle"/>
-  <arg name="comms_enabled" default="false"/>
+  <arg name="comms_type" default="disabled"/>
   <!-- <arg name="color_seed" default="0"/> -->
 
 
@@ -138,7 +138,7 @@
         <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" />
         <param name="z_hat_viz_top"  value="/$(arg namespace)/z_hat_marker" />
         <param name="max_throttle"  value="$(arg max_throttle)" />
-        <param name="comms_enabled"  value="$(arg comms_enabled)" />
+        <param name="comms_type"  value="$(arg comms_type)" />
 
 
 
