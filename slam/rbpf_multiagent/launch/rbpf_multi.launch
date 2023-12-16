@@ -88,16 +88,15 @@
         <param name="particle_count_neighbours" type= "int"   value="$(arg particle_count_neighbours)" />
         <rosparam param="init_covariance">[1., 1., 0.0, 0.0, 0.0, 0.0]</rosparam>
         <rosparam param="motion_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.00001]</rosparam>
-        <rosparam param="resampling_noise_covariance">[1.0, 1.0, 0.0, 0.0, 0.0, 0.0]</rosparam>
+        <rosparam param="resampling_noise_covariance">[10.0, 10.0, 0.0, 0.0, 0.0, 0.0]</rosparam>
         <!-- <rosparam param="init_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</rosparam> -->
         <!-- <rosparam param="motion_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</rosparam> -->
         <!-- <rosparam param="resampling_noise_covariance">[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</rosparam> -->
         <param name="measurement_std"                         value="10." />
         <!-- <rosparam param="fls_measurement_std">[0.1, 0.1]</rosparam> -->
-        <!-- <param name="fls_range_std"                         value="0.000000001" />
-        <param name="fls_angle_std"                         value="0.000000001" /> -->
         <param name="fls_range_std"                         value="0.001" />  <!-- Lower limit is 0.1 with zero noise until weights get too small-->
         <param name="fls_angle_std"                         value="0.00174533" /> <!-- 0.1 deg -->
+        <param name="particle_spread_std_factor"             value="0.01" />
         <param name="odometry_topic"                          value="$(arg odometry_topic)" />
         <param name="mbes_pings_topic"                        value="$(arg mbes_pings_topic)" />
         <param name="map_frame"                               value="$(arg map_frame)" />

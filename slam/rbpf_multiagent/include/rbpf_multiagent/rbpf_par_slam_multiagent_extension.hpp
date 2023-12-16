@@ -181,6 +181,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
 
     double ESS_ego_;
     double ESS_neigh_;
+    double particle_spread_std_factor_;
     
     // void update_particles_weights(float &range, float &angle)
 
