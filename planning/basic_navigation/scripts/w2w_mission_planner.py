@@ -79,9 +79,12 @@ class W2WMissionPlanner(object):
 
         self.wp_counter = 0
 
+        self.finished_pub = rospy.Publisher('/finished/' + self.namespace, Bool, queue_size=1)
+        self.started = False
         while not rospy.is_shutdown():
             
             if self.latest_path.poses and not self.relocalizing:
+                self.started = True
                 # Get next waypoint in path
                 rospy.loginfo("Sending WP")
                 wp = self.latest_path.poses[0]
@@ -176,7 +179,9 @@ class W2WMissionPlanner(object):
                     rospy.logerr("Unknown waypoint follower type: %s", self.wp_follower_type)
                     raise ValueError("Unknown waypoint follower type: %s", self.wp_follower_type)
                 self.wp_counter += 1
-            elif not self.latest_path.poses:
+            elif not self.latest_path.poses and self.started:
+                self.finished_pub.publish(Bool(True))
+                self.started = False
                 rospy.loginfo_once("Mission finished")
 
     def start_relocalize(self, bool_msg):

@@ -11,13 +11,36 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import tf
 import io
+import os
+import time
+from std_msgs.msg import Bool
+import csv
 
 class PlotGeneratorService:
     def __init__(self):
         self.service = rospy.Service('/plot_generator', PlotGenerator, self.callback)
         rospy.loginfo("Plot Generator service initialized")
-
+        self.save_final_plots = rospy.get_param('~save_final_plots',False)
+        self.results_path = rospy.get_param('~results_path','/home/kurreman/Documents/data_collection"')
         self.plot_instances_dict = {}
+
+        if self.save_final_plots:
+            #Create a folder in for the results with the current time as the name using os
+            folder_name = time.strftime("%Y%m%d-%H%M%S")
+            # Get the path of the current script
+            # script_path = os.path.dirname(os.path.abspath(__file__))
+            # Create a new directory path by joining the script path with the new folder name
+            # new_folder_path = os.path.join(script_path, folder_name)
+            new_folder_path = os.path.join(self.results_path, folder_name)
+
+            # Check if the directory already exists
+            if not os.path.exists(new_folder_path):
+                # Create the directory if it doesn't exist
+                os.makedirs(new_folder_path)
+                self.new_folder_path = new_folder_path
+        else:
+            self.new_folder_path = None
+
     
     def callback(self, req):
         ego_odom_frame = req.ego.header.frame_id
@@ -29,7 +52,7 @@ class PlotGeneratorService:
         try:
             plot_instance = self.plot_instances_dict[ego_id]
         except KeyError:
-            plot_instance = PlotGeneratorServiceInstance()
+            plot_instance = PlotGeneratorServiceInstance(ego_id,self.new_folder_path,self.save_final_plots)
             self.plot_instances_dict[ego_id] = plot_instance
         plot_instance.callback(req)
     
@@ -39,7 +62,7 @@ class PlotGeneratorService:
 
 class PlotGeneratorServiceInstance:
     
-    def __init__(self):
+    def __init__(self,ego_id,path,save_plots):
         # self.service = rospy.Service('/plot_generator', PlotGenerator, self.callback)
         # rospy.loginfo("Plot Generator service initialized")
 
@@ -58,6 +81,13 @@ class PlotGeneratorServiceInstance:
         self.frame_count = 0        # Frame count for the animation
 
         self.time_diff = 0.0
+        self.animate_plots = rospy.get_param('~animate_plots',True)
+        self.vehicle_model = rospy.get_param('~vehicle_model',"hugin")
+        self.ego_id = ego_id
+        self.path = path
+        self.save_final_plots = save_plots
+        # rospy.Subscriber('/multi_agent/common_timestamps',Int32MultiArray,self.common_timestamps_cb,queue_size=1)
+        rospy.Subscriber('/finished/'+str(self.vehicle_model)+'_'+str(self.ego_id),Bool,self.finished_cb,queue_size=1)
 
         # cv2.namedWindow("Errors Plot", cv2.WINDOW_NORMAL)
         # cv2.resizeWindow("Errors Plot", 500, 500)
@@ -241,11 +271,13 @@ class PlotGeneratorServiceInstance:
         # return PlotGeneratorResponse()
 
         self.update_plot(None)
-        plot_image = self.plot_to_image()
 
-        window_name = "Animated Plot - AUV " + str(ego_id)
-        cv2.imshow(window_name, plot_image)
-        cv2.waitKey(1)  # Adjust the waitKey value as needed
+        if self.animate_plots:
+            plot_image = self.plot_to_image()
+
+            window_name = "Animated Plot - AUV " + str(ego_id)
+            cv2.imshow(window_name, plot_image)
+            cv2.waitKey(1)  # Adjust the waitKey value as needed
     
     def plot_to_image(self):
         # Convert the plot to an image using matplotlib
@@ -517,6 +549,42 @@ class PlotGeneratorServiceInstance:
         # self.ax4.set_xlim(0, len(self.right_x_var_list))
 
         return self.line_left_distance, self.line_right_distance, self.line_left_bearing, self.line_right_bearing, self.line_ego_cov, self.line_left_cov, self.line_right_cov, self.line_ego_abs_error, self.line_left_abs_error, self.line_right_abs_error
+
+    def finished_cb(self,msg):
+        """Called when the finished topic is published"""
+        if msg.data and self.save_final_plots:
+            # Define the filename for the CSV file
+            #csv_filename = self.path + auv_ + self.ego_id.csv
+            csv_filename = os.path.join(self.path, f"auv_{self.ego_id}.csv")
+
+            # Gather data from the plots to save
+            data_to_save = {
+                'left_distance_errors': self.left_distance_errors,
+                'right_distance_errors': self.right_distance_errors,
+                'left_bearing_errors': self.left_bearing_errors,
+                'right_bearing_errors': self.right_bearing_errors,
+                'ego_cov_list': self.ego_cov_list,
+                'left_cov_list': self.left_cov_list,
+                'right_cov_list': self.right_cov_list,
+                'ego_abs_error': self.ego_abs_error,
+                'left_abs_error': self.left_abs_error,
+                'right_abs_error': self.right_abs_error
+                # Add more data you want to save here
+            }
+
+            # Determine the length of the data
+            data_length = max(len(data) for data in data_to_save.values())
+
+            # Write the data to a CSV file
+            with open(csv_filename, mode='w', newline='') as file:
+                writer = csv.DictWriter(file, fieldnames=data_to_save.keys())
+                writer.writeheader()
+
+                for i in range(data_length):
+                    row_data = {key: data[i] if i < len(data) else None for key, data in data_to_save.items()}
+                    writer.writerow(row_data)
+
+            rospy.loginfo(f"Saved plot data to {csv_filename}")
 
 if __name__ == '__main__':
     rospy.init_node('plot_generator_service')
