@@ -23,7 +23,12 @@ class RbpfSetup():
         self.max_throttle = rospy.get_param('~max_throttle')
         self.comms_type = rospy.get_param('~comms_type',"disabled")
         self.i = 0
-        
+        self.init_covariance = rospy.get_param('~init_covariance')
+        self.motion_covariance = rospy.get_param('~motion_covariance')
+        self.resampling_noise_covariance = rospy.get_param('~resampling_noise_covariance')
+        self.fls_range_std = rospy.get_param('~fls_range_std')
+        self.fls_angle_std = rospy.get_param('~fls_angle_std')
+        self.particle_spread_std_factor = rospy.get_param('~particle_spread_std_factor')
 
         rospy.loginfo("Setting up AUV RBPF SLAM...")
 
@@ -65,6 +70,12 @@ class RbpfSetup():
                             "vehicle_model:=" + self.vehicle_model,
                             "max_throttle:=" + str(self.max_throttle),
                             "comms_type:=" + str(self.comms_type),
+                            "init_covariance:=" + str(self.init_covariance),
+                            "motion_covariance:=" + str(self.motion_covariance),
+                            "resampling_noise_covariance:=" + str(self.resampling_noise_covariance),
+                            "fls_range_std:=" + str(self.fls_range_std),
+                            "fls_angle_std:=" + str(self.fls_angle_std),
+                            "particle_spread_std_factor:=" + str(self.particle_spread_std_factor),
                           ])
             
             while time.time() - t < 2:

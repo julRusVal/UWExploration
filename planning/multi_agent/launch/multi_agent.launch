@@ -29,7 +29,7 @@
     <arg name="node_name_navigation" default="auv_navigation_node"/>
     <!-- max_thrust = 4 gives a turning radius of approx 2.5 m -->
     <arg name="max_thrust" default="3.0"/> 
-    <arg name="max_throttle" default="5.0"/>
+    <arg name="max_throttle" default="2.0"/>
     <!-- Acceptable types below: 'simple', 'simple_maxturn' -->
     <arg name="waypoint_follower_type" default="simple_maxturn"/>
     <arg name="dubins_turning_radius" default="3"/>
@@ -41,14 +41,19 @@
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
-    <arg name="particle_count" default="30"/>
-    <arg name="particle_count_neighbours" default="30"/>
+    <arg name="particle_count" default="50"/>
+    <arg name="particle_count_neighbours" default="50"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
     <arg name="rbpf_sensor_FLS" default="true"/>
     <arg name="rbpf_sensor_MBES" default="false"/>
     <arg name="comms_type" default="disabled"/> <!-- 'disabled', 'realistic', 'unlimited' -->
-
+    <arg name="init_covariance" default="[1., 1., 0.0, 0.0, 0.0, 0.0]"/> 
+    <arg name="motion_covariance" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.000001]"/>
+    <arg name="resampling_noise_covariance" default="[1.0, 1.0, 0.0, 0.0, 0.0, 0.0]"/>
+    <arg name="fls_range_std" default="0.001"/>  
+    <arg name="fls_angle_std" default="0.00174533"/> <!-- 0.1 deg -->
+    <arg name="particle_spread_std_factor" default="0.01"/>
 
 
 
@@ -189,6 +194,12 @@
             <param name="num_auvs" value="$(arg num_auvs)"/>
             <param name="max_throttle" value="$(arg max_throttle)"/>
             <param name="comms_type" value="$(arg comms_type)"/>
+            <param name="init_covariance" value="$(arg init_covariance)"/>
+            <param name="motion_covariance" value="$(arg motion_covariance)"/>
+            <param name="resampling_noise_covariance" value="$(arg resampling_noise_covariance)"/>
+            <param name="fls_range_std" value="$(arg fls_range_std)"/>
+            <param name="fls_angle_std" value="$(arg fls_angle_std)"/>
+            <param name="particle_spread_std_factor" value="$(arg particle_spread_std_factor)"/>
 
             <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
 
