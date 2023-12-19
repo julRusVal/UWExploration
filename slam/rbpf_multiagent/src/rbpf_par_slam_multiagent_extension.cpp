@@ -1493,12 +1493,12 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     //     RbpfSlamMultiExtension::update_plots(ros::TimerEvent());
     // }
 
-    ROS_INFO("init_covariance = %f, %f, %f, %f, %f, %f", init_cov_[0], init_cov_[1], init_cov_[2], init_cov_[3], init_cov_[4], init_cov_[5]);
-    ROS_INFO("motion_covariance = %f, %f, %f, %f, %f, %f", motion_cov_[0], motion_cov_[1], motion_cov_[2], motion_cov_[3], motion_cov_[4], motion_cov_[5]);
-    ROS_INFO("resampling_noise_covariance = %f, %f, %f, %f, %f, %f", res_noise_cov_[0], res_noise_cov_[1], res_noise_cov_[2], res_noise_cov_[3], res_noise_cov_[4], res_noise_cov_[5]);
-    ROS_INFO("fls_range_std = %f", fls_measurement_std_range_);
-    ROS_INFO("fls_angle_std = %f", fls_measurement_std_angle_);
-    ROS_INFO("particle_spread_std_factor = %f", particle_spread_std_factor_);
+    // ROS_INFO("init_covariance = %f, %f, %f, %f, %f, %f", init_cov_[0], init_cov_[1], init_cov_[2], init_cov_[3], init_cov_[4], init_cov_[5]);
+    // ROS_INFO("motion_covariance = %f, %f, %f, %f, %f, %f", motion_cov_[0], motion_cov_[1], motion_cov_[2], motion_cov_[3], motion_cov_[4], motion_cov_[5]);
+    // ROS_INFO("resampling_noise_covariance = %f, %f, %f, %f, %f, %f", res_noise_cov_[0], res_noise_cov_[1], res_noise_cov_[2], res_noise_cov_[3], res_noise_cov_[4], res_noise_cov_[5]);
+    // ROS_INFO("fls_range_std = %f", fls_measurement_std_range_);
+    // ROS_INFO("fls_angle_std = %f", fls_measurement_std_angle_);
+    // ROS_INFO("particle_spread_std_factor = %f", particle_spread_std_factor_);
 
     particles_busy_ = true;
 

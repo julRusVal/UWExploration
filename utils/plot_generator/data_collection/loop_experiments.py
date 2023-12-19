@@ -3,6 +3,7 @@
 import rospy
 import roslaunch
 from std_msgs.msg import Bool
+from geometry_msgs.msg import PoseStamped, Pose
 # import os
 import numpy as np
 from pathlib import Path
@@ -18,7 +19,7 @@ class experiments_loop(object):
         # For future Koray: now that you have 2+ RBPFs running (congrats!) you'll have to adapt this cb 
         # to run your experiments
         # finished_top = rospy.get_param("~rbpf_saved_top", "/gt/rbpf_saved")
-        self.synch_pub = rospy.Subscriber(finished_top, Bool, self.synch_cb)
+        # self.synch_pub = rospy.Subscriber(finished_top, Bool, self.synch_cb)
         self.finished = False
         # dataset = "overnight_2020"
         # particle_count = 1
@@ -26,7 +27,7 @@ class experiments_loop(object):
         # path = "/media/orin/Seagate Expansion Drive/rbpf_results/hugin/"
         path = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection"
         test_run_date_id = time.strftime("%Y%m%d_%H%M%S")
-        nums_auvs = '2'
+        num_auvs = '2'
         time_sync = 'true'
         save_plots = 'true'
         animate_plots = 'false'
@@ -37,6 +38,17 @@ class experiments_loop(object):
         fls_angle_std_list = [np.deg2rad(1), np.deg2rad(0.1), np.deg2rad(0.01)]
 
         self.finished_flags_received = 0
+        self.survey_area_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+
+        left_corner_pose = PoseStamped()
+        left_corner_pose.header.frame_id = "map"
+        left_corner_pose.pose.position.x = -50
+        left_corner_pose.pose.position.y = -10
+
+        right_corner_pose = PoseStamped()
+        right_corner_pose.header.frame_id = "map"
+        right_corner_pose.pose.position.x = 154
+        right_corner_pose.pose.position.y = 57
 
         # params = np.meshgrid(motion_cov_list, resampling_cov_list, fls_range_std_list, fls_angle_std_list)
         # print(params)
@@ -51,16 +63,17 @@ class experiments_loop(object):
                     for fls_angle_std in fls_angle_std_list:
                         test_i += 1
                         for t in range(N_retests):
+                            print(motion_cov, res_cov, fls_range_std, fls_angle_std)
                             # Path(path + str(i)).mkdir(parents=True, exist_ok=True)
                             cli_args = ['/home/kurreman/catkin_ws/src/UWExploration/planning/multi_agent/launch/multi_agent.launch', 
-                                        'num_auvs:=' + nums_auvs, 
+                                        'num_auvs:=' + num_auvs, 
                                         'time_sync:=' + time_sync, 
                                         'save_final_plots:=' + save_plots, 
                                         'animate_plots:=' + animate_plots, 
-                                        'motion_covariance:=' + '[0.0, 0.0, 0.0, 0.0, 0.0, %s]' % (str(motion_cov)),
-                                        'resampling_noise_covariance:=' + '[%s, %s, 0.0, 0.0, 0.0, 0.0]' % (str(res_cov), str(res_cov)), 
-                                        'fls_range_std:=' + str(fls_range_std), 
-                                        'fls_angle_std:=' + str(fls_angle_std), 
+                                        'motion_covariance:=' + '[0.0, 0.0, 0.0, 0.0, 0.0, %s]' % (str(format(motion_cov,'.9f'))),
+                                        'resampling_noise_covariance:=' + '[%s, %s, 0.0, 0.0, 0.0, 0.0]' % (str(format(res_cov,'.9f')), str(format(res_cov,'.9f'))),
+                                        'fls_range_std:=' + str(format(fls_range_std,'.9f')),
+                                        'fls_angle_std:=' + str(format(fls_angle_std,'.9f')),
                                         'plots_results_path:=' + path + "/test_run_" + test_run_date_id + "/" + "my" + str(motion_cov) + "_rxy" + str(res_cov) + "_fr" + str(fls_range_std) + "_fa" + str(fls_angle_std),
                                         ]
                             
@@ -72,6 +85,14 @@ class experiments_loop(object):
                             print("Launching test ", test_i)
                             parent.start()
 
+                            rospy.sleep(1)
+                            left_corner_pose.header.stamp = rospy.Time.now()
+                            self.survey_area_pub.publish(left_corner_pose)
+                            rospy.sleep(1)
+                            right_corner_pose.header.stamp = rospy.Time.now()
+                            self.survey_area_pub.publish(right_corner_pose)
+                            rospy.sleep(1)
+                            #TODO. press Enter
                             while not rospy.is_shutdown() and not self.finished:
                                 rospy.sleep(1)
 
