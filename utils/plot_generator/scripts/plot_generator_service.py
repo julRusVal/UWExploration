@@ -22,11 +22,12 @@ class PlotGeneratorService:
         rospy.loginfo("Plot Generator service initialized")
         self.save_final_plots = rospy.get_param('~save_final_plots',False)
         self.results_path = rospy.get_param('~results_path','/home/kurreman/Documents/data_collection"')
+        self.results_path = self.results_path.replace("[", "").replace("]", "")
         self.plot_instances_dict = {}
 
         if self.save_final_plots:
             #Create a folder in for the results with the current time as the name using os
-            folder_name = time.strftime("%Y%m%d-%H%M%S")
+            folder_name = time.strftime("%Y%m%d_%H%M%S")
             # Get the path of the current script
             # script_path = os.path.dirname(os.path.abspath(__file__))
             # Create a new directory path by joining the script path with the new folder name

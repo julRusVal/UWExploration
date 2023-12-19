@@ -41,8 +41,8 @@
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
-    <arg name="particle_count" default="50"/>
-    <arg name="particle_count_neighbours" default="50"/>
+    <arg name="particle_count" default="100"/>
+    <arg name="particle_count_neighbours" default="100"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
     <arg name="rbpf_sensor_FLS" default="true"/>
@@ -85,8 +85,8 @@
 
     <!-- Specific args for plotting service -->
     <arg name="animate_plots" default="true"/>
-    <arg name="save_final_plots" default="true"/>
-    <!-- <arg name="plots_results_path" default="/home/kurreman/Documents"/> -->
+    <arg name="save_final_plots" default="false"/>
+    <arg name="plots_results_path" default="/home/kurreman/Documents"/>
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
 
     <!-- Global params needed by multiple nodes -->
@@ -171,7 +171,8 @@
     <node type="plot_generator_service.py" pkg="plot_generator" name="plot_generator_service" output="screen">
         <param name="animate_plots" value="$(arg animate_plots)"/>
         <param name="save_final_plots" value="$(arg save_final_plots)"/>
-        <param name="results_path" value="$(find plot_generator)/data_collection/$(arg motion_covariance)_$(arg resampling_noise_covariance)_$(arg fls_range_std)_$(arg fls_angle_std)"/>
+        <!-- <param name="results_path" value="$(find plot_generator)/data_collection/$(arg motion_covariance)_$(arg resampling_noise_covariance)_$(arg fls_range_std)_$(arg fls_angle_std)"/> -->
+        <param name="results_path" value="$(arg plots_results_path)"/>
         <param name="vehicle_model" value="$(arg vehicle_model)"/>
     </node>
 
