@@ -9,6 +9,7 @@ from multi_agent.msg import AgentPath, AgentPathArray
 import tf
 from rviz_visualization.srv import DisplayRvizMessage, DisplayRvizMessageRequest
 from std_msgs.msg import String, Time
+import time
 
 
 
@@ -98,7 +99,8 @@ class AUVSpawner():
         #wait for user to press enter before publishing paths
         self.display_message_in_rviz("Press 'Enter' in terminal to start survey, once all AUVs are spawned...")
         rospy.loginfo("Press Enter to publish paths...")
-        input()
+        # input()
+        time.sleep(10)
         self.t_start_pub.publish(rospy.Time.now())
         self.path_array_pub.publish(msg)
         self.display_message_in_rviz("Survey started!")

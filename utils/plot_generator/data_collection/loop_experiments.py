@@ -8,6 +8,7 @@ from geometry_msgs.msg import PoseStamped, Pose
 import numpy as np
 from pathlib import Path
 import time
+from pynput.keyboard import Key, Controller
 
 class experiments_loop(object):
 
@@ -19,7 +20,8 @@ class experiments_loop(object):
         # For future Koray: now that you have 2+ RBPFs running (congrats!) you'll have to adapt this cb 
         # to run your experiments
         # finished_top = rospy.get_param("~rbpf_saved_top", "/gt/rbpf_saved")
-        # self.synch_pub = rospy.Subscriber(finished_top, Bool, self.synch_cb)
+        self.synch_pub_0 = rospy.Subscriber('/finished/hugin_0', Bool, self.synch_cb)
+        self.synch_pub_1 = rospy.Subscriber('/finished/hugin_1', Bool, self.synch_cb)
         self.finished = False
         # dataset = "overnight_2020"
         # particle_count = 1
@@ -57,13 +59,15 @@ class experiments_loop(object):
         N_tests = len(motion_cov_list)*len(resampling_cov_list)*len(fls_range_std_list)*len(fls_angle_std_list)
         test_i = 0
         N_retests = 5
+        keyboard = Controller()
+
         for motion_cov in motion_cov_list:
             for res_cov in resampling_cov_list:
                 for fls_range_std in fls_range_std_list:
                     for fls_angle_std in fls_angle_std_list:
                         test_i += 1
                         for t in range(N_retests):
-                            print(motion_cov, res_cov, fls_range_std, fls_angle_std)
+                            # print(motion_cov, res_cov, fls_range_std, fls_angle_std)
                             # Path(path + str(i)).mkdir(parents=True, exist_ok=True)
                             cli_args = ['/home/kurreman/catkin_ws/src/UWExploration/planning/multi_agent/launch/multi_agent.launch', 
                                         'num_auvs:=' + num_auvs, 
@@ -91,8 +95,11 @@ class experiments_loop(object):
                             rospy.sleep(1)
                             right_corner_pose.header.stamp = rospy.Time.now()
                             self.survey_area_pub.publish(right_corner_pose)
-                            rospy.sleep(1)
+                            rospy.sleep(10)
                             #TODO. press Enter
+                            # subprocess.run(["xdotool", "key", "Return"])
+                            # keyboard.send('enter')
+                            # keyboard.type('Enter')
                             while not rospy.is_shutdown() and not self.finished:
                                 rospy.sleep(1)
 
