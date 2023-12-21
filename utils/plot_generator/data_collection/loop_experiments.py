@@ -67,7 +67,13 @@ class experiments_loop(object):
         keyboard = Controller()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.cb)
-
+        ###
+        motion_cov_list = motion_cov_list[:2]
+        resampling_cov_list = resampling_cov_list[:2]
+        fls_range_std_list = fls_range_std_list[:2]
+        fls_angle_std_list = fls_angle_std_list[:2]
+        N_retests = 2
+        ###
         for motion_cov in motion_cov_list:
             for res_cov in resampling_cov_list:
                 for fls_range_std in fls_range_std_list:
