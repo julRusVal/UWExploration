@@ -57,7 +57,7 @@ def plot_next_csv():
         # parent_folder = os.path.dirname(stats_csv_path)
         parent_folder = os.path.basename(os.path.dirname(stats_csv_path))
 
-        plot_csv(stats_csv_path)
+        plot_csv(stats_csv_path, vlines_x=[80, 96, 320, 336])
         update_label()
     else:
         messagebox.showinfo("Info", "No more files left.")
@@ -74,7 +74,7 @@ def on_key_press(event):
         label_choice("Star")
 
 # Set the base directory path
-base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_143917'
+base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_215841'
 
 # Get all CSV files named "stats.csv" in the directory
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(base_directory) for file in files if file == "stats.csv"]
@@ -114,7 +114,7 @@ root.bind("<Key>", on_key_press)
 
 # Plot the first CSV
 if stats_csv_path:
-    plot_csv(stats_csv_path)
+    plot_csv(stats_csv_path, vlines_x=[80, 96, 320, 336])
     update_label()
 else:
     messagebox.showinfo("Info", "No CSV files named stats.csv found.")

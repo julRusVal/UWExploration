@@ -1,0 +1,2 @@
+/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_215841/my1e-05_rxy10_fr0.01_fa0.017453292519943295/stats.csv
+/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_215841/my1e-05_rxy10_fr0.01_fa0.017453292519943295/stats.csv

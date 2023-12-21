@@ -65,7 +65,7 @@ class PlotGeneratorService:
     
     def callback(self, req):
         ego_odom_frame = req.ego.header.frame_id
-        rospy.logerr("timestamp: %f",req.ego.header.stamp.to_sec())
+        # rospy.logerr("timestamp: %f",req.ego.header.stamp.to_sec())
         if self.start_time is None:
             self.start_time = req.ego.header.stamp.to_sec()
         if ego_odom_frame[0:5] == "hugin":
@@ -542,7 +542,7 @@ class PlotGeneratorServiceInstance:
 
     def update_plot(self, frame):
         # Update the plot with new data for each frame
-        rospy.logfatal("Time: %f s",self.T_local)
+        # rospy.logfatal("Time: %f s",self.T_local)
         x_left = np.arange(len(self.left_distance_errors))
         x_right = np.arange(len(self.right_distance_errors))
         # print("left distance errors:",self.left_distance_errors)
@@ -633,7 +633,17 @@ class PlotGeneratorServiceInstance:
                 'right_cov_list': self.right_cov_list,
                 'ego_abs_error': self.ego_abs_error,
                 'left_abs_error': self.left_abs_error,
-                'right_abs_error': self.right_abs_error
+                'right_abs_error': self.right_abs_error,
+                'l_d_e_t': self.l_d_e_t,
+                'r_d_e_t': self.r_d_e_t,
+                'l_b_e_t': self.l_b_e_t,
+                'r_b_e_t': self.r_b_e_t,
+                'e_c_t': self.e_c_t,
+                'l_c_t': self.l_c_t,
+                'r_c_t': self.r_c_t,
+                'e_a_e_t': self.e_a_e_t,
+                'l_a_e_t': self.l_a_e_t,
+                'r_a_e_t': self.r_a_e_t,
                 # Add more data you want to save here
             }
 
