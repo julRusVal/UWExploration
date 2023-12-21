@@ -9,7 +9,9 @@ import numpy as np
 from pathlib import Path
 import time
 from pynput.keyboard import Key, Controller
-
+from stats_from_multiple_csvs import gen_stats
+import os
+import subprocess
 class experiments_loop(object):
 
     def __init__(self):
@@ -30,6 +32,7 @@ class experiments_loop(object):
         path = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection"
         test_run_date_id = time.strftime("%Y%m%d_%H%M%S")
         num_auvs = '2'
+        self.num_auvs = int(num_auvs)
         time_sync = 'true'
         save_plots = 'true'
         animate_plots = 'false'
@@ -40,6 +43,8 @@ class experiments_loop(object):
         fls_angle_std_list = [np.deg2rad(1), np.deg2rad(0.1), np.deg2rad(0.01)]
 
         self.finished_flags_received = 0
+        self.t_first_finished = None
+
         self.survey_area_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
 
         left_corner_pose = PoseStamped()
@@ -61,6 +66,8 @@ class experiments_loop(object):
         N_retests = 5
         keyboard = Controller()
 
+        self.timer = rospy.Timer(rospy.Duration(1.0), self.cb)
+
         for motion_cov in motion_cov_list:
             for res_cov in resampling_cov_list:
                 for fls_range_std in fls_range_std_list:
@@ -79,6 +86,7 @@ class experiments_loop(object):
                                         'fls_range_std:=' + str(format(fls_range_std,'.9f')),
                                         'fls_angle_std:=' + str(format(fls_angle_std,'.9f')),
                                         'plots_results_path:=' + path + "/test_run_" + test_run_date_id + "/" + "my" + str(motion_cov) + "_rxy" + str(res_cov) + "_fr" + str(fls_range_std) + "_fa" + str(fls_angle_std),
+                                        'record_launch_parameters_and_arguments:=true',
                                         ]
                             
                             roslaunch_args = cli_args[1:]
@@ -86,7 +94,10 @@ class experiments_loop(object):
                                                 roslaunch_args)]
 
                             parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
-                            print("Launching test ", test_i)
+                            # rospy.logfatal("Launching test ", test_i, "of ", N_tests)
+                            # rospy.logfatal("Iteration ", t+1, "of ", N_retests)
+                            rospy.logfatal("Launching test {} of {}".format(test_i, N_tests))
+                            rospy.logfatal("Iteration {} of {}".format(t+1, N_retests))
                             parent.start()
 
                             rospy.sleep(1)
@@ -96,6 +107,23 @@ class experiments_loop(object):
                             right_corner_pose.header.stamp = rospy.Time.now()
                             self.survey_area_pub.publish(right_corner_pose)
                             rospy.sleep(10)
+
+                            # # Define the command to execute rosparam dump
+                            # folder_name = path + "/test_run_" + test_run_date_id
+                            # filename = "rosparams.yaml"
+                            # command = ["rosparam", "dump"]
+                            # command.append(folder_name+"/"+filename)
+
+                            # #if the file doesn't exists
+                            # if not os.path.isfile(folder_name+"/"+filename):
+                            #     try:
+                            #         subprocess.run(command, check=True)
+                            #         print("Parameters dumped successfully.")
+                            #     except subprocess.CalledProcessError as e:
+                            #         print(f"An error occurred while dumping parameters: {e}")
+                            # else:
+                            #     print("Parameters already dumped.")
+
                             #TODO. press Enter
                             # subprocess.run(["xdotool", "key", "Return"])
                             # keyboard.send('enter')
@@ -103,12 +131,15 @@ class experiments_loop(object):
                             while not rospy.is_shutdown() and not self.finished:
                                 rospy.sleep(1)
 
-                            print("Shutting down test ", test_i, "of ", N_tests)
+                            # rospy.logfatal("Shutting down test ", test_i, "of ", N_tests)
+                            # rospy.logfatal("Iteration ", t+1, "of ", N_retests)
+                            rospy.logfatal("Shutting down test {} of {}".format(test_i, N_tests))
+                            rospy.logfatal("Iteration {} of {}".format(t+1, N_retests))
                             # rospy.sleep(particle_count*10)
                             parent.shutdown()
                             self.finished = False
                             rospy.sleep(5)
-
+                        gen_stats(path + "/test_run_" + test_run_date_id + "/" + "my" + str(motion_cov) + "_rxy" + str(res_cov) + "_fr" + str(fls_range_std) + "_fa" + str(fls_angle_std))
         # duration = 2  # seconds
         # freq = 340  # Hz
         # os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
@@ -120,7 +151,20 @@ class experiments_loop(object):
             if self.finished_flags_received == self.num_auvs:
                 self.finished = True
                 self.finished_flags_received = 0
-            
+    
+    def cb(self, event):
+        if self.finished_flags_received != 0:
+            if self.t_first_finished is None:
+                self.t_first_finished = time.time()
+            elif time.time() - self.t_first_finished < 20:
+                rospy.logfatal("Waiting for all AUVs to finish...")
+                rospy.logfatal("Finished flags received: {}".format(self.finished_flags_received))
+                rospy.logfatal("Time left: {}".format(20 - (time.time() - self.t_first_finished)))
+            else:
+                self.finished = True
+                self.finished_flags_received = 0
+                self.t_first_finished = None
+        
 
 
 if __name__ == '__main__':

@@ -89,6 +89,9 @@
     <arg name="plots_results_path" default="/home/kurreman/Documents"/>
     <!-- <arg name="multi_agent" default="false"/> NOTE: Not sure about this one -->
 
+    <arg name="record_launch_parameters_and_arguments" default="false"/>
+
+
     <!-- Global params needed by multiple nodes -->
     <param name="num_auvs" value="$(arg num_auvs)"/>
     <param name="vehicle_model" value="$(arg vehicle_model)"/> 
@@ -174,7 +177,12 @@
         <!-- <param name="results_path" value="$(find plot_generator)/data_collection/$(arg motion_covariance)_$(arg resampling_noise_covariance)_$(arg fls_range_std)_$(arg fls_angle_std)"/> -->
         <param name="results_path" value="$(arg plots_results_path)"/>
         <param name="vehicle_model" value="$(arg vehicle_model)"/>
+        <param name="record_launch_parameters_and_arguments" value="$(arg record_launch_parameters_and_arguments)"/>
     </node>
+
+    <!-- <group if="$(arg record_launch_parameters_and_arguments)">
+        <node name="param_dumper" pkg="rospy" type="rosrun" args="dump $(arg plots_results_path)/arguments.yaml"/>
+    </group> -->
 
     <!-- Start auxiliary nodes  -->
     <group if="$(arg auxiliary_enabled)">
@@ -211,8 +219,7 @@
             <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
 
             
-            
-
+        
         </node>
     </group>
 </launch>

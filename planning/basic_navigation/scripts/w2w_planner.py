@@ -26,7 +26,7 @@ class W2WPathPlanner(object):
 
     def execute_cb(self, goal):
 
-        rospy.loginfo("Goal received")
+        # rospy.loginfo("Goal received")
 
         success = True
         self.nav_goal = goal.target_pose.pose
@@ -84,7 +84,7 @@ class W2WPathPlanner(object):
                         self.k = -radius
                     
                     self.do_max_turn = self._point_on_circle(x,y,radius,h,self.k)
-                    rospy.loginfo("Do max turn: %s", self.do_max_turn)
+                    # rospy.loginfo("Do max turn: %s", self.do_max_turn)
 
                 
                 if self.t:

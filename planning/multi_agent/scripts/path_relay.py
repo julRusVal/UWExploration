@@ -46,7 +46,7 @@ class PathRelay():
         
 
     def path_array_cb(self, msg):
-        rospy.loginfo("Received AgentPathArray")
+        # rospy.loginfo("Received AgentPathArray")
         self.paths = msg
 
     # def teleport_agent_to_pose(self, agent_id, pose):

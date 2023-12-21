@@ -231,9 +231,9 @@ class PatternGenerator():
         exiting_line=self.exiting_line
         )
 
-        # Visualization
-        fig = plt.figure()
-        ax = fig.add_subplot(111, aspect='equal')
+        # # Visualization
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, aspect='equal')
 
         
         # Transform waypoints for agent 0
@@ -274,7 +274,7 @@ class PatternGenerator():
                 self.time_array = times
                 self.time_array_pub.publish(Int32MultiArray(data=self.time_array))
 
-            timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k') #Uncomment to plot the paths in separate window
+            # timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k') #Uncomment to plot the paths in separate window
 
         # Publish AgentPathArray containing all agent paths
         self.paths.header.stamp = rospy.Time.now()

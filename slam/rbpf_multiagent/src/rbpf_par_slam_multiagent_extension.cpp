@@ -237,18 +237,18 @@ void RbpfSlamMultiExtension::survey_area_cb(const visualization_msgs::MarkerArra
 void RbpfSlamMultiExtension::wp_counter_cb(const std_msgs::Int32& wp_counter_msg)
 {   
     wp_counter_ = wp_counter_msg.data;
-    ROS_INFO("Updating wp_counter_ to value %d", wp_counter_);
+    // ROS_INFO("Updating wp_counter_ to value %d", wp_counter_);
     RbpfSlamMultiExtension::update_frontal_neighbour_id();
     // ROS_INFO("namespace_ = %s", namespace_.c_str());
-    if (frontal_neighbour_id_)
-    {
-        ROS_INFO("frontal_neighbour_id_ = %d", *frontal_neighbour_id_);
-    }
-    else
-    {
-        ROS_INFO("frontal_neighbour_id_ = nullptr");
-    }
-    ROS_INFO("frontal_direction_ = %d", frontal_direction_);
+    // if (frontal_neighbour_id_)
+    // {
+    //     ROS_INFO("frontal_neighbour_id_ = %d", *frontal_neighbour_id_);
+    // }
+    // else
+    // {
+    //     ROS_INFO("frontal_neighbour_id_ = nullptr");
+    // }
+    // ROS_INFO("frontal_direction_ = %d", frontal_direction_);
 
 }
 
@@ -340,7 +340,7 @@ void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
         // ROS_INFO("Time for resampling: %d", duration.count());
-        std::cout << "Duration of resampling step: " << duration.count() << " seconds" << std::endl;
+        // std::cout << "Duration of resampling step: " << duration.count() << " seconds" << std::endl;
         }
         else
         {

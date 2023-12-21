@@ -15,6 +15,7 @@ import os
 import time
 from std_msgs.msg import Bool
 import csv
+import subprocess
 
 class PlotGeneratorService:
     def __init__(self):
@@ -23,6 +24,7 @@ class PlotGeneratorService:
         self.save_final_plots = rospy.get_param('~save_final_plots',False)
         self.results_path = rospy.get_param('~results_path','/home/kurreman/Documents/data_collection"')
         self.results_path = self.results_path.replace("[", "").replace("]", "")
+        self.record_params = rospy.get_param('~record_launch_parameters_and_arguments',False)
         self.plot_instances_dict = {}
 
         if self.save_final_plots:
@@ -41,6 +43,23 @@ class PlotGeneratorService:
                 self.new_folder_path = new_folder_path
         else:
             self.new_folder_path = None
+
+        if self.record_params:
+            # Define the command to execute rosparam dump
+            folder_name = self.results_path
+            filename = "rosparams.yaml"
+            command = ["rosparam", "dump"]
+            command.append(folder_name+"/"+filename)
+
+            #if the file doesn't exists
+            if not os.path.isfile(folder_name+"/"+filename):
+                try:
+                    subprocess.run(command, check=True)
+                    rospy.logfatal("Parameters dumped successfully.")
+                except subprocess.CalledProcessError as e:
+                    rospy.logfatal(f"An error occurred while dumping parameters: {e}")
+            else:
+                rospy.logfatal("Parameters already dumped.")
 
     
     def callback(self, req):

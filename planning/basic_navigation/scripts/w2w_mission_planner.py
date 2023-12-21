@@ -86,7 +86,7 @@ class W2WMissionPlanner(object):
             if self.latest_path.poses and not self.relocalizing:
                 self.started = True
                 # Get next waypoint in path
-                rospy.loginfo("Sending WP")
+                # rospy.loginfo("Sending WP")
                 wp = self.latest_path.poses[0]
                 del self.latest_path.poses[0]
 
@@ -117,8 +117,8 @@ class W2WMissionPlanner(object):
                     
                     for i,wp in enumerate(wps):
                         if i==1 or self.wp_counter == 0:
-                            print("sending arrival time")
-                            print(self.common_timestamps)
+                            # print("sending arrival time")
+                            # print(self.common_timestamps)
                             arrival_time = Time()
                             arrival_time.data.secs = self.common_timestamps.pop(0)
                             self.arrival_time_pub.publish(arrival_time)
@@ -138,7 +138,7 @@ class W2WMissionPlanner(object):
                         path = Path()
                         path.header.frame_id = self.map_frame
                         path.header.stamp = rospy.Time(0)
-                        print("len configurations: %d" % len(configurations))
+                        # print("len configurations: %d" % len(configurations))
                         for sub_wp in configurations:
                             wp = PoseStamped()
                             wp.header.frame_id = self.map_frame
@@ -153,12 +153,12 @@ class W2WMissionPlanner(object):
                         self.path_pub.publish(path)
 
                         for i,wp in enumerate(path.poses):
-                            print("Sending wp %d of %d" % (i+1,len(path.poses)))
+                            # print("Sending wp %d of %d" % (i+1,len(path.poses)))
                             goal = MoveBaseGoal(wp)
                             goal.target_pose.header.frame_id = self.map_frame
                             self.ac.send_goal(goal)
                             self.ac.wait_for_result()
-                            rospy.loginfo("WP reached, moving on to next one")
+                            # rospy.loginfo("WP reached, moving on to next one")
 
                 elif self.wp_follower_type == 'simple':
                     #Publish path to rviz
@@ -174,7 +174,7 @@ class W2WMissionPlanner(object):
                     goal.target_pose.header.frame_id = self.map_frame
                     self.ac.send_goal(goal)
                     self.ac.wait_for_result()
-                    rospy.loginfo("WP reached, moving on to next one")
+                    # rospy.loginfo("WP reached, moving on to next one")
                 else:
                     rospy.logerr("Unknown waypoint follower type: %s", self.wp_follower_type)
                     raise ValueError("Unknown waypoint follower type: %s", self.wp_follower_type)
