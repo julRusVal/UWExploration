@@ -1306,6 +1306,11 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
         
         srv.request.ego.header.frame_id = vehicle_model_ + "_" + std::to_string(*auv_id_) + "/odom";
         srv.request.ego.header.stamp = latest_odom_stamp_;//ros::Time::now();
+        if (latest_odom_stamp_ == ros::Time(0))
+        {
+            // ROS_WARN("latest_odom_stamp_ is ros::Time(0)");
+            return;
+        }
         // ROS_INFO("before ego average_pose_with_cov");
         // ROS_INFO("namespace_ = %s, 3", namespace_.c_str());
         // code_stage_ = 3;

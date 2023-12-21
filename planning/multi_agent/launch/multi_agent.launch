@@ -21,6 +21,7 @@
     <arg name="fls_max_range" default="50.0"/>
 
     <arg name="odom_period" default="0.01"/>
+    <arg name="mbes_meas_period" default="0.1"/>
 
 
     <!-- Specific args for navigation -->
@@ -29,7 +30,7 @@
     <arg name="node_name_navigation" default="auv_navigation_node"/>
     <!-- max_thrust = 4 gives a turning radius of approx 2.5 m -->
     <arg name="max_thrust" default="3.0"/> 
-    <arg name="max_throttle" default="2.0"/>
+    <arg name="max_throttle" default="1.0"/>
     <!-- Acceptable types below: 'simple', 'simple_maxturn' -->
     <arg name="waypoint_follower_type" default="simple_maxturn"/>
     <arg name="dubins_turning_radius" default="3"/>
@@ -41,8 +42,8 @@
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
     <arg name="rbpf" default="true"/>
-    <arg name="particle_count" default="100"/>
-    <arg name="particle_count_neighbours" default="100"/>
+    <arg name="particle_count" default="50"/>
+    <arg name="particle_count_neighbours" default="50"/>
     <arg name="num_particle_handlers" default="1"/>
     <arg name="results_path" default="/home/kurreman/Downloads/rbpf_test"/>
     <arg name="rbpf_sensor_FLS" default="true"/>
@@ -52,7 +53,7 @@
     <arg name="motion_covariance" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.000001]"/>
     <arg name="resampling_noise_covariance" default="[1.0, 1.0, 0.0, 0.0, 0.0, 0.0]"/>
     <arg name="fls_range_std" default="0.001"/>  
-    <arg name="fls_angle_std" default="0.00174533"/> <!-- 0.1 deg -->
+    <arg name="fls_angle_std" default="0.0174533"/> <!-- 0.1 deg -->
     <arg name="particle_spread_std_factor" default="0.01"/>
 
 
@@ -117,6 +118,7 @@
         <param name="fls_angle_std" value="0.0"/> <!-- 1 degree = 0.0174532925 radians -->
         <param name="fls_meas_period" value="0.1"/> <!-- seconds -->
         <param name="odom_period" value="$(arg odom_period)"/>
+        <param name="mbes_meas_period" value="$(arg mbes_meas_period)"/>
         
     </node>
 

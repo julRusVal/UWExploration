@@ -67,13 +67,13 @@ class experiments_loop(object):
         keyboard = Controller()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.cb)
-        ###
-        motion_cov_list = motion_cov_list[:2]
-        resampling_cov_list = resampling_cov_list[:2]
-        fls_range_std_list = fls_range_std_list[:2]
-        fls_angle_std_list = fls_angle_std_list[:2]
-        N_retests = 2
-        ###
+        # ###
+        # motion_cov_list = motion_cov_list[:2]
+        # resampling_cov_list = resampling_cov_list[:2]
+        # fls_range_std_list = fls_range_std_list[:2]
+        # fls_angle_std_list = fls_angle_std_list[:2]
+        # N_retests = 2
+        # ###
         for motion_cov in motion_cov_list:
             for res_cov in resampling_cov_list:
                 for fls_range_std in fls_range_std_list:
@@ -93,6 +93,7 @@ class experiments_loop(object):
                                         'fls_angle_std:=' + str(format(fls_angle_std,'.9f')),
                                         'plots_results_path:=' + path + "/test_run_" + test_run_date_id + "/" + "my" + str(motion_cov) + "_rxy" + str(res_cov) + "_fr" + str(fls_range_std) + "_fa" + str(fls_angle_std),
                                         'record_launch_parameters_and_arguments:=true',
+                                        "mbes_meas_period:=100"
                                         ]
                             
                             roslaunch_args = cli_args[1:]

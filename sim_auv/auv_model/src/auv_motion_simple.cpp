@@ -204,6 +204,7 @@ void AUVMotionModel::updateMeas(const ros::TimerEvent&){
 
 //        clock_t tStart = clock();
     // Don't start survey until PF is up
+    ROS_INFO("updateMeas");
     if(start_replay_ != true){
         ROS_INFO_NAMED(node_name_, "AUV Sim model waiting for PF to send synch signal");
         return;

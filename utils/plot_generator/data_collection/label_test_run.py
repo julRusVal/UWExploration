@@ -74,7 +74,7 @@ def on_key_press(event):
         label_choice("Star")
 
 # Set the base directory path
-base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_094131'
+base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_143917'
 
 # Get all CSV files named "stats.csv" in the directory
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(base_directory) for file in files if file == "stats.csv"]
