@@ -38,3 +38,5 @@ install/*
 
 # Datasets
 datasets/
+
+utils/plot_generator/data_collection/

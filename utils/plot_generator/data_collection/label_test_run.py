@@ -79,9 +79,20 @@ base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generato
 # Get all CSV files named "stats.csv" in the directory
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(base_directory) for file in files if file == "stats.csv"]
 total_files = len(csv_files)
-csv_files = iter(csv_files)
+#already indexed files are the total number of rows in good.txt, bad.txt and star.txt
+already_indexed_files = 0
 count = total_files
 current_file = 1
+for file in [base_directory+"/good.txt", base_directory+"/bad.txt", base_directory+"/star.txt"]:
+    try:
+        with open(os.path.join(base_directory, file), "r") as f:
+            already_indexed_files += len(f.readlines())
+            current_file += len(f.readlines())
+    except FileNotFoundError:
+        print(f"File {file} not found.")
+        pass
+csv_files = csv_files[already_indexed_files:]
+csv_files = iter(csv_files)
 stats_csv_path = next(csv_files, None)
 
 # Create the main window
