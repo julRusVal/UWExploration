@@ -39,4 +39,4 @@ install/*
 # Datasets
 datasets/
 
-utils/plot_generator/data_collection/
+utils/plot_generator/data_collection/test_run*

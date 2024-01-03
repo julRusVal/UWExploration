@@ -1,4 +1,3 @@
-
 from replot_from_csv import plot_csv
 # base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_094131'
 
@@ -42,7 +41,7 @@ def update_label():
     if root and label:
         try:
             # label.config(text=f"Files left: {count} Current file: {current_file}/{total_files}")
-            label.config(text=f"Folder: {parent_folder}\nFiles left: {count} Current file: {current_file}/{total_files}") #TODO: fix correct folder name in the button windows
+            label.config(text=f"Folder: {parent_folder}\nFiles left: {count} Current file: {current_file}/{total_files}") #TODO(2): fix correct folder name in the button windows. It resets after I have checked already iterated files
         except tk.TclError:
             pass
 
@@ -74,25 +73,26 @@ def on_key_press(event):
         label_choice("Star")
 
 # Set the base directory path
-base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_215841'
+base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_232418'
 
 # Get all CSV files named "stats.csv" in the directory
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(base_directory) for file in files if file == "stats.csv"]
 total_files = len(csv_files)
-#already indexed files are the total number of rows in good.txt, bad.txt and star.txt
-already_indexed_files = 0
 count = total_files
-current_file = 1
+# current_file = 1
+already_indexed_files = 0
 for file in [base_directory+"/good.txt", base_directory+"/bad.txt", base_directory+"/star.txt"]:
     try:
         with open(os.path.join(base_directory, file), "r") as f:
             already_indexed_files += len(f.readlines())
-            current_file += len(f.readlines())
+            # current_file += len(f.readlines())
     except FileNotFoundError:
         print(f"File {file} not found.")
         pass
+print(f"Already indexed files: {already_indexed_files}")
 csv_files = csv_files[already_indexed_files:]
 csv_files = iter(csv_files)
+current_file = already_indexed_files + 1 #TODO(1): Current file is 1 (or already_indexed +1) for the two first presses. THen it iterates correctly
 stats_csv_path = next(csv_files, None)
 
 # Create the main window
@@ -127,6 +127,7 @@ root.bind("<Key>", on_key_press)
 if stats_csv_path:
     plot_csv(stats_csv_path, vlines_x=[80, 96, 320, 336])
     update_label()
+    # current_file += 1
 else:
     messagebox.showinfo("Info", "No CSV files named stats.csv found.")
     root.destroy()
