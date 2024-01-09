@@ -798,7 +798,8 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
 
     std::vector<int> dupes_s; //self
     std::vector<int> dupes_n; //neighbour
-
+    std::vector<int> married_ego_particles;
+    std::vector<int> married_neighbour_particles;
 
     for (int k=0; k < indexes.size(); k++)
     {   
@@ -825,19 +826,47 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
             ROS_WARN("Index out of bounds");//. i_self = %d, i_neighbour = %d, r = %d, i = %d, indexes.size() = %d", i_self, i_neighbour, r, i, indexes.size());
             continue;
         }
-        if (k<pc_)
+        if (dupes_s.size() < pc_)
         {
             // std::lock_guard<std::mutex> lock(*particles_.at(i_self).pc_mutex_); //lock guard doesnt work the way I want/need it to
             // particles_self_new.emplace_back(particles_[i_self]);
             // particles_self_new.emplace_back(particles_copy_self[i_self]);
+            if (pmp_ == "mono")
+            {
+                std::vector<int>::iterator it = std::find(married_neighbour_particles.begin(), married_neighbour_particles.end(), i_neighbour);
+                bool already_married = it != married_neighbour_particles.end(); //find returns end if i is not found
+                if (already_married)
+                {
+                    ROS_INFO("Neighbour already married");
+                    continue;
+                }
+            }
+            ROS_INFO("Adding ego particle %d to dupes_s", i_self);
+            ROS_INFO("Neighbour particle adding is %d", i_neighbour);
             dupes_s.push_back(i_self);
+            married_neighbour_particles.push_back(i_neighbour);
+            
         }
-        if (k<pcn_)
+        if (dupes_n.size() < pcn_)//(k<pcn_)
         {
             // std::lock_guard<std::mutex> lock(*particles_neighbour_ptr->at(i_neighbour).pc_mutex_);
             // particles_neighbour_new.emplace_back((*particles_neighbour_ptr)[i_neighbour]);
             // particles_neighbour_new.emplace_back((particles_copy_neighbour)[i_neighbour]);
+    
+            if (pmp_ == "mono")
+            {
+                std::vector<int>::iterator it = std::find(married_ego_particles.begin(), married_ego_particles.end(), i_self);
+                bool already_married = it != married_ego_particles.end(); //find returns end if i is not found
+                if (already_married)
+                {
+                    ROS_INFO("Ego already married");
+                    continue;
+                }
+            }
+            ROS_INFO("Adding neighbour particle %d to dupes_n", i_neighbour);
+            ROS_INFO("Ego particle adding is %d", i_self);
             dupes_n.push_back(i_neighbour);
+            married_ego_particles.push_back(i_self);
         }
         // particle_votes[i_self] += 1;
         // particle_votes_neighbour[i_neighbour] += 1;
