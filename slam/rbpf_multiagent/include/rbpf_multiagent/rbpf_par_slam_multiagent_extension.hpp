@@ -70,10 +70,12 @@
 #include <vector>
 #include <future>
 #include <cmath>
+#include <unordered_set>
 
 #include "ros/ros.h"
 #include <cstdlib>
 #include "plot_generator/PlotGenerator.h"
+
 
 
 using namespace std;
