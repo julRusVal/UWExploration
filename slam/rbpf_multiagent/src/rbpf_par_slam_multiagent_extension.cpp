@@ -763,6 +763,22 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
     std::vector<int> particle_votes(pc_,0); //a vector of size pc_ filled with zeros
     std::vector<int> particle_votes_neighbour(pcn_,0);
 
+    if (weight_slicing_ == "all" && weights.size() != pc_*pcn_)
+    {
+        ROS_ERROR("weights.size() != pc_*pcn_");
+        return;
+    }
+    if (weight_slicing_ == "top" && weights.size() != std::max(pc_,pcn_))
+    {
+        ROS_ERROR("weights.size() != std::max(pc_,pcn_)");
+        return;
+    }
+    if (weights.size() != indexes.size())
+    {
+        ROS_ERROR("weights.size() != indexes.size()");
+        return;
+    }
+
     if (indexes.size() == 0)
     {
         ROS_WARN("Indexes array for resampling is empty");
@@ -922,23 +938,23 @@ void RbpfSlamMultiExtension::regenerate_particle_sets(const vector<int> &indexes
 
     if (particles_.size() != pc_)
     {
-        ROS_WARN("Resampling failed, too many or too few SELF particles regenerated!");
+        ROS_ERROR("Resampling failed, too many or too few SELF particles regenerated!");
     }
     if (auv_id_left_ && particles_left_.size() != pcn_)
     {
-        ROS_WARN("Resampling failed, too many or too few LEFT neighbour particles regenerated!");
+        ROS_ERROR("Resampling failed, too many or too few LEFT neighbour particles regenerated!");
     }
     if (!auv_id_left_ && particles_left_.size() != 0)
     {
-        ROS_WARN("LEFT neighbour particles generated, they should NOT exist!");
+        ROS_ERROR("LEFT neighbour particles generated, they should NOT exist!");
     }
     if (auv_id_right_ && particles_right_.size() != pcn_)
     {
-        ROS_WARN("Resampling failed, too many or too few RIGHT neighbour particles regenerated!");
+        ROS_ERROR("Resampling failed, too many or too few RIGHT neighbour particles regenerated!");
     }
     if (!auv_id_right_ && particles_right_.size() != 0)
     {
-        ROS_WARN("RIGHT neighbour particles generated, they should NOT exist!");
+        ROS_ERROR("RIGHT neighbour particles generated, they should NOT exist!");
     }
 
     // //Add noise to particles to avoid loss of variance. TODO() To the noise addition of the copy particle sets before assigning to global sets
@@ -1510,8 +1526,8 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     // ROS_INFO("fls_range_std = %f", fls_measurement_std_range_);
     // ROS_INFO("fls_angle_std = %f", fls_measurement_std_angle_);
     // ROS_INFO("particle_spread_std_factor = %f", particle_spread_std_factor_);
-    ROS_INFO("weight_slicing_ = %s", weight_slicing_.c_str());
-    ROS_INFO("pmp_ = %s", pmp_.c_str());
+    // ROS_INFO("weight_slicing_ = %s", weight_slicing_.c_str());
+    // ROS_INFO("pmp_ = %s", pmp_.c_str());
 
     particles_busy_ = true;
 
