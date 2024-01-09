@@ -35,6 +35,8 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<double>(("max_throttle"), max_throttle_,3);
     nh_->param<double>(("particle_spread_std_factor"), particle_spread_std_factor_, 1.0);
     nh_->param<string>(("comms_type"), comms_type_, "disabled");
+    nh_->param<string>(("weight_slicing"), weight_slicing_, "top");
+    nh_->param<string>(("pmp"), pmp_, "poly");
 
 
 
@@ -618,17 +620,21 @@ double RbpfSlamMultiExtension::calc_ESS(const std::vector<Weight> &weights)
 
 void RbpfSlamMultiExtension::resample(std::vector<Weight> &weights)
 {
+   
+    
+    if (pmp_ == "top")
+    {
     //Shrink weights array to contain the maximum weights needed for computational reasons
     int max_pc = std::max(pc_, pcn_);
     //Refactor weights such that it consist of the top max_pc weights in terms of weight value. We still want weight to be an array of weights, but with size max_pc.
     std::vector<Weight> weights_refactored;
-    
     std::sort(weights.begin(), weights.end(), [](const Weight& lhs, const Weight& rhs){return lhs.value > rhs.value;}); //sort weights in descending order
     for (int i = 0; i < max_pc; i++)
     {
         weights_refactored.push_back(weights[i]);
     }
     weights = weights_refactored;
+    }
 
     //Normalize weights
     double sum = 0;
@@ -1504,6 +1510,8 @@ void RbpfSlamMultiExtension::odom_callback(const nav_msgs::OdometryConstPtr& odo
     // ROS_INFO("fls_range_std = %f", fls_measurement_std_range_);
     // ROS_INFO("fls_angle_std = %f", fls_measurement_std_angle_);
     // ROS_INFO("particle_spread_std_factor = %f", particle_spread_std_factor_);
+    ROS_INFO("weight_slicing_ = %s", weight_slicing_.c_str());
+    ROS_INFO("pmp_ = %s", pmp_.c_str());
 
     particles_busy_ = true;
 

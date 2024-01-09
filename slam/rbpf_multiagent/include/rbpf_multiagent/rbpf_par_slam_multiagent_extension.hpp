@@ -192,6 +192,8 @@ class RbpfSlamMultiExtension: public RbpfSlam
     double particle_spread_std_factor_;
     
     string comms_type_;
+    string weight_slicing_;
+    string pmp_;
     // void update_particles_weights(float &range, float &angle)
 
 

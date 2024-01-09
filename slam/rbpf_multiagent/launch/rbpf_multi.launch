@@ -65,7 +65,8 @@
   <arg name="fls_range_std" default="0.001"/>  
   <arg name="fls_angle_std" default="0.00174533"/> <!-- 0.1 deg -->
   <arg name="particle_spread_std_factor" default="0.01"/>
-
+  <arg name="weight_slicing" default="top"/>
+  <arg name="pmp" default="poly"/>
 
   <!-- Rosbags from lolo -->
   <!-- <node pkg="rosbag" type="play" name="mission_player" output="log" args="-s 1050 $(arg path)/2022-06-07-12-22-19.bag"/> -->
@@ -154,6 +155,8 @@
         <param name="z_hat_viz_top"  value="/$(arg namespace)/z_hat_marker" />
         <param name="max_throttle"  value="$(arg max_throttle)" />
         <param name="comms_type"  value="$(arg comms_type)" />
+        <param name="weight_slicing"  value="$(arg weight_slicing)" />
+        <param name="pmp"  value="$(arg pmp)" />
 
 
 

@@ -29,6 +29,8 @@ class RbpfSetup():
         self.fls_range_std = rospy.get_param('~fls_range_std')
         self.fls_angle_std = rospy.get_param('~fls_angle_std')
         self.particle_spread_std_factor = rospy.get_param('~particle_spread_std_factor')
+        self.weight_slicing = rospy.get_param('~weight_slicing', "top")
+        self.pmp = rospy.get_param('~pmp', "poly")
 
         rospy.loginfo("Setting up AUV RBPF SLAM...")
 
@@ -76,6 +78,8 @@ class RbpfSetup():
                             "fls_range_std:=" + str(self.fls_range_std),
                             "fls_angle_std:=" + str(self.fls_angle_std),
                             "particle_spread_std_factor:=" + str(self.particle_spread_std_factor),
+                            "weight_slicing:=" + str(self.weight_slicing),
+                            "pmp:=" + str(self.pmp),
                           ])
             
             while time.time() - t < 2:
