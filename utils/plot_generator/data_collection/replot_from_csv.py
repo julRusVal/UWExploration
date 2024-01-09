@@ -115,4 +115,5 @@ def plot_csv(csv_file_path, vlines_x = []):
     # Show all plots
     plt.show()
 
-# plot_csv('/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_215841/my1e-05_rxy10_fr0.01_fa0.017453292519943295/stats.csv')
+s = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231227_001440/my1e-07_rxy0.1_fr0.01_fa0.00017453292519943296/stats.csv"
+plot_csv(s)

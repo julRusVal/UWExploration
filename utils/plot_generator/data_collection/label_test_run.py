@@ -73,7 +73,7 @@ def on_key_press(event):
         label_choice("Star")
 
 # Set the base directory path
-base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_232418'
+base_directory = '/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231227_001440'
 
 # Get all CSV files named "stats.csv" in the directory
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(base_directory) for file in files if file == "stats.csv"]
@@ -91,6 +91,7 @@ for file in [base_directory+"/good.txt", base_directory+"/bad.txt", base_directo
         pass
 print(f"Already indexed files: {already_indexed_files}")
 csv_files = csv_files[already_indexed_files:]
+print(f"csv_files: {csv_files}")
 csv_files = iter(csv_files)
 current_file = already_indexed_files + 1 #TODO(1): Current file is 1 (or already_indexed +1) for the two first presses. THen it iterates correctly
 stats_csv_path = next(csv_files, None)
