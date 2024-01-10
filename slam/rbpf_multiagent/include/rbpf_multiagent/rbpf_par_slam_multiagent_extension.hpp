@@ -71,6 +71,7 @@
 #include <future>
 #include <cmath>
 #include <unordered_set>
+#include <stdexcept>
 
 #include "ros/ros.h"
 #include <cstdlib>

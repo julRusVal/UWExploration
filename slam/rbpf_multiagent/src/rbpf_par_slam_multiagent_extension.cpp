@@ -38,8 +38,17 @@ RbpfSlamMultiExtension::RbpfSlamMultiExtension(ros::NodeHandle &nh, ros::NodeHan
     nh_->param<string>(("weight_slicing"), weight_slicing_, "top");
     nh_->param<string>(("pmp"), pmp_, "poly");
 
-
-
+    if (pmp_ == "mono" && weight_slicing_ == "top")
+    {
+        ROS_ERROR("pmp_ = mono and weight_slicing_ = top is not a valid combination!");
+        throw std::invalid_argument("pmp_ = mono and weight_slicing_ = top is not a valid combination!");
+    }
+    
+    if (pmp_ == "mono" && pc_ != pcn_)
+    {
+        ROS_ERROR("pmp_ = mono and pc_ != pcn_ is not a valid combination!");
+        throw std::invalid_argument("pmp_ = mono and pc_ != pcn_ is not a valid combination!");
+    }
     // nh_mb_->param<float>(("rbpf_period"), rbpf_period_, 0.3);
 
     if(!rbpf_sensor_MBES){
