@@ -1445,7 +1445,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
             // ROS_INFO("namespace_ = %s, 4", namespace_.c_str());
             // code_stage_ = 4;
             srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
-            srv.request.left_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_left_);
+            // srv.request.left_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_left_);
             // ROS_INFO("after left average_pose_with_cov");
 
         }
@@ -1461,7 +1461,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
             // ROS_INFO("namespace_ = %s, 5", namespace_.c_str());
             // code_stage_ = 5;
             srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
-            srv.request.right_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_right_);
+            // srv.request.right_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_right_);
             // ROS_INFO("after right average_pose_with_cov");
         }
         else
@@ -1482,40 +1482,57 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
 
 std_msgs::Float32 RbpfSlamMultiExtension::average_distance_to_ego_particles(const std::vector<RbpfParticle> particles)
 {
+    ROS_INFO("1");
+    const Eigen::Matrix4f* oN2o_mat_ptr = nullptr;
+    ROS_INFO("2");
     if (&particles == &particles_left_)
     {
+        ROS_INFO("3");
         oN2o_mat_ptr = &oL2o_mat_;
     }
     else if (&particles == &particles_right_)
     {
+        ROS_INFO("4");
         oN2o_mat_ptr = &oR2o_mat_;
     }
     else
     {
         ROS_ERROR("particles is neither particles_left_ nor particles_right_");
     }
+    ROS_INFO("5");
     std_msgs::Float32 mean_distance_msg;
+    ROS_INFO("6");
     int total_num_data_pts = 0;
 
     for (const RbpfParticle& particle : particles)
-    {
+    {   
+        ROS_INFO("7");
         Eigen::Vector4f n_point_Nodom;//HOMOGENOUS neighbour point in neighbour odom frame
+        ROS_INFO("8");
         Eigen::Vector3f n_point; //neighbour point in self odom frame
+        ROS_INFO("9");
         Eigen::Vector3f s_point; //self point in self odom frame
+        ROS_INFO("10");
         n_point_Nodom.head(3) = particle.p_pose_.head(3); 
+        ROS_INFO("11");
         n_point_Nodom(3) = 1;
+        ROS_INFO("12");
         n_point = ((*oN2o_mat_ptr) * n_point_Nodom).head(3);
 
         for (const RbpfParticle& particle_self : particles_)
         {
+            ROS_INFO("13");
             s_point = particle_self.p_pose_.head(3);
+            ROS_INFO("14");
             mean_distance_msg.data += (s_point - n_point).norm();
-            total_num_data_pts++;
+            ROS_INFO("15");
+            total_num_data_pts++; 
         }
     }
-    mean_distance_msg.data = mean_distance_msg.data / total_num_data_pts;
-    
-    return pose;
+    ROS_INFO("16");
+    mean_distance_msg.data = mean_distance_msg.data / total_num_data_pts; //CONTINUE HERE; continue in plot service and test
+    ROS_INFO("17");
+    return mean_distance_msg;
 }
 
 geometry_msgs::PoseWithCovariance RbpfSlamMultiExtension::average_pose_with_cov(const std::vector<RbpfParticle> particles)

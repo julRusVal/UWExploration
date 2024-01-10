@@ -108,6 +108,7 @@ class PlotGeneratorServiceInstance:
         self.r_b_e_t = [] #right bearing error timestamps
         self.frame_count = 0        # Frame count for the animation
 
+
         self.time_diff = 0.0
         self.animate_plots = rospy.get_param('~animate_plots',True)
         self.vehicle_model = rospy.get_param('~vehicle_model',"hugin")
@@ -122,16 +123,16 @@ class PlotGeneratorServiceInstance:
 
         # Create a figure and axis for the animation
         self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 10))
-        self.fig.suptitle('Position error and variance over time')
+        self.fig.suptitle('Error and covariance over time')
         self.line_left_distance, = self.ax1.plot([], [], label='Left Error Sum')
         self.line_right_distance, = self.ax1.plot([], [], label='Right Error Sum')
-        # self.line_left_bearing, = self.ax1.plot([], [], label='Left Bearing Error')
-        # self.line_right_bearing, = self.ax1.plot([], [], label='Right Bearing Error')
-        self.ax1.set_xlabel('Callback Iteration')
+        self.line_left_bearing, = self.ax1.plot([], [], label='Left Bearing Error')
+        self.line_right_bearing, = self.ax1.plot([], [], label='Right Bearing Error')
+        self.ax1.set_xlabel('Time')
         self.ax1.set_ylabel('Error [m] or [deg]')
         self.ax1.legend()
         self.ax1.set_ylim(0, 1)
-        self.ax1.set_title('Distance and Bearing Errors Over Time')
+        self.ax1.set_title('Distance & Bearing Error Sum Over Time for Mean Poses')
 
         self.ego_cov_list = []
         self.e_c_t = [] #ego covariance timestamps
@@ -143,10 +144,22 @@ class PlotGeneratorServiceInstance:
         self.line_ego_cov, = self.ax2.plot([], [], label='Ego x & y Covariance Sum')
         self.line_left_cov, = self.ax2.plot([], [], label='Left x & y Covariance Sum')
         self.line_right_cov, = self.ax2.plot([], [], label='Right x & y Covariance Sum')
-        self.ax2.set_xlabel('Callback Iteration')
+        self.ax2.set_xlabel('Time')
         self.ax2.set_ylabel('Covariance Sum')
         self.ax2.legend()
         self.ax2.set_title('Covariance Sum Over Time')
+
+        self.left_distance_errors_between_all_particles = []
+        self.right_distance_errors_between_all_particles = []
+        self.l_d_e_b_a_p_t = [] #left distance error between all particles timestamps
+        self.r_d_e_b_a_p_t = []
+
+        self.line_left_distance_between_all_particles, = self.ax3.plot([], [], label='Left Distance Error Mean Of All Particles')
+        self.line_right_distance_between_all_particles, = self.ax3.plot([], [], label='Right Distance Error Mean Of All Particles')
+        self.ax3.set_xlabel('Time')
+        self.ax3.set_ylabel('Particle mean distance Error')
+        self.ax3.legend()
+        self.ax3.set_title('Distance Error Over Time for Mean Distance Between All Particles')
 
         self.ego_abs_error = []
         self.e_a_e_t = [] #ego absolute error timestamps
@@ -155,13 +168,13 @@ class PlotGeneratorServiceInstance:
         self.right_abs_error = []
         self.r_a_e_t = [] #right absolute error timestamps
 
-        self.line_ego_abs_error, = self.ax3.plot([], [], label='Ego Absolute Positional Error')
-        self.line_left_abs_error, = self.ax3.plot([], [], label='Left Absolute Positional Error')
-        self.line_right_abs_error, = self.ax3.plot([], [], label='Right Absolute Position Error')
-        self.ax3.set_xlabel('Callback Iteration')
-        self.ax3.set_ylabel('Absolute Positional Error [m]')
-        self.ax3.legend()
-        self.ax3.set_title('Absolute Positional Error Over Time')
+        self.line_ego_abs_error, = self.ax4.plot([], [], label='Ego Absolute Positional Error')
+        self.line_left_abs_error, = self.ax4.plot([], [], label='Left Absolute Positional Error')
+        self.line_right_abs_error, = self.ax4.plot([], [], label='Right Absolute Position Error')
+        self.ax4.set_xlabel('Time')
+        self.ax4.set_ylabel('Absolute Positional Error [m]')
+        self.ax4.legend()
+        self.ax4.set_title('Absolute Positional Error Over Time')
 
         # self.line_ego_x_var, = self.ax2.plot([], [], label='Ego Variance X')
         # self.line_ego_y_var, = self.ax2.plot([], [], label='Ego Variance Y')
@@ -222,6 +235,7 @@ class PlotGeneratorServiceInstance:
         ego_odom_frame = ego_pose_with_cov.header.frame_id
         left_odom_frame = left_pose_with_cov.header.frame_id
         right_odom_frame = right_pose_with_cov.header.frame_id
+        
         #Get the last character in the string and convert to int
         ego_id = -1
         left_id = -1
@@ -285,6 +299,9 @@ class PlotGeneratorServiceInstance:
             self.l_d_e_t.append(self.T_local)
             self.left_bearing_errors.append(np.rad2deg(left_error_bearing))
             self.l_b_e_t.append(self.T_local)
+
+            self.left_distance_errors_between_all_particles.append(abs(self.gt_distance[0] - req.left_mean_dist.data))
+            self.l_d_e_b_a_p_t.append(self.T_local)
         # else:
         #     self.left_distance_errors.append(0)
         #     self.left_bearing_errors.append(0)
@@ -302,6 +319,9 @@ class PlotGeneratorServiceInstance:
             self.r_d_e_t.append(self.T_local)
             self.right_bearing_errors.append(np.rad2deg(right_error_bearing))
             self.r_b_e_t.append(self.T_local)
+
+            self.right_distance_errors_between_all_particles.append(abs(self.gt_distance[1] - req.right_mean_dist.data))
+            self.r_d_e_b_a_p_t.append(self.T_local)
         
 
         # else:
@@ -586,13 +606,26 @@ class PlotGeneratorServiceInstance:
 
         self.ax2.set_ylim(0, max(y_max_list))
 
+        if len(self.left_distance_errors_between_all_particles) != 0:
+            self.line_left_distance_between_all_particles.set_data(self.l_d_e_b_a_p_t, self.left_distance_errors_between_all_particles)
+            self.ax3.set_xlim(0, len(self.left_distance_errors_between_all_particles))
+        if len(self.right_distance_errors_between_all_particles) != 0:
+            self.line_right_distance_between_all_particles.set_data(self.r_d_e_b_a_p_t, self.right_distance_errors_between_all_particles)
+            self.ax3.set_xlim(0, len(self.left_distance_errors_between_all_particles))
+        y_max_list = [0]
+        if len(self.left_distance_errors_between_all_particles) != 0:
+            y_max_list.append(max(self.left_distance_errors_between_all_particles))
+        if len(self.right_distance_errors_between_all_particles) != 0:
+            y_max_list.append(max(self.right_distance_errors_between_all_particles))
+        self.ax3.set_ylim(0, max(y_max_list))
+
 
         self.line_ego_abs_error.set_data(self.e_a_e_t, self.ego_abs_error)
         if len(self.left_abs_error) != 0:
             self.line_left_abs_error.set_data(self.l_a_e_t, self.left_abs_error)
         if len(self.right_abs_error) != 0:
             self.line_right_abs_error.set_data(self.r_a_e_t, self.right_abs_error)
-        self.ax3.set_xlim(0, len(self.ego_abs_error))
+        self.ax4.set_xlim(0, len(self.ego_abs_error))
         y_max_list = [0.001]
         if len(self.ego_abs_error) != 0:
             y_max_list.append(max(self.ego_abs_error))
@@ -600,7 +633,7 @@ class PlotGeneratorServiceInstance:
             y_max_list.append(max(self.left_abs_error))
         if len(self.right_abs_error) != 0:
             y_max_list.append(max(self.right_abs_error))
-        self.ax3.set_ylim(0, max(y_max_list))
+        self.ax4.set_ylim(0, max(y_max_list))
         # self.line_ego_x_var.set_data(np.arange(len(self.ego_x_var_list)), self.ego_x_var_list)
         # self.line_ego_y_var.set_data(np.arange(len(self.ego_y_var_list)), self.ego_y_var_list)
         # self.ax2.set_xlim(0, len(self.ego_x_var_list))
@@ -634,6 +667,8 @@ class PlotGeneratorServiceInstance:
                 'ego_abs_error': self.ego_abs_error,
                 'left_abs_error': self.left_abs_error,
                 'right_abs_error': self.right_abs_error,
+                'left_distance_errors_between_all_particles': self.left_distance_errors_between_all_particles,
+                'right_distance_errors_between_all_particles': self.right_distance_errors_between_all_particles,
                 'l_d_e_t': self.l_d_e_t,
                 'r_d_e_t': self.r_d_e_t,
                 'l_b_e_t': self.l_b_e_t,
@@ -644,6 +679,8 @@ class PlotGeneratorServiceInstance:
                 'e_a_e_t': self.e_a_e_t,
                 'l_a_e_t': self.l_a_e_t,
                 'r_a_e_t': self.r_a_e_t,
+                'l_d_e_b_a_p_t': self.l_d_e_b_a_p_t,
+                'r_d_e_b_a_p_t': self.r_d_e_b_a_p_t,
                 # Add more data you want to save here
             }
 
