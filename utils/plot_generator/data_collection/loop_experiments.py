@@ -37,10 +37,15 @@ class experiments_loop(object):
         save_plots = 'true'
         animate_plots = 'false'
         
-        motion_cov_list = [1e-5, 1e-6, 1e-7]
-        resampling_cov_list = [10, 1, 0.1]
-        fls_range_std_list = [1e-2, 1e-3, 1e-4]
-        fls_angle_std_list = [np.deg2rad(1), np.deg2rad(0.1), np.deg2rad(0.01)]
+        # motion_cov_list = [1e-5, 1e-6, 1e-7]
+        # resampling_cov_list = [10, 1, 0.1]
+        # fls_range_std_list = [1e-2, 1e-3, 1e-4]
+        # fls_angle_std_list = [np.deg2rad(1), np.deg2rad(0.1), np.deg2rad(0.01)]
+
+        motion_cov_list = [0.00001]
+        resampling_cov_list = [1.0]
+        fls_range_std_list = [0.001]
+        fls_angle_std_list = [0.00174533]
 
         self.finished_flags_received = 0
         self.t_first_finished = None
@@ -63,7 +68,8 @@ class experiments_loop(object):
         # N_params = param_list.shape[0]
         N_tests = len(motion_cov_list)*len(resampling_cov_list)*len(fls_range_std_list)*len(fls_angle_std_list)
         test_i = 0
-        N_retests = 5
+        # N_retests = 5
+        N_retests = 1
         keyboard = Controller()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.cb)

@@ -300,8 +300,10 @@ class PlotGeneratorServiceInstance:
             self.left_bearing_errors.append(np.rad2deg(left_error_bearing))
             self.l_b_e_t.append(self.T_local)
 
-            self.left_distance_errors_between_all_particles.append(abs(self.gt_distance[0] - req.left_mean_dist.data))
-            self.l_d_e_b_a_p_t.append(self.T_local)
+            # print("req.left_mean_dist.data:",req.left_mean_dist.data)
+            if req.left_mean_dist.data != -1:
+                self.left_distance_errors_between_all_particles.append(abs(self.gt_distance[0] - req.left_mean_dist.data))
+                self.l_d_e_b_a_p_t.append(self.T_local)
         # else:
         #     self.left_distance_errors.append(0)
         #     self.left_bearing_errors.append(0)
@@ -320,8 +322,9 @@ class PlotGeneratorServiceInstance:
             self.right_bearing_errors.append(np.rad2deg(right_error_bearing))
             self.r_b_e_t.append(self.T_local)
 
-            self.right_distance_errors_between_all_particles.append(abs(self.gt_distance[1] - req.right_mean_dist.data))
-            self.r_d_e_b_a_p_t.append(self.T_local)
+            if req.right_mean_dist.data != -1:
+                self.right_distance_errors_between_all_particles.append(abs(self.gt_distance[1] - req.right_mean_dist.data))
+                self.r_d_e_b_a_p_t.append(self.T_local)
         
 
         # else:
