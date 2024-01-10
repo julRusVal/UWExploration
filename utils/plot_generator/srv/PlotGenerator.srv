@@ -1,6 +1,8 @@
 geometry_msgs/PoseWithCovarianceStamped ego
 geometry_msgs/PoseWithCovarianceStamped left
 geometry_msgs/PoseWithCovarianceStamped right
+std_msgs/Float32 left_mean_dist
+std_msgs/Float32 right_mean_dist
 ---
 std_msgs/Empty resp
 

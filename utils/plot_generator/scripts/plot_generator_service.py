@@ -123,10 +123,10 @@ class PlotGeneratorServiceInstance:
         # Create a figure and axis for the animation
         self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 10))
         self.fig.suptitle('Position error and variance over time')
-        self.line_left_distance, = self.ax1.plot([], [], label='Left Distance Error')
-        self.line_right_distance, = self.ax1.plot([], [], label='Right Distance Error')
-        self.line_left_bearing, = self.ax1.plot([], [], label='Left Bearing Error')
-        self.line_right_bearing, = self.ax1.plot([], [], label='Right Bearing Error')
+        self.line_left_distance, = self.ax1.plot([], [], label='Left Error Sum')
+        self.line_right_distance, = self.ax1.plot([], [], label='Right Error Sum')
+        # self.line_left_bearing, = self.ax1.plot([], [], label='Left Bearing Error')
+        # self.line_right_bearing, = self.ax1.plot([], [], label='Right Bearing Error')
         self.ax1.set_xlabel('Callback Iteration')
         self.ax1.set_ylabel('Error [m] or [deg]')
         self.ax1.legend()
@@ -550,13 +550,13 @@ class PlotGeneratorServiceInstance:
         # print("left bearing errors:",self.left_bearing_errors)
         # print("right bearing errors:",self.right_bearing_errors)
         if len(self.left_distance_errors) != 0:
-            self.line_left_distance.set_data(self.l_d_e_t, self.left_distance_errors)
+            self.line_left_distance.set_data(self.l_d_e_t, [x+y for x,y in zip(self.left_distance_errors,self.left_bearing_errors)])
         if len(self.right_distance_errors) != 0:
-            self.line_right_distance.set_data(self.r_d_e_t, self.right_distance_errors)
-        if len(self.left_bearing_errors) != 0:
-            self.line_left_bearing.set_data(self.l_b_e_t, self.left_bearing_errors)
-        if len(self.right_bearing_errors) != 0:
-            self.line_right_bearing.set_data(self.r_b_e_t, self.right_bearing_errors)
+            self.line_right_distance.set_data(self.r_d_e_t, [x+y for x,y in zip(self.right_distance_errors,self.right_bearing_errors)])
+        # if len(self.left_bearing_errors) != 0:
+        #     self.line_left_bearing.set_data(self.l_b_e_t, self.left_bearing_errors)
+        # if len(self.right_bearing_errors) != 0:
+        #     self.line_right_bearing.set_data(self.r_b_e_t, self.right_bearing_errors)
 
         # Update the x-axis limits dynamically
         max_x = max(len(self.left_distance_errors), len(self.right_distance_errors))
