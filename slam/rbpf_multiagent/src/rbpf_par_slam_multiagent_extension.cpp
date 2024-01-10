@@ -1445,7 +1445,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
             // ROS_INFO("namespace_ = %s, 4", namespace_.c_str());
             // code_stage_ = 4;
             srv.request.left.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_left_);
-            // srv.request.left_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_left_);
+            srv.request.left_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_left_);
             // ROS_INFO("after left average_pose_with_cov");
 
         }
@@ -1461,7 +1461,7 @@ void RbpfSlamMultiExtension::update_plots(const ros::TimerEvent &)
             // ROS_INFO("namespace_ = %s, 5", namespace_.c_str());
             // code_stage_ = 5;
             srv.request.right.pose = RbpfSlamMultiExtension::average_pose_with_cov(particles_right_);
-            // srv.request.right_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_right_);
+            srv.request.right_mean_dist = RbpfSlamMultiExtension::average_distance_to_ego_particles(particles_right_);
             // ROS_INFO("after right average_pose_with_cov");
         }
         else
@@ -1498,6 +1498,7 @@ std_msgs::Float32 RbpfSlamMultiExtension::average_distance_to_ego_particles(cons
     else
     {
         ROS_ERROR("particles is neither particles_left_ nor particles_right_");
+        return std_msgs::Float32();
     }
     ROS_INFO("5");
     std_msgs::Float32 mean_distance_msg;

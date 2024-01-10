@@ -611,7 +611,7 @@ class PlotGeneratorServiceInstance:
             self.ax3.set_xlim(0, len(self.left_distance_errors_between_all_particles))
         if len(self.right_distance_errors_between_all_particles) != 0:
             self.line_right_distance_between_all_particles.set_data(self.r_d_e_b_a_p_t, self.right_distance_errors_between_all_particles)
-            self.ax3.set_xlim(0, len(self.left_distance_errors_between_all_particles))
+            self.ax3.set_xlim(0, len(self.right_distance_errors_between_all_particles))
         y_max_list = [0]
         if len(self.left_distance_errors_between_all_particles) != 0:
             y_max_list.append(max(self.left_distance_errors_between_all_particles))
