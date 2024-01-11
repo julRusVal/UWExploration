@@ -36,16 +36,19 @@ class experiments_loop(object):
         time_sync = 'true'
         save_plots = 'true'
         animate_plots = 'false'
+        auxiliary_enabled = 'false' #true is standard, false to save computation power for large simulation runs
+        mbes_meas_period = '100' #0.1 is standard, 100 to save computation power for large simulation runs
+        rbpf_sensor_FLS = "true"
         
         # motion_cov_list = [1e-5, 1e-6, 1e-7]
         # resampling_cov_list = [10, 1, 0.1]
         # fls_range_std_list = [1e-2, 1e-3, 1e-4]
         # fls_angle_std_list = [np.deg2rad(1), np.deg2rad(0.1), np.deg2rad(0.01)]
 
-        motion_cov_list = [0.00001]
-        resampling_cov_list = [1.0]
-        fls_range_std_list = [0.001]
-        fls_angle_std_list = [0.00174533]
+        motion_cov_list = [1e-5]
+        resampling_cov_list = [0.1]
+        fls_range_std_list = [0.0001]
+        fls_angle_std_list = [0.00017453292519943296]
 
         self.finished_flags_received = 0
         self.t_first_finished = None
@@ -54,13 +57,13 @@ class experiments_loop(object):
 
         left_corner_pose = PoseStamped()
         left_corner_pose.header.frame_id = "map"
-        left_corner_pose.pose.position.x = -50
-        left_corner_pose.pose.position.y = -10
+        left_corner_pose.pose.position.x = -50-200
+        left_corner_pose.pose.position.y = -10-80
 
         right_corner_pose = PoseStamped()
         right_corner_pose.header.frame_id = "map"
-        right_corner_pose.pose.position.x = 154
-        right_corner_pose.pose.position.y = 57
+        right_corner_pose.pose.position.x = 154-200
+        right_corner_pose.pose.position.y = 57-80
 
         # params = np.meshgrid(motion_cov_list, resampling_cov_list, fls_range_std_list, fls_angle_std_list)
         # print(params)
@@ -69,7 +72,7 @@ class experiments_loop(object):
         N_tests = len(motion_cov_list)*len(resampling_cov_list)*len(fls_range_std_list)*len(fls_angle_std_list)
         test_i = 0
         # N_retests = 5
-        N_retests = 1
+        N_retests = 5
         keyboard = Controller()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.cb)
@@ -99,7 +102,9 @@ class experiments_loop(object):
                                         'fls_angle_std:=' + str(format(fls_angle_std,'.9f')),
                                         'plots_results_path:=' + path + "/test_run_" + test_run_date_id + "/" + "my" + str(motion_cov) + "_rxy" + str(res_cov) + "_fr" + str(fls_range_std) + "_fa" + str(fls_angle_std),
                                         'record_launch_parameters_and_arguments:=true',
-                                        "mbes_meas_period:=100"
+                                        "mbes_meas_period:=" + mbes_meas_period,
+                                        "auxiliary_enabled:="+auxiliary_enabled,
+                                        "rbpf_sensor_FLS:="+rbpf_sensor_FLS
                                         ]
                             
                             roslaunch_args = cli_args[1:]
