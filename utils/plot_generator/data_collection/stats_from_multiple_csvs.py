@@ -45,4 +45,4 @@ def gen_stats(base_directory):
         df_stats.to_csv(base_directory + 'stats.csv', index=False)
         print("Saved stats to: ", base_directory + 'stats.csv')
             
-# gen_stats('/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20231221_094131/my1e-05_rxy10_fr0.01_fa0.00017453292519943296')
+gen_stats('/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_211835/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296')

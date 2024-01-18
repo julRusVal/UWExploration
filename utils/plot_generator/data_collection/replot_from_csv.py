@@ -1,10 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-plt.rcParams.update({'font.size': 24})  # Sets default font size to 12
+# plt.rcParams.update({'font.size': 12})  # Sets default font size to 12
 import csv
 
 def plot_csv(csv_file_path, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
-    alpha_e_bars = 0.5
+    if separate_windows:
+        plt.rcParams.update({'font.size': 24})  # Sets default font size to 24
+    else:
+        plt.rcParams.update({'font.size': 12})  # Sets default font size to 12
+    alpha_e_bars = 0.2
+    alpha_v_lines = 0.5
     data = pd.read_csv(csv_file_path)
 
     if not separate_windows:
@@ -19,7 +24,7 @@ def plot_csv(csv_file_path, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
         plt.subplot(2, 2, 1)
 
     for x in vlines_x:
-        plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_e_bars)
+        plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_v_lines)
     if "l_d_e_t" in data.columns:
         plt.plot(data["l_d_e_t"].values,data['left_distance_errors'].values+data['left_bearing_errors'].values, label='Left CAPE', linewidth=lw)
         plt.plot(data["r_d_e_t"].values,data['right_distance_errors'].values+data['right_bearing_errors'].values, label='Right CAPE', linewidth=lw)
@@ -54,7 +59,7 @@ def plot_csv(csv_file_path, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
     else:
         plt.subplot(2, 2, 2)
     for x in vlines_x:
-        plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_e_bars)
+        plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_v_lines)
     if 'e_c_t' in data.columns:
         plt.plot(data['e_c_t'].values, data['ego_cov_list'].values, label='Ego PDI', linewidth=lw)
         plt.plot(data['l_c_t'].values, data['left_cov_list'].values, label='Left PDI', linewidth=lw)
@@ -89,7 +94,7 @@ def plot_csv(csv_file_path, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
     else:
         plt.subplot(2, 2, 3)
     for x in vlines_x:
-        plt.axvline(x=x, color='k', linestyle='--', alpha=alpha_e_bars)
+        plt.axvline(x=x, color='k', linestyle='--', alpha=alpha_v_lines)
     if 'l_d_e_b_a_p_t' in data.columns:
         plt.plot(data['l_d_e_b_a_p_t'].values, data['left_distance_errors_between_all_particles'].values, label='Left APDE', linewidth=lw)
         plt.plot(data['r_d_e_b_a_p_t'].values, data['right_distance_errors_between_all_particles'].values, label='Right APDE', linewidth=lw)
@@ -123,7 +128,7 @@ def plot_csv(csv_file_path, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
     else:
         plt.subplot(2, 2, 4)
     for x in vlines_x:
-        plt.axvline(x=x, color='k', linestyle='--', alpha=alpha_e_bars)
+        plt.axvline(x=x, color='k', linestyle='--', alpha=alpha_v_lines)
     if 'e_a_e_t' in data.columns:
         plt.plot(data['e_a_e_t'].values, data['ego_abs_error'].values, label='Ego APE', linewidth=lw)
         plt.plot(data['l_a_e_t'].values, data['left_abs_error'].values, label='Left APE', linewidth=lw)
@@ -156,5 +161,8 @@ def plot_csv(csv_file_path, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
     # Show all plots
     plt.show()
 
-s = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_162124/my1e-05_rxy1.0_fr0.001_fa0.00174533/20240111_162125/auv_0.csv"
+#DR only
+# s = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_162124/my1e-05_rxy1.0_fr0.001_fa0.00174533/20240111_162125/auv_0.csv"
+
+s = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_211835/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 plot_csv(s,vlines_x=[80, 96, 320, 336],separate_windows=True,t_cut=350)
