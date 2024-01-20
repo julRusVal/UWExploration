@@ -164,5 +164,5 @@ def plot_csv(csv_file_path, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
 #DR only
 # s = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_162124/my1e-05_rxy1.0_fr0.001_fa0.00174533/20240111_162125/auv_0.csv"
 
-s = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_211835/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
-plot_csv(s,vlines_x=[80, 96, 320, 336],separate_windows=True,t_cut=350)
+s = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_211835/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240111_215030/auv_0.csv"
+plot_csv(s,vlines_x=[80, 96, 320, 336],separate_windows=False,t_cut=350)

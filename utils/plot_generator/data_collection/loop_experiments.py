@@ -38,8 +38,10 @@ class experiments_loop(object):
         animate_plots = 'false'
         auxiliary_enabled = 'false' #true is standard, false to save computation power for large simulation runs
         mbes_meas_period = '100' #0.1 is standard, 100 to save computation power for large simulation runs
-        rbpf_sensor_FLS = "true"
-        
+        rbpf_sensor_FLS = "false"
+        comms_type ="disabled" # <!-- 'disabled', 'realistic', 'unlimited' -->
+        weight_slicing="all" # <!-- 'all', 'top' -->
+        pmp="poly" # <!-- particle marital policy: 'poly', 'mono' -->
         # motion_cov_list = [1e-5, 1e-6, 1e-7]
         # resampling_cov_list = [10, 1, 0.1]
         # fls_range_std_list = [1e-2, 1e-3, 1e-4]
@@ -48,7 +50,7 @@ class experiments_loop(object):
         motion_cov_list = [1e-5]
         resampling_cov_list = [0.1]
         fls_range_std_list = [0.0001]
-        fls_angle_std_list = [0.00017453292519943296]
+        fls_angle_std_list = [np.deg2rad(0.01)]
 
         self.finished_flags_received = 0
         self.t_first_finished = None
@@ -104,7 +106,10 @@ class experiments_loop(object):
                                         'record_launch_parameters_and_arguments:=true',
                                         "mbes_meas_period:=" + mbes_meas_period,
                                         "auxiliary_enabled:="+auxiliary_enabled,
-                                        "rbpf_sensor_FLS:="+rbpf_sensor_FLS
+                                        "rbpf_sensor_FLS:="+rbpf_sensor_FLS,
+                                        "comms_type:="+comms_type,
+                                        "weight_slicing:="+weight_slicing,
+                                        "pmp:="+pmp
                                         ]
                             
                             roslaunch_args = cli_args[1:]
