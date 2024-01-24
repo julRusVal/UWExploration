@@ -13,7 +13,7 @@ def gen_stats(base_directory):
     base_directory = base_directory + "/"
     for folder_name in glob.glob(base_directory + '*/'):
         # print("Found folder:", folder_name)
-        csv_files = glob.glob(folder_name + '/auv_0.csv')
+        csv_files = glob.glob(folder_name + '/auv_1.csv') #CHOOSE AUV HERE
         file_paths.extend(csv_files)
 
     # Print the found file paths (for debugging purposes)
@@ -45,4 +45,4 @@ def gen_stats(base_directory):
         df_stats.to_csv(base_directory + 'stats.csv', index=False)
         print("Saved stats to: ", base_directory + 'stats.csv')
             
-gen_stats('/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_211835/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296')
+gen_stats('/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296')

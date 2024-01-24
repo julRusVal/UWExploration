@@ -8,7 +8,7 @@ from plot_generator.srv import PlotGenerator, PlotGeneratorResponse
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+# import matplotlib.animation as animation
 import tf
 import io
 import os

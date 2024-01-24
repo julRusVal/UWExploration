@@ -31,17 +31,19 @@ class experiments_loop(object):
         # path = "/media/orin/Seagate Expansion Drive/rbpf_results/hugin/"
         path = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection"
         test_run_date_id = time.strftime("%Y%m%d_%H%M%S")
-        num_auvs = '2'
+        num_auvs = '3'
         self.num_auvs = int(num_auvs)
         time_sync = 'true'
         save_plots = 'true'
         animate_plots = 'false'
         auxiliary_enabled = 'false' #true is standard, false to save computation power for large simulation runs
         mbes_meas_period = '100' #0.1 is standard, 100 to save computation power for large simulation runs
-        rbpf_sensor_FLS = "false"
+        rbpf_sensor_FLS = "true"
         comms_type ="disabled" # <!-- 'disabled', 'realistic', 'unlimited' -->
-        weight_slicing="all" # <!-- 'all', 'top' -->
+        weight_slicing="top" # <!-- 'all', 'top' -->
         pmp="poly" # <!-- particle marital policy: 'poly', 'mono' -->
+        pc_ = "25"
+        pcn_ = "25"
         # motion_cov_list = [1e-5, 1e-6, 1e-7]
         # resampling_cov_list = [10, 1, 0.1]
         # fls_range_std_list = [1e-2, 1e-3, 1e-4]
@@ -74,7 +76,7 @@ class experiments_loop(object):
         N_tests = len(motion_cov_list)*len(resampling_cov_list)*len(fls_range_std_list)*len(fls_angle_std_list)
         test_i = 0
         # N_retests = 5
-        N_retests = 5
+        N_retests = 50
         keyboard = Controller()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.cb)
@@ -109,9 +111,11 @@ class experiments_loop(object):
                                         "rbpf_sensor_FLS:="+rbpf_sensor_FLS,
                                         "comms_type:="+comms_type,
                                         "weight_slicing:="+weight_slicing,
-                                        "pmp:="+pmp
+                                        "pmp:="+pmp,
+                                        "particle_count:="+pc_,
+                                        "particle_count_neighbours:="+pcn_
                                         ]
-                            
+
                             roslaunch_args = cli_args[1:]
                             roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], 
                                                 roslaunch_args)]

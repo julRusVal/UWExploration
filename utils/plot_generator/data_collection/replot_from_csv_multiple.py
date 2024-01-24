@@ -50,7 +50,7 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
             # plt.errorbar(data.index, data['right_bearing_errors'], yerr=data['right_bearing_errors_std'], fmt='o', label='Right Bearing Error Std', alpha=alpha_e_bars)
             try:
                 # plt.errorbar(data['l_d_e_t'].values, data['left_distance_errors']+data['left_bearing_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
-                plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors']+data['right_bearing_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', label='$\sigma_{right}$ over 4 runs', alpha=alpha_e_bars)
+                plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors']+data['right_bearing_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
             except:
                 # plt.errorbar(data.index, data['left_distance_errors']+data['left_bearing_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
                 plt.errorbar(data.index, data['right_distance_errors']+data['right_bearing_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', label='std', alpha=alpha_e_bars)
@@ -88,9 +88,9 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         # Check if columns with '_std' suffix exist and plot error bars if available
         if 'ego_cov_list_std' in data.columns and 'left_cov_list_std' in data.columns and 'right_cov_list_std' in data.columns:
             try:
-                plt.errorbar(data['e_c_t'].values, data['ego_cov_list'], yerr=data['ego_cov_list_std'], fmt='o', label='$\sigma_{ego}$ over 4 runs', alpha=alpha_e_bars, linewidth=lw)
+                plt.errorbar(data['e_c_t'].values, data['ego_cov_list'], yerr=data['ego_cov_list_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#label='$\sigma_{ego}$ ~50 runs', alpha=alpha_e_bars, linewidth=lw)
                 # plt.errorbar(data['l_c_t'].values, data['left_cov_list'], yerr=data['left_cov_list_std'], fmt='o', label='Left Covariance Sum Std', alpha=alpha_e_bars, linewidth=lw)
-                plt.errorbar(data['r_c_t'].values, data['right_cov_list'], yerr=data['right_cov_list_std'], fmt='o', label='$\sigma_{right}$ over 4 runs', alpha=alpha_e_bars, linewidth=lw)
+                plt.errorbar(data['r_c_t'].values, data['right_cov_list'], yerr=data['right_cov_list_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars, linewidth=lw)
             except:
                 plt.errorbar(data.index, data['ego_cov_list'], yerr=data['ego_cov_list_std'], fmt='o', label='Ego Covariance Sum Std', alpha=alpha_e_bars)
                 # plt.errorbar(data.index, data['left_cov_list'], yerr=data['left_cov_list_std'], fmt='o', label='Left Covariance Sum Std', alpha=alpha_e_bars)
@@ -127,10 +127,10 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         if 'left_distance_errors_between_all_particles_std' in data.columns and 'right_distance_errors_between_all_particles_std' in data.columns:
             try:
                 # plt.errorbar(data['l_d_e_b_a_p_t'].values, data['left_distance_errors_between_all_particles'], yerr=data['left_distance_errors_between_all_particles_std'], fmt='o', label='Left Distance Error Mean Of All Particles Std', alpha=alpha_e_bars)
-                plt.errorbar(data['r_d_e_b_a_p_t'].values, data['right_distance_errors_between_all_particles'], yerr=data['right_distance_errors_between_all_particles_std'], fmt='o', label='$\sigma_{right}$ over 4 runs', alpha=alpha_e_bars)
+                plt.errorbar(data['r_d_e_b_a_p_t'].values, data['right_distance_errors_between_all_particles'], yerr=data['right_distance_errors_between_all_particles_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
             except:
                 # plt.errorbar(data.index, data['left_distance_errors_between_all_particles'], yerr=data['left_distance_errors_between_all_particles_std'], fmt='o', label='Left Distance Error Mean Of All Particles Std', alpha=alpha_e_bars)
-                plt.errorbar(data.index, data['right_distance_errors_between_all_particles'], yerr=data['right_distance_errors_between_all_particles_std'], fmt='o', label='$\sigma_{right}$ over 4 runs', alpha=alpha_e_bars)
+                plt.errorbar(data.index, data['right_distance_errors_between_all_particles'], yerr=data['right_distance_errors_between_all_particles_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
         plt.legend()
 
     # Plot 4: Absolute Positional Error Over Time
@@ -164,9 +164,9 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         # Check if columns with '_std' suffix exist and plot error bars if available
         if 'ego_abs_error_std' in data.columns and 'left_abs_error_std' in data.columns and 'right_abs_error_std' in data.columns:
             try:
-                plt.errorbar(data['e_a_e_t'].values, data['ego_abs_error'], yerr=data['ego_abs_error_std'], fmt='o', label='$\sigma_{ego}$ over 4 runs', alpha=alpha_e_bars)
+                plt.errorbar(data['e_a_e_t'].values, data['ego_abs_error'], yerr=data['ego_abs_error_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#label='$\sigma_{ego}$ ~50 runs', alpha=alpha_e_bars)
                 # plt.errorbar(data['l_a_e_t'].values, data['left_abs_error'], yerr=data['left_abs_error_std'], fmt='o', label='Left Abs. Pos. Error Std', alpha=alpha_e_bars)
-                plt.errorbar(data['r_a_e_t'].values, data['right_abs_error'], yerr=data['right_abs_error_std'], fmt='o', label='$\sigma_{right}$ over 4 runs', alpha=alpha_e_bars)
+                plt.errorbar(data['r_a_e_t'].values, data['right_abs_error'], yerr=data['right_abs_error_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
             except: 
                 plt.errorbar(data.index, data['ego_abs_error'], yerr=data['ego_abs_error_std'], fmt='o', label='Ego Abs. Pos. Error Std', alpha=alpha_e_bars)
                 # plt.errorbar(data.index, data['left_abs_error'], yerr=data['left_abs_error_std'], fmt='o', label='Left Abs. Pos. Error Std', alpha=alpha_e_bars)
@@ -179,7 +179,9 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
     plt.show()
 
 #DR only
-DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_162124/my1e-05_rxy1.0_fr0.001_fa0.00174533/20240111_162125/auv_0.csv"
+DRx1 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_162124/my1e-05_rxy1.0_fr0.001_fa0.00174533/20240111_162125/auv_0.csv"
+DRx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240120_102051/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+DR = DRx1
 defaultx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240111_211835/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 defaultx50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240119_150728/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 default = defaultx50
@@ -187,16 +189,22 @@ default = defaultx50
 all_polyx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_144137/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 all_polyx50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240119_233258/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 all_poly = all_polyx50
-all_mono = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_160923/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
-
-default_realistic_comms = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_171042/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
-default_unlimited_comms = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_182056/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
-
+all_monox5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_160923/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+all_monox50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240120_110841/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+all_mono = all_monox50
+default_realistic_commsx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_171042/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+default_realistic_commsx50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240120_223118/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+default_realistic_comms = default_realistic_commsx50
+default_unlimited_commsx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_182056/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+default_unlimited_commsx50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240121_090945/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+default_unlimited_comms = default_unlimited_commsx50
+auvs3x45 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+resampling_windows = [72, 97, 295, 370]
 # names = ["DR only ","RBPF default"]
-# plot_csv([DR,default],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=350)
+# plot_csv([DR,default],names,vlines_x=[72, 97, 295, 360],separate_windows=True,t_cut=400)
 
-names = ["RBPF default","RBPF all poly"]
-plot_csv([default,all_poly],names,vlines_x=[78, 97, 320, 338],separate_windows=True,t_cut=350)
+# names = ["RBPF default","RBPF W:all PMP:poly"]
+# plot_csv([default,all_poly],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400)
 
 # names = ["RBPF default","0", "1","2","3","4"]
 # plot_csv([default,"/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_144137/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240118_144138/auv_0.csv",
@@ -206,11 +214,18 @@ plot_csv([default,all_poly],names,vlines_x=[78, 97, 320, 338],separate_windows=T
 #             "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_144137/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240118_151333/auv_0.csv" ],
 #             names,vlines_x=[78, 97, 320, 338],separate_windows=True,t_cut=350)
 
-# names = ["RBPF default","RBPF all mono"]
-# plot_csv([default,all_mono],names,vlines_x=[78, 97, 320, 338],separate_windows=True,t_cut=350)
+# names = ["RBPF default","RBPF W:all PMP:mono"]
+# plot_csv([default,all_mono],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400)
 
-# names = ["RBPF default","RBPF default+realistic comms"]
-# plot_csv([default,default_realistic_comms],names,vlines_x=[78, 97, 320, 338],separate_windows=True,t_cut=350)
+# names = ["RBPF default","RBPF default+COMMS:realistic"]
+# plot_csv([default,default_realistic_comms],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400)
 
-# names = ["RBPF default","RBPF default+unlimited comms"]
-# plot_csv([default,default_unlimited_comms],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=350)
+# names = ["RBPF default","RBPF default+COMMS:unlimited"]
+# plot_csv([default,default_unlimited_comms],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400)
+
+# names = ["DR 1 ","DR 5"]
+# plot_csv([DRx1,DRx5],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=350)
+
+
+names = [" 3 AUVS DR ","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
+plot_csv([DRx1,auvs3x45],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=500)
