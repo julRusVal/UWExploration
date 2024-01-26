@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 # plt.rcParams.update({'font.size': 12})  # Sets default font size to 12
 import csv
 
-def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_cut=0,lw=4):
+def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_cut=0,lw=4,left=True,right=True):
     if separate_windows:
         plt.rcParams.update({'font.size': 24})  # Sets default font size to 24
     else:
@@ -21,7 +21,7 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.figure(figsize=(12, 10))
         plt.subplot(1, 1, 1)
     else:
-        plt.subplot(2, 2, 1)
+        plt.subplot(2, 2, 2)
 
     for x in vlines_x:
         plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_v_lines)
@@ -30,7 +30,11 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         dataset_name = dataset_names[i]
         if "l_d_e_t" in data.columns:
             # plt.plot(data["l_d_e_t"].values,data['left_distance_errors'].values+data['left_bearing_errors'].values, label='Left CAPE '+dataset_name, linewidth=lw)
-            plt.plot(data["r_d_e_t"].values,data['right_distance_errors'].values+data['right_bearing_errors'].values, label='Right CAPE '+dataset_name, linewidth=lw)
+            # plt.plot(data["r_d_e_t"].values,data['right_distance_errors'].values+data['right_bearing_errors'].values, label='Right CAPE '+dataset_name, linewidth=lw)
+            if left:
+                plt.plot(data["l_d_e_t"].values,data['left_distance_errors'].values, label='Left CAPE '+dataset_name, linewidth=lw)
+            if right:
+                plt.plot(data["r_d_e_t"].values,data['right_distance_errors'].values, label='Right CAPE '+dataset_name, linewidth=lw)
             plt.xlabel('Time [s]')
         else:
             # plt.plot(data['left_distance_errors']+data['left_bearing_errors'], label='Left Error Sum', linewidth=lw )
@@ -38,7 +42,7 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
             plt.xlabel('Callback Iteration')
         plt.ylabel('CAPE [-]')
         # plt.legend()
-        plt.title('Composite Average Pose Error Over Time')
+        plt.title('Composite Average Pose Error Over Time \n $\\theta$ error not diplayed')
         plt.grid(True)
         plt.xlim(right=t_cut)
     # Check if columns with '_std' suffix exist and plot error bars if available
@@ -49,8 +53,13 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
             # plt.errorbar(data.index, data['left_bearing_errors'], yerr=data['left_bearing_errors_std'], fmt='o', label='Left Bearing Error Std', alpha=alpha_e_bars)
             # plt.errorbar(data.index, data['right_bearing_errors'], yerr=data['right_bearing_errors_std'], fmt='o', label='Right Bearing Error Std', alpha=alpha_e_bars)
             try:
-                # plt.errorbar(data['l_d_e_t'].values, data['left_distance_errors']+data['left_bearing_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
-                plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors']+data['right_bearing_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
+                # plt.errorbar(data['l_d_e_t'].values, data['left_distance_errors']+data['left_bearing_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#, label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
+                # plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors']+data['right_bearing_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
+                if left:
+                    plt.errorbar(data['l_d_e_t'].values, data['left_distance_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#, label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
+                if right:
+                    plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
+                
             except:
                 # plt.errorbar(data.index, data['left_distance_errors']+data['left_bearing_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
                 plt.errorbar(data.index, data['right_distance_errors']+data['right_bearing_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', label='std', alpha=alpha_e_bars)
@@ -63,7 +72,7 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.figure(figsize=(12, 10))
         plt.subplot(1, 1, 1)
     else:
-        plt.subplot(2, 2, 2)
+        plt.subplot(2, 2, 3)
     for x in vlines_x:
         plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_v_lines)
     for i, csv_file_path in enumerate(csv_file_paths):
@@ -71,8 +80,10 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         dataset_name = dataset_names[i]
         if 'e_c_t' in data.columns:
             plt.plot(data['e_c_t'].values, data['ego_cov_list'].values, label='Ego PDI '+dataset_name, linewidth=lw)
-            # plt.plot(data['l_c_t'].values, data['left_cov_list'].values, label='Left PDI '+dataset_name, linewidth=lw)
-            plt.plot(data['r_c_t'].values, data['right_cov_list'].values, label='Right PDI '+dataset_name, linewidth=lw)
+            if left:
+                plt.plot(data['l_c_t'].values, data['left_cov_list'].values, label='Left PDI '+dataset_name, linewidth=lw)
+            if right:
+                plt.plot(data['r_c_t'].values, data['right_cov_list'].values, label='Right PDI '+dataset_name, linewidth=lw)
             plt.xlabel('Time [s]')
         else:
             plt.plot(data['ego_cov_list'], label='Ego x & y Covariance Sum')
@@ -89,8 +100,10 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         if 'ego_cov_list_std' in data.columns and 'left_cov_list_std' in data.columns and 'right_cov_list_std' in data.columns:
             try:
                 plt.errorbar(data['e_c_t'].values, data['ego_cov_list'], yerr=data['ego_cov_list_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#label='$\sigma_{ego}$ ~50 runs', alpha=alpha_e_bars, linewidth=lw)
-                # plt.errorbar(data['l_c_t'].values, data['left_cov_list'], yerr=data['left_cov_list_std'], fmt='o', label='Left Covariance Sum Std', alpha=alpha_e_bars, linewidth=lw)
-                plt.errorbar(data['r_c_t'].values, data['right_cov_list'], yerr=data['right_cov_list_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars, linewidth=lw)
+                if left:
+                    plt.errorbar(data['l_c_t'].values, data['left_cov_list'], yerr=data['left_cov_list_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#, label='Left Covariance Sum Std', alpha=alpha_e_bars, linewidth=lw)
+                if right:
+                    plt.errorbar(data['r_c_t'].values, data['right_cov_list'], yerr=data['right_cov_list_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars, linewidth=lw)
             except:
                 plt.errorbar(data.index, data['ego_cov_list'], yerr=data['ego_cov_list_std'], fmt='o', label='Ego Covariance Sum Std', alpha=alpha_e_bars)
                 # plt.errorbar(data.index, data['left_cov_list'], yerr=data['left_cov_list_std'], fmt='o', label='Left Covariance Sum Std', alpha=alpha_e_bars)
@@ -102,15 +115,17 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.figure(figsize=(12, 10))
         plt.subplot(1, 1, 1)
     else:
-        plt.subplot(2, 2, 3)
+        plt.subplot(2, 2, 1)
     for x in vlines_x:
         plt.axvline(x=x, color='k', linestyle='--', alpha=alpha_v_lines)
     for i, csv_file_path in enumerate(csv_file_paths):
         data = pd.read_csv(csv_file_path)
         dataset_name = dataset_names[i]
         if 'l_d_e_b_a_p_t' in data.columns:
-            # plt.plot(data['l_d_e_b_a_p_t'].values, data['left_distance_errors_between_all_particles'].values, label='Left APDE '+dataset_name, linewidth=lw)
-            plt.plot(data['r_d_e_b_a_p_t'].values, data['right_distance_errors_between_all_particles'].values, label='Right APDE '+dataset_name, linewidth=lw)
+            if left:
+                plt.plot(data['l_d_e_b_a_p_t'].values, data['left_distance_errors_between_all_particles'].values, label='Left APDE '+dataset_name, linewidth=lw)
+            if right:
+                plt.plot(data['r_d_e_b_a_p_t'].values, data['right_distance_errors_between_all_particles'].values, label='Right APDE '+dataset_name, linewidth=lw)
             plt.xlabel('Time [s]')
         elif "leftleft_distance_errors_between_all_particles" in data.columns:
             # plt.plot(data['left_distance_errors_between_all_particles'], label='Left Distance Error Mean Of All Particles')
@@ -126,8 +141,10 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         # Check if columns with '_std' suffix exist and plot error bars if available
         if 'left_distance_errors_between_all_particles_std' in data.columns and 'right_distance_errors_between_all_particles_std' in data.columns:
             try:
-                # plt.errorbar(data['l_d_e_b_a_p_t'].values, data['left_distance_errors_between_all_particles'], yerr=data['left_distance_errors_between_all_particles_std'], fmt='o', label='Left Distance Error Mean Of All Particles Std', alpha=alpha_e_bars)
-                plt.errorbar(data['r_d_e_b_a_p_t'].values, data['right_distance_errors_between_all_particles'], yerr=data['right_distance_errors_between_all_particles_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
+                if left:
+                    plt.errorbar(data['l_d_e_b_a_p_t'].values, data['left_distance_errors_between_all_particles'], yerr=data['left_distance_errors_between_all_particles_std'], fmt='o', alpha=alpha_e_bars)#, label='Left Distance Error Mean Of All Particles Std', alpha=alpha_e_bars)
+                if right:
+                    plt.errorbar(data['r_d_e_b_a_p_t'].values, data['right_distance_errors_between_all_particles'], yerr=data['right_distance_errors_between_all_particles_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
             except:
                 # plt.errorbar(data.index, data['left_distance_errors_between_all_particles'], yerr=data['left_distance_errors_between_all_particles_std'], fmt='o', label='Left Distance Error Mean Of All Particles Std', alpha=alpha_e_bars)
                 plt.errorbar(data.index, data['right_distance_errors_between_all_particles'], yerr=data['right_distance_errors_between_all_particles_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
@@ -148,8 +165,10 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         dataset_name = dataset_names[i]
         if 'e_a_e_t' in data.columns:
             plt.plot(data['e_a_e_t'].values, data['ego_abs_error'].values, label='Ego APE '+dataset_name, linewidth=lw)
-            # plt.plot(data['l_a_e_t'].values, data['left_abs_error'].values, label='Left APE '+dataset_name, linewidth=lw)
-            plt.plot(data['r_a_e_t'].values, data['right_abs_error'].values, label='Right APE '+dataset_name, linewidth=lw)
+            if left:
+                plt.plot(data['l_a_e_t'].values, data['left_abs_error'].values, label='Left APE '+dataset_name, linewidth=lw)
+            if right:
+                plt.plot(data['r_a_e_t'].values, data['right_abs_error'].values, label='Right APE '+dataset_name, linewidth=lw)
             plt.xlabel('Time [s]')
         else:
             plt.plot(data['ego_abs_error'], label='Ego Absolute Positional Error')
@@ -165,8 +184,10 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         if 'ego_abs_error_std' in data.columns and 'left_abs_error_std' in data.columns and 'right_abs_error_std' in data.columns:
             try:
                 plt.errorbar(data['e_a_e_t'].values, data['ego_abs_error'], yerr=data['ego_abs_error_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#label='$\sigma_{ego}$ ~50 runs', alpha=alpha_e_bars)
-                # plt.errorbar(data['l_a_e_t'].values, data['left_abs_error'], yerr=data['left_abs_error_std'], fmt='o', label='Left Abs. Pos. Error Std', alpha=alpha_e_bars)
-                plt.errorbar(data['r_a_e_t'].values, data['right_abs_error'], yerr=data['right_abs_error_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
+                if left:
+                    plt.errorbar(data['l_a_e_t'].values, data['left_abs_error'], yerr=data['left_abs_error_std'], fmt='o', alpha=alpha_e_bars)#, label='Left Abs. Pos. Error Std', alpha=alpha_e_bars)
+                if right:
+                    plt.errorbar(data['r_a_e_t'].values, data['right_abs_error'], yerr=data['right_abs_error_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
             except: 
                 plt.errorbar(data.index, data['ego_abs_error'], yerr=data['ego_abs_error_std'], fmt='o', label='Ego Abs. Pos. Error Std', alpha=alpha_e_bars)
                 # plt.errorbar(data.index, data['left_abs_error'], yerr=data['left_abs_error_std'], fmt='o', label='Left Abs. Pos. Error Std', alpha=alpha_e_bars)
@@ -199,7 +220,10 @@ default_unlimited_commsx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/pl
 default_unlimited_commsx50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240121_090945/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 default_unlimited_comms = default_unlimited_commsx50
 auvs3x45 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
-resampling_windows = [72, 97, 295, 370]
+auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240125_170635/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240125_170636/auv_1.csv"
+resampling_windows_2auvs = [72, 97, 295, 370]
+resampling_windows_3auvs = [44, 87, 131, 175,218,262]
+resampling_windows = resampling_windows_3auvs
 # names = ["DR only ","RBPF default"]
 # plot_csv([DR,default],names,vlines_x=[72, 97, 295, 360],separate_windows=True,t_cut=400)
 
@@ -227,5 +251,11 @@ resampling_windows = [72, 97, 295, 370]
 # plot_csv([DRx1,DRx5],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=350)
 
 
-names = [" 3 AUVS DR ","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
-plot_csv([DRx1,auvs3x45],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=500)
+# names = ["3 AUVS DR","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
+# plot_csv([auvs3x1DR,auvs3x45],names,vlines_x=resampling_windows,separate_windows=False,t_cut=500)
+
+zero = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240120_110841/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240120_150227/auv_0.csv"
+one = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240124_014348/auv_1.csv"
+two = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240124_014348/auv_2.csv"
+names = ["3 AUVS DR","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
+plot_csv([auvs3x1DR,one],names,vlines_x=resampling_windows,separate_windows=False,t_cut=300)

@@ -35,7 +35,7 @@ class experiments_loop(object):
         self.num_auvs = int(num_auvs)
         time_sync = 'true'
         save_plots = 'true'
-        animate_plots = 'false'
+        animate_plots = 'true'
         auxiliary_enabled = 'false' #true is standard, false to save computation power for large simulation runs
         mbes_meas_period = '100' #0.1 is standard, 100 to save computation power for large simulation runs
         rbpf_sensor_FLS = "true"
@@ -76,7 +76,7 @@ class experiments_loop(object):
         N_tests = len(motion_cov_list)*len(resampling_cov_list)*len(fls_range_std_list)*len(fls_angle_std_list)
         test_i = 0
         # N_retests = 5
-        N_retests = 50
+        N_retests = 1
         keyboard = Controller()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.cb)
