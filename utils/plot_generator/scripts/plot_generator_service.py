@@ -289,7 +289,7 @@ class PlotGeneratorServiceInstance:
         if left_id >= 0 and self.gt_distance[0] != None and self.distance[0] != None and self.gt_ego_bearing[0] != None and self.ego_bearing[0] != None:
             # print("gt_distance[0]:",self.gt_distance[0])
             # print("distance[0]:",self.distance[0])
-            left_error_distance = abs(self.gt_distance[0] - self.distance[0])#/self.gt_distance[0]
+            left_error_distance = abs(abs(self.gt_distance[0]) - abs(self.distance[0]))#/self.gt_distance[0]
             left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])#/self.gt_ego_bearing[0]
             # print("left_error_distance:",left_error_distance)
             # print("left_error_bearing:",left_error_bearing)
@@ -302,7 +302,10 @@ class PlotGeneratorServiceInstance:
 
             # print("req.left_mean_dist.data:",req.left_mean_dist.data)
             if req.left_mean_dist.data != -1:
-                self.left_distance_errors_between_all_particles.append(abs(self.gt_distance[0] - req.left_mean_dist.data))
+                self.left_distance_errors_between_all_particles.append(abs(abs(self.gt_distance[0]) - abs(req.left_mean_dist.data)))
+                # rospy.logerr("ego_id: %d",ego_id)
+                # rospy.logerr("left distance GT %f",self.gt_distance[0])
+                # rospy.logerr("left distance service call %f",req.left_mean_dist.data)
                 self.l_d_e_b_a_p_t.append(self.T_local)
         # else:
         #     self.left_distance_errors.append(0)
@@ -311,7 +314,7 @@ class PlotGeneratorServiceInstance:
         if right_id >= 0 and self.gt_distance[1] != None and self.distance[1] != None and self.gt_ego_bearing[1] != None and self.ego_bearing[1] != None:
             # print("gt_distance[1]:",self.gt_distance[1])
             # print("distance[1]:",self.distance[1])
-            right_error_distance = abs(self.gt_distance[1] - self.distance[1])#/self.gt_distance[1]
+            right_error_distance = abs(abs(self.gt_distance[1]) - abs(self.distance[1]))#/self.gt_distance[1]
             right_error_bearing = abs(self.gt_ego_bearing[1] - self.ego_bearing[1])#/self.gt_ego_bearing[1]
             # print("right_error_distance:",right_error_distance)
             # print("right_error_bearing:",right_error_bearing)
@@ -323,7 +326,7 @@ class PlotGeneratorServiceInstance:
             self.r_b_e_t.append(self.T_local)
 
             if req.right_mean_dist.data != -1:
-                self.right_distance_errors_between_all_particles.append(abs(self.gt_distance[1] - req.right_mean_dist.data))
+                self.right_distance_errors_between_all_particles.append(abs(abs(self.gt_distance[1]) - abs(req.right_mean_dist.data)))
                 self.r_d_e_b_a_p_t.append(self.T_local)
         
 
@@ -420,7 +423,10 @@ class PlotGeneratorServiceInstance:
             return None, None, None, None
 
         distance, ego_bearing = self.cartesian_to_polar(neighbour_pose_ego_odom.pose.position.x-ego_pose_ego_odom.pose.position.x,neighbour_pose_ego_odom.pose.position.y-ego_pose_ego_odom.pose.position.y)
-        
+        # rospy.logerr("left distance GT %f",self.gt_distance[0])
+        # rospy.logerr("ego_id: %d",ego_id)
+        # rospy.logerr("neighbour_id: %d",neighbour_id)
+        # rospy.logerr("distance: %f",distance)
         return distance, ego_bearing, ego_pose, neighbour_pose_ego_bl
 
     def update_estimates(self,ego_pose_with_cov,left_pose_with_cov,right_pose_with_cov):
@@ -457,9 +463,12 @@ class PlotGeneratorServiceInstance:
         """Converts cartesian coordinates to polar coordinates"""
         # print("x:",x)
         # print("y:",y)
-        if x < 1e-6:
+        # rospy.logerr("ego_id: %d",self.ego_id)
+        # rospy.logerr("x: %f",x)
+        # rospy.logerr("y: %f",y)
+        if abs(x) < 1e-6:
             x = 0
-        if y < 1e-6:
+        if abs(y) < 1e-6:
             y = 0
         
         if x == 0 and y == 0:

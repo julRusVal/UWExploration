@@ -234,16 +234,16 @@ default_realistic_comms = default_realistic_commsx50
 default_unlimited_commsx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_182056/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 default_unlimited_commsx50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240121_090945/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 default_unlimited_comms = default_unlimited_commsx50
-auvs3x45 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
-auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240125_170635/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240125_170636/auv_1.csv"
+# auvs3x45 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+# auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240125_170635/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240125_170636/auv_1.csv"
 resampling_windows = [72, 97, 295, 370]
 resampling_windows_3auvs = [44, 87, 131, 175,218,262]
 # resampling_windows = resampling_windows_3auvs
 # names = ["DR only ","RBPF default"]
 # plot_csv([DR,default],names,vlines_x=[72, 97, 295, 360],separate_windows=True,t_cut=400)
 
-names = ["RBPF default","RBPF W:all PMP:poly"]
-plot_csv([default,all_poly],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
+# names = ["RBPF default","RBPF W:all PMP:poly"]
+# plot_csv([default,all_poly],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
 
 # names = ["RBPF default","0", "1","2","3","4"]
 # plot_csv([default,"/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_144137/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240118_144138/auv_0.csv",
@@ -254,13 +254,13 @@ plot_csv([default,all_poly],names,vlines_x=resampling_windows,separate_windows=F
 #             names,vlines_x=[78, 97, 320, 338],separate_windows=True,t_cut=350)
 
 # names = ["RBPF default","RBPF W:all PMP:mono"]
-# plot_csv([default,all_mono],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400)
+# plot_csv([default,all_mono],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
 
 # names = ["RBPF default","RBPF default+COMMS:realistic"]
-# plot_csv([default,default_realistic_comms],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400)
+# plot_csv([default,default_realistic_comms],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
 
 # names = ["RBPF default","RBPF default+COMMS:unlimited"]
-# plot_csv([default,default_unlimited_comms],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400)
+# plot_csv([default,default_unlimited_comms],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
 
 # names = ["DR 1 ","DR 5"]
 # plot_csv([DRx1,DRx5],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=350)
@@ -269,8 +269,17 @@ plot_csv([default,all_poly],names,vlines_x=resampling_windows,separate_windows=F
 # names = ["3 AUVS DR","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
 # plot_csv([auvs3x1DR,auvs3x45],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=500)
 
-zero = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240120_110841/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240120_150227/auv_0.csv"
-one = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240124_014348/auv_1.csv"
-two = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240124_014348/auv_2.csv"
-# names = ["3 AUVS DR","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
-# plot_csv([auvs3x1DR,one],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=300,theta=False)
+# zero = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240120_110841/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240120_150227/auv_0.csv"
+# one = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240124_014348/auv_1.csv"
+# two = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240124_014348/auv_2.csv"
+zero = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_165327/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_165328/auv_0.csv"
+one = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_165327/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_165328/auv_1.csv"
+two = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_165327/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_165328/auv_2.csv"
+
+# names = ["1"] #TODO: Get 3 auv DR & enable plots for left auv
+# plot_csv([one],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=300,theta=False)
+
+auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_171308/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_171309/auv_1.csv"
+auvs3x1 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_165327/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_165328/auv_1.csv"
+names = ["3 AUVS DR","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
+plot_csv([auvs3x1DR,auvs3x1],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=300,theta=False)

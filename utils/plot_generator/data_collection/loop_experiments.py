@@ -35,10 +35,10 @@ class experiments_loop(object):
         self.num_auvs = int(num_auvs)
         time_sync = 'true'
         save_plots = 'true'
-        animate_plots = 'true'
+        animate_plots = 'false'
         auxiliary_enabled = 'false' #true is standard, false to save computation power for large simulation runs
         mbes_meas_period = '100' #0.1 is standard, 100 to save computation power for large simulation runs
-        rbpf_sensor_FLS = "true"
+        rbpf_sensor_FLS = "false"
         comms_type ="disabled" # <!-- 'disabled', 'realistic', 'unlimited' -->
         weight_slicing="top" # <!-- 'all', 'top' -->
         pmp="poly" # <!-- particle marital policy: 'poly', 'mono' -->
