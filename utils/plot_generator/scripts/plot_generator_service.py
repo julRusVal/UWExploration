@@ -286,9 +286,18 @@ class PlotGeneratorServiceInstance:
         # error_distance = np.array([None,None])
         # error_bearing = np.array([None,None])
         # print("left_id:",left_id)
+        rospy.logerr("ego_id: %d",ego_id)
+        if self.gt_distance[0] != None:
+            rospy.logerr("left distance GT %f",self.gt_distance[0])
+            rospy.logerr("left_mean_dist.data %f",req.left_mean_dist.data)
+        if self.gt_distance[1] != None:
+            rospy.logerr("right distance GT %f",self.gt_distance[1])
+            # rospy.logerr("right distance estimate %f",self.distance[1])
+            rospy.logerr("right_mean_dist.data %f",req.right_mean_dist.data)
         if left_id >= 0 and self.gt_distance[0] != None and self.distance[0] != None and self.gt_ego_bearing[0] != None and self.ego_bearing[0] != None:
             # print("gt_distance[0]:",self.gt_distance[0])
             # print("distance[0]:",self.distance[0])
+            
             left_error_distance = abs(abs(self.gt_distance[0]) - abs(self.distance[0]))#/self.gt_distance[0]
             left_error_bearing = abs(self.gt_ego_bearing[0] - self.ego_bearing[0])#/self.gt_ego_bearing[0]
             # print("left_error_distance:",left_error_distance)
@@ -474,13 +483,13 @@ class PlotGeneratorServiceInstance:
         if x == 0 and y == 0:
             return 0, 0
         elif x == 0 and y > 0:
-            return y, np.pi/2
+            return abs(y), np.pi/2
         elif x == 0 and y < 0:
-            return y, -np.pi/2
+            return abs(y), -np.pi/2
         elif x > 0 and y == 0:
-            return x, 0
+            return abs(x), 0
         elif x < 0 and y == 0:
-            return x, np.pi
+            return abs(x), np.pi
             
         distance = np.sqrt(x**2 + y**2)
         bearing = np.arctan2(y,x)
