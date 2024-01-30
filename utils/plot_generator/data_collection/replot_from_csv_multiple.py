@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 # plt.rcParams.update({'font.size': 12})  # Sets default font size to 12
 import csv
 
-def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_cut=0,lw=4,left=True,right=True,theta=True):
+def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_cut=0,lw=4,left=True,right=True,theta=True,highlight_color='grey'):
     if separate_windows:
         plt.rcParams.update({'font.size': 24})  # Sets default font size to 24
     else:
@@ -25,6 +25,8 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
 
     for x in vlines_x:
         plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_v_lines)
+    for i in range(0,len(vlines_x),2):
+        plt.axvspan(vlines_x[i], vlines_x[i+1], color=highlight_color, alpha=alpha_e_bars)
     for i, csv_file_path in enumerate(csv_file_paths):
         data = pd.read_csv(csv_file_path)
         dataset_name = dataset_names[i]
@@ -49,9 +51,9 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.ylabel('CAPE [-]')
         # plt.legend()
         if theta:
-            plt.title('Composite Average Pose Error Over Time')
+            plt.title('Center Average Pose Error Over Time \n $\\theta$ error IS displayed')
         else:
-            plt.title('Composite Average Pose Error Over Time \n $\\theta$ error not displayed')
+            plt.title('Center Average Pose Error Over Time')
         plt.grid(True)
         plt.xlim(right=t_cut)
     # Check if columns with '_std' suffix exist and plot error bars if available
@@ -68,12 +70,12 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
                     if theta:
                         plt.errorbar(data['l_d_e_t'].values, data['left_distance_errors']+data['left_bearing_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#, label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
                     else:
-                        plt.errorbar(data['l_d_e_t'].values, data['left_distance_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#, label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
+                        plt.errorbar(data['l_d_e_t'].values, data['left_distance_errors'], yerr=data['left_distance_errors_std'], fmt='o', alpha=alpha_e_bars, linewidth=lw)#, label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
                 if right:
                     if theta:
                         plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors']+data['right_bearing_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
                     else:
-                        plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors'], yerr=data['right_distance_errors_std']+data['right_bearing_errors_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
+                        plt.errorbar(data['r_d_e_t'].values, data['right_distance_errors'], yerr=data['right_distance_errors_std'], fmt='o', alpha=alpha_e_bars)#label='$\sigma_{right}$ ~50 runs', alpha=alpha_e_bars)
                 
             except:
                 # plt.errorbar(data.index, data['left_distance_errors']+data['left_bearing_errors'], yerr=data['left_distance_errors_std']+data['left_bearing_errors_std'], fmt='o', label='Left Distance and Bearing Error Std', alpha=alpha_e_bars)
@@ -90,6 +92,9 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.subplot(2, 2, 3)
     for x in vlines_x:
         plt.axvline(x=x, color='k', linestyle='--',alpha=alpha_v_lines)
+    #iterate and get vlines_x[0], vlines_x[2], vlines_x[4] etc 
+    for i in range(0,len(vlines_x),2):
+        plt.axvspan(vlines_x[i], vlines_x[i+1], color=highlight_color, alpha=alpha_e_bars)
     for i, csv_file_path in enumerate(csv_file_paths):
         data = pd.read_csv(csv_file_path)
         dataset_name = dataset_names[i]
@@ -133,6 +138,8 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.subplot(2, 2, 1)
     for x in vlines_x:
         plt.axvline(x=x, color='k', linestyle='--', alpha=alpha_v_lines)
+    for i in range(0,len(vlines_x),2):
+        plt.axvspan(vlines_x[i], vlines_x[i+1], color=highlight_color, alpha=alpha_e_bars)
     for i, csv_file_path in enumerate(csv_file_paths):
         data = pd.read_csv(csv_file_path)
         dataset_name = dataset_names[i]
@@ -153,6 +160,7 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.title('Average Particle Distance Error Over Time')
         plt.grid(True)
         plt.xlim(right=t_cut)
+        # plt.yticks([0,10,11,20],["0","10","0","10"])
         # Check if columns with '_std' suffix exist and plot error bars if available
         if 'left_distance_errors_between_all_particles_std' in data.columns and 'right_distance_errors_between_all_particles_std' in data.columns:
             try:
@@ -174,7 +182,8 @@ def plot_csv(csv_file_paths,dataset_names, vlines_x=[],separate_windows=False,t_
         plt.subplot(2, 2, 4)
     for x in vlines_x:
         plt.axvline(x=x, color='k', linestyle='--', alpha=alpha_v_lines)
-    
+    for i in range(0,len(vlines_x),2):
+        plt.axvspan(vlines_x[i], vlines_x[i+1], color=highlight_color, alpha=alpha_e_bars)
     for i, csv_file_path in enumerate(csv_file_paths):
         data = pd.read_csv(csv_file_path)
         dataset_name = dataset_names[i]
@@ -234,16 +243,20 @@ default_realistic_comms = default_realistic_commsx50
 default_unlimited_commsx5 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_182056/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 default_unlimited_commsx50 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240121_090945/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 default_unlimited_comms = default_unlimited_commsx50
-# auvs3x45 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
-# auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240125_170635/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240125_170636/auv_1.csv"
+auvs3x45 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
+auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240125_170635/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240125_170636/auv_1.csv"
 resampling_windows = [72, 97, 295, 370]
 resampling_windows_3auvs = [44, 87, 131, 175,218,262]
 # resampling_windows = resampling_windows_3auvs
-# names = ["DR only ","RBPF default"]
-# plot_csv([DR,default],names,vlines_x=[72, 97, 295, 360],separate_windows=True,t_cut=400)
+names = ["DR only ","RBPF default"]
+# plot_csv([DR,default],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400,theta=False,left=False)
+# DRabs = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240129_173504/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240129_173504/auv_0.csv"
+# DRrem = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240129_172630/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240129_172630/auv_0.csv"
+# names = ["DR ","DRabs","DRrem","DRx5"]
+# plot_csv([DR,DRabs,DRrem,DRx5],names,vlines_x=resampling_windows,separate_windows=True,t_cut=400,theta=False,left=False)
 
-# names = ["RBPF default","RBPF W:all PMP:poly"]
-# plot_csv([default,all_poly],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
+names = ["RBPF default","RBPF W:all PMP:poly"]
+# plot_csv([default,all_poly],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False,theta=False)
 
 # names = ["RBPF default","0", "1","2","3","4"]
 # plot_csv([default,"/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_144137/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240118_144138/auv_0.csv",
@@ -253,21 +266,21 @@ resampling_windows_3auvs = [44, 87, 131, 175,218,262]
 #             "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240118_144137/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240118_151333/auv_0.csv" ],
 #             names,vlines_x=[78, 97, 320, 338],separate_windows=True,t_cut=350)
 
-# names = ["RBPF default","RBPF W:all PMP:mono"]
-# plot_csv([default,all_mono],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
+names = ["RBPF default","RBPF W:all PMP:mono"]
+# plot_csv([default,all_mono],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False,theta=False)
 
-# names = ["RBPF default","RBPF default+COMMS:realistic"]
-# plot_csv([default,default_realistic_comms],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
+names = ["RBPF default","RBPF default+COMMS:realistic"]
+# plot_csv([default,default_realistic_comms],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False,theta=False)
 
-# names = ["RBPF default","RBPF default+COMMS:unlimited"]
-# plot_csv([default,default_unlimited_comms],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False)
+names = ["RBPF default","RBPF default+COMMS:unlimited"]
+# plot_csv([default,default_unlimited_comms],names,vlines_x=resampling_windows,separate_windows=False,t_cut=400,left=False,theta=False)
 
 # names = ["DR 1 ","DR 5"]
 # plot_csv([DRx1,DRx5],names,vlines_x=[78, 97, 320, 338],separate_windows=False,t_cut=350)
 
 
 # names = ["3 AUVS DR","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
-# plot_csv([auvs3x1DR,auvs3x45],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=500)
+# plot_csv([auvs3x1DR,auvs3x45],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=500,theta=False)
 
 # zero = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240120_110841/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240120_150227/auv_0.csv"
 # one = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240123_214057/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240124_014348/auv_1.csv"
@@ -279,7 +292,11 @@ two = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_coll
 # names = ["1"] #TODO: Get 3 auv DR & enable plots for left auv
 # plot_csv([one],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=300,theta=False)
 
-auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_171308/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_171309/auv_1.csv"
+# auvs3x1DR = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_171308/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_171309/auv_1.csv"
+auvs3x1DRabs ="/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240129_121017/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240129_121017/auv_1.csv"
+auvs3x1DRrem ="/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240129_122953/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240129_122954/auv_1.csv"
+auvs3x1DR = auvs3x1DRabs
 auvs3x1 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240126_165327/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/20240126_165328/auv_1.csv"
+auvs3x10 = "/home/kurreman/catkin_ws/src/UWExploration/utils/plot_generator/data_collection/test_run_20240129_180933/my1e-05_rxy0.1_fr0.0001_fa0.00017453292519943296/stats.csv"
 names = ["3 AUVS DR","3 AUVS RBPF default"] #TODO: Get 3 auv DR & enable plots for left auv
-plot_csv([auvs3x1DR,auvs3x1],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=300,theta=False)
+plot_csv([auvs3x1DR,auvs3x10],names,vlines_x=resampling_windows_3auvs,separate_windows=False,t_cut=300,theta=False,left=True)
