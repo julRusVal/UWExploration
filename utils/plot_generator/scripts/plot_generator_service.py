@@ -286,14 +286,14 @@ class PlotGeneratorServiceInstance:
         # error_distance = np.array([None,None])
         # error_bearing = np.array([None,None])
         # print("left_id:",left_id)
-        rospy.logerr("ego_id: %d",ego_id)
-        if self.gt_distance[0] != None:
-            rospy.logerr("left distance GT %f",self.gt_distance[0])
-            rospy.logerr("left_mean_dist.data %f",req.left_mean_dist.data)
-        if self.gt_distance[1] != None:
-            rospy.logerr("right distance GT %f",self.gt_distance[1])
-            # rospy.logerr("right distance estimate %f",self.distance[1])
-            rospy.logerr("right_mean_dist.data %f",req.right_mean_dist.data)
+        # rospy.logerr("ego_id: %d",ego_id)
+        # if self.gt_distance[0] != None:
+        #     rospy.logerr("left distance GT %f",self.gt_distance[0])
+        #     rospy.logerr("left_mean_dist.data %f",req.left_mean_dist.data)
+        # if self.gt_distance[1] != None:
+        #     rospy.logerr("right distance GT %f",self.gt_distance[1])
+        #     # rospy.logerr("right distance estimate %f",self.distance[1])
+        #     rospy.logerr("right_mean_dist.data %f",req.right_mean_dist.data)
         if left_id >= 0 and self.gt_distance[0] != None and self.distance[0] != None and self.gt_ego_bearing[0] != None and self.ego_bearing[0] != None:
             # print("gt_distance[0]:",self.gt_distance[0])
             # print("distance[0]:",self.distance[0])
