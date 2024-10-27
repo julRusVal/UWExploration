@@ -13,7 +13,18 @@ def train_svgp(gp_inputs_type, survey_name):
 
     print("Loading ", survey_name)
     cloud = np.load(survey_name)
-    points = cloud['points']
+
+    # TODO Check for proper format
+    # The input is either a compress .npz that contains "points" and "convs"
+    # or is a raw point cloud
+    if hasattr(cloud, 'keys'):
+        points = cloud['points']
+        # Check if convs is present
+        if 'covs' not in cloud.keys():
+            gp_inputs_type = 'di'
+    else:
+        points = cloud
+        gp_inputs_type = 'di'
     
     # pcd = o3d.io.read_point_cloud(survey_name)
     # pcd = pcd.uniform_down_sample(every_k_points=3)
