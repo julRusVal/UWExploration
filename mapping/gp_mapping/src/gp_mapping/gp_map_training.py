@@ -10,7 +10,9 @@ import open3d as o3d
 
 
 def train_svgp(gp_inputs_type, survey_name):
-
+    """
+    Accepts the file name of either compressed np arrays, .npz, or an np array, .npy.
+    """
     print("Loading ", survey_name)
     cloud = np.load(survey_name)
 
