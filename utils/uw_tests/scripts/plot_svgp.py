@@ -152,7 +152,6 @@ def plot_loss(fname, loss):
     fig.savefig(fname, bbox_inches='tight', dpi=1000)
 
 
-
 if __name__ == '__main__':
 
     path = argv[1]  # /media/orin/Seagate\ Expansion\ Drive/rbpf_results/lolo_0/  

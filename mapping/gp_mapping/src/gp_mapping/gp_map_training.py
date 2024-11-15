@@ -9,7 +9,7 @@ import numpy as np
 import open3d as o3d
 
 
-def train_svgp(gp_inputs_type, survey_name):
+def train_svgp(gp_inputs_type, survey_name, inducing_bins=1, batch_bins=1):
     """
     Accepts the file name of either compressed np arrays, .npz, or an np array, .npy.
     """
@@ -47,7 +47,7 @@ def train_svgp(gp_inputs_type, survey_name):
         name = "svgp_ui"    
 
     # initialise GP with 1000 inducing points
-    gp = SVGP(400)
+    gp = SVGP(400, inducing_bins=inducing_bins, batch_bins=batch_bins)
     gp.fit(inputs, targets, covariances=covariances, n_samples=1000, 
             max_iter=1000, learning_rate=1e-1, rtol=1e-12, n_window=2000, 
             auto=False, verbose=True)

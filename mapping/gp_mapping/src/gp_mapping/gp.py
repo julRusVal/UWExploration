@@ -13,6 +13,40 @@ from convergence import ExpMAStoppingCriterion
 #from gp_mapping.convergence import ExpMAStoppingCriterion
 import matplotlib.pyplot as plt
 
+def  sample_from_binned_input(input, n_samples, bins=1, dimension_split=1, replacement=True):
+    '''
+    Assuming data is a Nx2
+    dimension_split corresponds to the axis on which the data is split into bins
+    returns an array of indices
+    '''
+
+    input_mins = np.min(input, axis=0)
+    input_maxs = np.max(input, axis=0)
+
+    input_min = input_mins[dimension_split]
+    input_max = input_maxs[dimension_split]
+
+    agent_span = (input_max - input_min) / bins
+    boundaries = [input_min + i * agent_span for i in range(bins + 1)]
+
+    samples_per_bin = int(n_samples / bins)
+
+    samples = []
+
+    for i in range(bins):
+        # Filter points within the current boundary
+        indices = np.where((input[:, dimension_split] >= boundaries[i]) & (input[:, dimension_split] < boundaries[i + 1]))[0]
+        # check for remainder on last bin and adjust samples accordingly
+        if i == bins - 1:
+            samples_per_bin = n_samples - len(samples)
+        # Sample from valid indices
+        sampled_indices = np.random.choice(indices, samples_per_bin, replace=replacement)
+        samples.extend(sampled_indices)
+
+    samples_array = np.array(samples)
+
+    return samples_array
+
 # This is not tested
 class RGP(ExactGP):
 
@@ -149,11 +183,13 @@ class RGP(ExactGP):
 
 class SVGP(VariationalGP):
 
-    def __init__(self, n_inducing):
+    def __init__(self, n_inducing, inducing_bins=1, batch_bins=1):
 
         # number of inducing points and optimisation samples
         assert isinstance(n_inducing, int)
         self.m = n_inducing
+        self.inducing_bins = inducing_bins
+        self.batch_bins = batch_bins
 
         # variational distribution and strategy
         # NOTE: we put random normal dumby inducing points
@@ -203,7 +239,11 @@ class SVGP(VariationalGP):
         '''
 
         # inducing points randomly distributed over data
-        indpts = np.random.choice(inputs.shape[0], self.m, replace=True)
+        if self.inducing_bins == 1:
+            indpts = np.random.choice(inputs.shape[0], self.m, replace=True)
+        else:
+            indpts = sample_from_binned_input(inputs, self.m, bins=self.inducing_bins, replacement=True)
+
         self.variational_strategy.inducing_points.data = torch.from_numpy(inputs[indpts]).to(self.device).float()
 
         # number of random samples
@@ -231,8 +271,12 @@ class SVGP(VariationalGP):
         self.loss = list()
         for _ in epochs:
 
+
             # randomly sample from the dataset
-            idx = np.random.choice(inputs.shape[0], n, replace=False)
+            if self.batch_bins == 1:
+                idx = np.random.choice(inputs.shape[0], n, replace=False)
+            else:
+                idx = sample_from_binned_input(inputs, n, bins=self.batch_bins, replacement=False)
             
             ## UI covariance
             if covariances is None or covariances.shape[1] == 2:
@@ -286,7 +330,7 @@ class SVGP(VariationalGP):
     def save_posterior(self, n, xlb, xub, ylb, yub, fname, verbose=True):
 
         '''
-        Samples the GP posterior on a inform grid over the
+        Samples the GP posterior on a unform grid over the
         rectangular region defined by (xlb, xub) and (ylb, yub)
         and saves it as a pointcloud array.
 
@@ -432,4 +476,5 @@ class SVGP(VariationalGP):
         gp = cls(nind)
         gp.load_state_dict(torch.load(fname))
         return gp
+
 
