@@ -271,7 +271,6 @@ class SVGP(VariationalGP):
         self.loss = list()
         for _ in epochs:
 
-
             # randomly sample from the dataset
             if self.batch_bins == 1:
                 idx = np.random.choice(inputs.shape[0], n, replace=False)
