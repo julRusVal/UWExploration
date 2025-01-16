@@ -4,7 +4,13 @@ Collection of ROS packages for localization, map building and SLAM with autonomo
 
 ## Dependencies (tested on Ubuntu 20.04)
 * ROS Noetic
-* AUVLIB [here](https://github.com/nilsbore/auvlib)
+* AUVLIB [here](https://github.com/nilsbore/auvlib) (NOTE: if you're using a CONDA environment - deactivate it )
+
+### Specific dependecies only for multi-agent missions
+It is recommended to place these is a common directory called 'custom_modules' outside your catkin workspace.
+* coop_cov [here](https://github.com/kurreman/coop_cov)
+
+* toolbox [here](https://github.com/KKalem/toolbox)
 
 Only required if working with the **bathy_graph_slam** package (currently under development and ignored during building):
 * Bathymetric SLAM [here](https://github.com/ignaciotb/bathymetric_slam)
@@ -25,6 +31,11 @@ pip install gpytorch open3d
 If you want to try waypoint navigation for an AUV, clone this repo within your catkin workspace to plan missions in RVIZ
 * Waypoint_navigation_plugin [here](https://github.com/KumarRobotics/waypoint_navigation_plugin)
 
+### ROS specific dependencies
+```
+sudo apt-get install ros-noetic-move-base-msgs
+```
+
 ## Building
 This is a collection of ROS packages. Just clone the repo within your catking workspace and run
 ```
@@ -36,6 +47,8 @@ Finally, add the following lines to your ~/.bashrc file adapted to your own inst
 ```
 export PATH=$PATH:/path/to/folder/auvlib/install/share
 export PYTHONPATH=$PYTHONPATH:/path/to/folder/auvlib/install/lib
+export PYTHONPATH=$PYTHONPATH:/path/to/folder/custom_modules #to coop_cov and toolbox
+export PYTHONPATH=$PYTHONPATH:/path/to/folder/UWExploration/planning/multi_agent/scripts
 ```
 
 ## Troubleshooting
@@ -108,16 +121,58 @@ roslaunch basic_navigation basic_mission.launch manual_control:=False namespace:
 ```
 And add and publish waypoints through RVIZ as in their tutorial.
 
-### Manual navigation with multiple AUVs
-Example of multi-agent mission with 2 AUVs:
+### Multiple AUVs
+#### Relevant launch arguments
+- num_auvs: number of auvs to spawn
+- manual_control: if true, opens a pygame-window for each AUV to control it manually.
+- pattern_generation: if true, the user will be asked to define a survey area to generate a search pattern for. Else the AUVs will be spawned with uniform spacing.
+- rviz_helper: if true, enables the "2D Nav Goal" tool in rviz to set waypoint to which all spawned AUVs will navigate to.  
+- waypoint_follower_type: 
+  - {simple} is a simple waypoint follower that just goes to the next generated waypoint. 
+  - {simple_maxturn} is a simple waypoint follower for waypoints straight infron. If a waypoint is within the AUV's turning radius it will do a maximum turn. This ensures inside turns during lawn mower patterns
+  - {dubins} is a waypoint follower that uses Dubins paths to go to the next waypoint, filtering out straight paths, which will then be simple waypoint followed.
+- time_sync: if true, the auvs will be time synced, such that they all will reach the same waypoint at the same time. This is useful for multi-vehicle missions where the vehicles need to be at the same place at the same time.
+- auxiliary_enabled: if true, the ground truth map will be published as a pointcloud and each auv will have a collected submap which grows during the survey. This is useful for visualizing the survey in rviz.
+
+#### Manual navigation with multiple AUVs
+Example of multi-agent mission with 5 AUVs:
+
 ```
-roslaunch auv_model auv_environment.launch namespace:=hugin_0
-roslaunch auv_model auv_environment.launch namespace:=hugin_1 y:=10
+roslaunch multi_agent multi_agent.launch num_auvs:=5 manual_control:=true pattern_generation:=false
+```
+
+#### Waypoint navigation with multiple AUVs
+Example of multi-agent mission with 5 AUVs:
+
+```
+roslaunch multi_agent multi_agent.launch num_auvs:=5 rviz_helper:=true pattern_generation:=false
+```
+
+#### Multi-agent mission with search pattern generation
+Example of multi-agent mission with 5 AUVs using simple_maxturn waypoint follower:
+
+```
+roslaunch multi_agent multi_agent.launch num_auvs:=5
+```
+
+#### Multi-agent mission with time sync
+Example of multi-agent mission with 5 AUVs using simple_maxturn waypoint follower and time sync:
+
+```
+roslaunch multi_agent multi_agent.launch num_auvs:=5 time_sync:=true
+```
+
+#### External launch files 
+Choosing either waypoint navigation or manual control above, also run:
+
+```
 roslaunch auv_model auv_env_aux.launch
-roslaunch basic_navigation basic_mission.launch manual_control:=True namespace:=hugin_0
-roslaunch basic_navigation basic_mission.launch manual_control:=True namespace:=hugin_1
 ```
-*WP navigation isn't implemented yet for several AUVs and currently you'll need a manual controller per AUV, although this is easy to modify in the launch if required.
+
+```
+rviz
+```
+
 
 ### Particle filter localization with an AUV
 Replay the AUV bathymetric survey with a PF running on a mesh or a Gaussian process created from the bathymetry.

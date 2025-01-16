@@ -56,8 +56,13 @@ void RbpfParticle::motion_prediction(Eigen::Vector3f &vel_rot, Eigen::Vector3f &
     {
         std::normal_distribution<float> sampler(0, std::sqrt(process_cov_.at(j)));
         noise_vec_(j) = sampler(rng);
+        // if (noise_vec_(j) > 0)
+        // {
+        //     ROS_INFO("LARGE NOISE!!!");
+        //     ROS_INFO("Noise: at index %d, %f", j, noise_vec_(j));
+        // }
     }
-
+    // ROS_INFO("Noise: %f, %f, %f, %f, %f, %f", noise_vec_(0), noise_vec_(1), noise_vec_(2), noise_vec_(3), noise_vec_(4), noise_vec_(5));
     Eigen::Vector3f rot_t = p_pose_.tail(3) + vel_rot * dt + noise_vec_.tail(3);
     // Wrap up angles
     for (int i = 0; i < 3; i++)

@@ -30,11 +30,13 @@ install/*
 *.pth
 
 
-# RVIZ
-*.rviz
+# # RVIZ
+# *.rviz
 
 *.code*
 .vscode/*
 
 # Datasets
 datasets/
+
+utils/plot_generator/data_collection/test_run*

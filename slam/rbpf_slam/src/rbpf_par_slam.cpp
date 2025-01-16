@@ -5,7 +5,9 @@ RbpfSlam::RbpfSlam()
 }
 
 RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_mb_(&nh_mb), rng_((std::random_device())()), g_((std::random_device())())
-{
+{   
+    ROS_INFO("Inside RbpfSlam constructor");
+    ROS_INFO("base_frame %s", base_frame_.c_str());
     // Get parameters from launch file
     nh_->param<int>(("particle_count"), pc_, 10);
     nh_->param<int>(("n_beams_mbes"), beams_real_, 512);
@@ -13,7 +15,7 @@ RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_m
     nh_->param<string>(("mbes_link"), mbes_frame_, "mbes_link");
     nh_->param<string>(("base_link"), base_frame_, "base_link");
     nh_->param<string>(("odom_frame"), odom_frame_, "odom");
-
+    ROS_INFO("base_frame %s", base_frame_.c_str());
     // Read covariance values
     nh_->param<float>(("measurement_std"), meas_std_, 0.01);
     nh_->param("init_covariance", init_cov_, vector<float>());
@@ -180,6 +182,20 @@ RbpfSlam::RbpfSlam(ros::NodeHandle &nh, ros::NodeHandle &nh_mb) : nh_(&nh), nh_m
     std::string rbpf_markers_top;
     nh_->param<string>(("markers_top"), rbpf_markers_top, "/markers");
     vis_pub_ = nh_->advertise<visualization_msgs::MarkerArray>(rbpf_markers_top, 0);
+    // int seed;
+    // nh_->param<int>(("color_seed"), seed, 0);
+
+    float LO = 0.05;
+    float HI = 0.9;
+    srand (time(0));
+    // int srand(seed);
+    marker_r_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+    marker_g_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+    marker_b_ = LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO)));
+    // cout << "Marker color " << marker_r_ << " " << marker_g_ << " " << marker_b_ << endl;
+    // cout << time(NULL) << endl;
+    // cout << time(0) << endl;
+    
 
     ROS_INFO("Particle filter instantiated");
 }
@@ -247,6 +263,8 @@ void RbpfSlam::enable_lc(const std_msgs::Int32::ConstPtr& enable_lc)
 
 void RbpfSlam::path_cb(const nav_msgs::PathConstPtr& wp_path)
 {
+    ROS_INFO("Inside path_cb");
+
     if (wp_path->poses.size() > 0)
     {
         if (!start_training_){
@@ -260,8 +278,8 @@ void RbpfSlam::path_cb(const nav_msgs::PathConstPtr& wp_path)
 
             for (int i = 0; i < wp_size; i++)
             {
-                ip << poses[i].pose.position.x, poses[i].pose.position.y, 0;
-                i_points.push_back(ip);
+                ip << poses[i].pose.position.x, poses[i].pose.position.y, 0; //<< is element-wise assignment of the three values to the right into the row vector ip
+                i_points.push_back(ip); //add ip to the end of the vector i_points
             }
 
             ip_pcloud = pack_cloud(map_frame_, i_points);
@@ -325,6 +343,8 @@ void RbpfSlam::mbes_real_cb(const sensor_msgs::PointCloud2ConstPtr& msg)
 
 void RbpfSlam::rbpf_update(const ros::TimerEvent&)
 {
+    // cout << "MBES RBPF update" << endl;
+    ROS_INFO("MBES RBPF update");
     if(!mission_finished_)
     {
         if(latest_mbes_.header.stamp > prev_mbes_.header.stamp)
@@ -692,6 +712,7 @@ void RbpfSlam::sampleCB(const actionlib::SimpleClientGoalState &state,
 }
 
 void RbpfSlam::predict(nav_msgs::Odometry odom_t, float dt)
+// one instance per auv
 {
     // Multithreading
     auto t1 = high_resolution_clock::now();
@@ -712,9 +733,13 @@ void RbpfSlam::predict(nav_msgs::Odometry odom_t, float dt)
 
     for(int i = 0; i < pc_; i++)
     {
+        // ROS_INFO("BEFORE pose of particle %d = %f, %f, %f", i, particles_.at(i).p_pose_(0), particles_.at(i).p_pose_(1), particles_.at(i).p_pose_(2));
+
         pred_threads_vec_.emplace_back(std::thread(&RbpfParticle::motion_prediction, 
                                     &particles_.at(i), std::ref(vel_rot), std::ref(vel_p),
                                     depth, dt, std::ref(rng_)));
+        // ROS_INFO("AFTER pose of particle %d = %f, %f, %f", i, particles_.at(i).p_pose_(0), particles_.at(i).p_pose_(1), particles_.at(i).p_pose_(2));
+
     }
 
     for (int i = 0; i < pc_; i++)
@@ -723,11 +748,14 @@ void RbpfSlam::predict(nav_msgs::Odometry odom_t, float dt)
         {
             pred_threads_vec_[i].join();
         }
+        // ROS_INFO("AFTER2 pose of particle %d = %f, %f, %f", i, particles_.at(i).p_pose_(0), particles_.at(i).p_pose_(1), particles_.at(i).p_pose_(2));
+
     }
     pred_threads_vec_.clear();
-
+    
     // Particle to compute DR without filtering
     dr_particle_.at(0).motion_prediction(vel_rot, vel_p, depth, dt, rng_);
+    // ROS_INFO("AFTER3 pose of particle 0 = %f, %f, %f", particles_.at(0).p_pose_(0), particles_.at(0).p_pose_(1), particles_.at(0).p_pose_(2));
 
     // auto t2 = high_resolution_clock::now();
     // duration<double, std::milli> ms_double = t2 - t1;
@@ -776,9 +804,9 @@ void RbpfSlam::pub_markers(const geometry_msgs::PoseArray& array_msg)
         marker.scale.y = 0.001;
         marker.scale.z = 0.001;
         marker.color.a = 1.0; 
-        marker.color.r = 0.0;
-        marker.color.g = 1.0;
-        marker.color.b = 0.0;
+        marker.color.r = marker_r_; //0.0;
+        marker.color.g = marker_g_; //1.0;
+        marker.color.b = marker_b_; //0.0;
         marker.mesh_resource = "package://hugin_description/mesh/Hugin_big_meter.dae";
         markers.markers.push_back(marker);
         i++;

@@ -13,14 +13,27 @@
     <arg name="odom_rate" default="0.1"/>
 	<arg name="mbes_rate" default="0.1"/>
 	<arg name="sss_rate" default="0.1"/>
+	<arg name="meas_rate" default="0.1"/>
 	
 	<!-- MBES sensor -->
 	<arg name="n_beams_mbes" default="100"/>	
 	<arg name="mbes_open_angle" default="1.0" />
 
     <!-- SSS sensor -->
-	<arg name="n_beams_sss" default="100"/>	
+	<arg name="n_beams_sss" default="100"/>
 	<arg name="sss_open_angle" default="1.0" />
+
+	<!-- FLS sensor -->
+	<arg name="fls_horizontal_angle" default="135"/>
+    <arg name="fls_vertical_angle" default="60"/>
+    <arg name="fls_max_range" default="50.0"/>
+    <arg name="fls_range_std" default="0.001"/>
+	<arg name="fls_angle_std" default="0.001"/>
+    <arg name="fls_meas_period" default="0.1"/>
+
+	<!-- multi agent -->
+	<arg name="vehicle_model" default="hugin"/>
+    <arg name="num_auvs" default="1"/>
 
     <!-- Real data  -->
     <arg name="path" default="$(find uw_tests)/datasets/$(arg dataset)/"/>
@@ -45,6 +58,7 @@
 
     <node pkg="auv_model" type="auv_motion_model" name="auv_motion_model" output="screen">
         <param name="odom_rate" value="$(arg odom_rate)" />
+        <param name="meas_rate" value="$(arg meas_rate)" />
         <param name="mbes_rate" value="$(arg mbes_rate)" />
         <param name="sss_rate" value="$(arg sss_rate)" />
         <param name="odom_sim" value="/$(arg namespace)/$(arg mode)/odom" />
@@ -56,14 +70,18 @@
         <param name="sss_link" value="$(arg namespace)/sss_link" />
         <param name="mbes_pings_topic" value="/$(arg namespace)/$(arg mode)/mbes_pings" />
         <param name="sss_pings_topic" value="/$(arg namespace)/$(arg mode)/sss_pings" />
-        <param name="throttle_cmd" value="/$(arg namespace)/sim/throttle_cmd" />
-        <param name="thruster_cmd" value="/$(arg namespace)/sim/thruster_cmd" />
-        <param name="inclination_cmd" value="/$(arg namespace)/sim/inclination_cmd" />
+        <param name="throttle_cmd" value="/$(arg namespace)/throttle_cmd" />
+        <param name="thruster_cmd" value="/$(arg namespace)/thruster_cmd" />
+        <param name="inclination_cmd" value="/$(arg namespace)/inclination_cmd" />
         <param name="mbes_sim_as" value="/$(arg namespace)/sim/mbes_server" />
         <param name="sss_sim_as" value="/$(arg namespace)/sim/sss_server" />
         <param name="n_beams_mbes" value="$(arg n_beams_mbes)" />
         <param name="n_beams_sss" value="$(arg n_beams_sss)" />
         <param name="synch_topic" value="/$(arg app)/synch" />
+        <param name="fls_sim_as" value="/$(arg namespace)/fls_sim_server" />
+        <param name="fls_link" value="$(arg namespace)/fls_link" />
+        <param name="fls_meas_topic" value="/sim/$(arg namespace)/fls_measurement" />
+        <param name="fls_meas_period" value="$(arg fls_meas_period)" />
     </node>
 
     <node pkg="auv_model" type="auv_payload.py" name="auv_payload" output="screen">
@@ -71,13 +89,33 @@
         <param name="sss_open_angle" value="$(arg sss_open_angle)" />
         <param name="mbes_link" value="$(arg namespace)/mbes_link" />
         <param name="sss_link" value="$(arg namespace)/sss_link" />
-        <param name="mbes_sim_as" value="/$(arg namespace)/sim/mbes_server" /> 
-        <param name="sss_sim_as" value="/$(arg namespace)/sim/sss_server" /> 
+        <param name="mbes_sim_as" value="/$(arg namespace)/sim/mbes_server" />
+        <param name="sss_sim_as" value="/$(arg namespace)/sim/sss_server" />
         <param name="server_mode" value="True" if="$(eval mode == 'sim')"/>    
         <param name="server_mode" value="False" unless="$(eval mode == 'sim')"/> 
         <!-- <param name="sound_velocity_prof" value="$(find uw_tests)/datasets/$(arg dataset)/svp.cereal" />        -->
         <param name="sound_velocity_prof" value="$(arg path)/svp.cereal" />       
         <param name="mesh_path" value="$(arg path)/mesh.npz" />       
+    </node>
+
+    <node pkg="auv_model" type="auv_fls_model.py" name="auv_fls_model" output="screen">
+        <param name="server_mode" value="True" if="$(eval mode == 'sim')"/>
+        <param name="server_mode" value="False" unless="$(eval mode == 'sim')"/>
+        <param name="fls_sim_as" value="/$(arg namespace)/fls_sim_server" />
+
+        <param name="fls_horizontal_angle" value="$(arg fls_horizontal_angle)" />
+        <param name="fls_vertical_angle" value="$(arg fls_vertical_angle)" />
+        <param name="fls_max_range" value="$(arg fls_max_range)" />
+        <param name="fls_range_std" value="$(arg fls_range_std)" />
+        <param name="fls_angle_std" value="$(arg fls_angle_std)" />
+        <param name="vehicle_model" value="$(arg vehicle_model)" />
+        <param name="num_auvs" value="$(arg num_auvs)" />
+        <param name="fls_enable_topic" value="/$(arg namespace)/fls_sim_enable" />
+        <param name="scan_area_marker_topic" value="/sim/$(arg namespace)/fls_scan_area" />
+        <param name="namespace" value="$(arg namespace)" />
+
+
+
     </node>
 
     <group if="$(eval app == 'basic')">

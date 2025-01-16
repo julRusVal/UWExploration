@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   std_msgs
   auv_model
+  message_generation
 )
 
 # find_package(Ceres REQUIRED)
@@ -70,11 +71,10 @@ find_package(BathyMaps REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  FlsReading.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -84,19 +84,20 @@ find_package(BathyMaps REQUIRED)
 # )
 
 # Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   MbesSim.action
-# )
+ add_action_files(
+   FILES
+   MbesSim.action
+   FlsSim.action
+ )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-#   actionlib_msgs
-#   geometry_msgs
-#   sensor_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs
+   actionlib_msgs
+   geometry_msgs
+   sensor_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -130,7 +131,8 @@ find_package(BathyMaps REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mbes_model
-#  CATKIN_DEPENDS roscpp
+ CATKIN_DEPENDS actionlib_msgs
+ CATKIN_DEPENDS message_runtime
 #  	DEPENDS LibXTF
 #     INCLUDE_DIRS 
 #     LIBRARIES ${LibXTF_LIBRARIES}

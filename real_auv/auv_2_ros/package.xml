@@ -31,6 +31,8 @@
   <depend>actionlib_msgs</depend>
   <depend>std_msgs</depend>
   <depend>auv_model</depend>
+   <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
