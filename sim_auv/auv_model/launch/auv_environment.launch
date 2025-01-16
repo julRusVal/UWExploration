@@ -11,22 +11,27 @@
 
 	<!-- Rates for simulating missions  -->
     <arg name="odom_rate" default="0.1"/>
-	<arg name="meas_rate" default="0.1"/>
+	<arg name="mbes_rate" default="0.1"/>
+	<arg name="sss_rate" default="0.1"/>
 	<!-- Rate for replaying real missions  -->
     <arg name="replay_rate" default="0.05"/>
     <!-- <arg name="replay_rate" default="1"/> -->
 	
 	<!-- MBES sim sensor -->
 	<arg name="n_beams_mbes" default="100"/>	
-	<arg name="mbes_open_angle" default="1.0" />
+	<arg name="mbes_open_angle" default="2.0" />
+
+	<!-- SSS sensor -->
+	<arg name="n_beams_sss" default="500"/>	<!-- Per SSS head -->
+	<arg name="sss_open_angle" default="2.0" />
 
     <!-- Real data  -->
     <arg name="path" default="$(find uw_tests)/datasets/$(arg dataset)/"/>
     <arg name="cereal_trajectory" default="$(arg path)/mbes_pings.cereal"/>
 
 	<!-- Coordinates of odom frame wrt the map frame. By default, the AUV start the mission here -->
-    <arg name="x" default="0.0"/>
-	<arg name="y" default="0.0"/>
+    <arg name="x" default="-50.0"/>
+	<arg name="y" default="-50.0"/>
 	<arg name="z" default="0.0"/>
 	<arg name="roll" default="0.0"/>
 	<arg name="pitch" default="0.0"/>
@@ -36,7 +41,7 @@
 	<group ns="$(arg namespace)">
 
 		<!-- Reproduce real Hugin survey -->
-  		<group unless="$(eval mode == 'sim')">
+  		<group unless="$(eval mode == 'sim')" ns="$(eval mode)">
 			<!-- Hugin model -->
 			<param name="robot_description" command="$(find xacro)/xacro '$(find hugin_description)/robots/hugin_auv_default.urdf.xacro' debug:=$(arg debug) namespace:=$(arg namespace)" />
 			<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen">
@@ -75,7 +80,7 @@
 		</group>
 
 		<!-- Simulate Hugin AUV -->
-		<group if="$(eval mode == 'sim')">
+		<group if="$(eval mode == 'sim')" ns="$(eval mode)">
 			<node pkg="tf" type="static_transform_publisher" name="tf_world_map_pub" 
 					args="0 0 0 0 0 0 world map 50" />
 				
@@ -86,9 +91,12 @@
 				<arg name="app" value="$(arg app)"/>
 				<arg name="debug" value="$(arg debug)"/>
 				<arg name="odom_rate" value="$(arg odom_rate)"/>
-				<arg name="meas_rate" value="$(arg meas_rate)"/>
+				<arg name="mbes_rate" value="$(arg mbes_rate)"/>
+				<arg name="sss_rate" value="$(arg sss_rate)"/>
 				<arg name="n_beams_mbes" value="$(arg n_beams_mbes)"/>	
+				<arg name="n_beams_sss" value="$(arg n_beams_sss)"/>	
 				<arg name="mbes_open_angle" value="$(arg mbes_open_angle)" />
+				<arg name="sss_open_angle" value="$(arg sss_open_angle)" />
 				<arg name="path" value="$(arg path)" />
 				<arg name="x" value="$(arg x)"/>
 				<arg name="y" value="$(arg y)"/>
