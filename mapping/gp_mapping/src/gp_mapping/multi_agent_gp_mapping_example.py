@@ -4,11 +4,15 @@ from typing import List
 from collections import OrderedDict
 import pickle
 import yaml
+import matplotlib.pyplot as plt
+import time
+
+from system_helperss import remove_files_in_directory
 
 import numpy as np
 import torch
 
-from torch.utils.hipify.hipify_python import value
+#from torch.utils.hipify.hipify_python import value
 
 from gp import SVGP
 from gpytorch.models import VariationalGP
@@ -363,7 +367,7 @@ def instantiate_svgp_with_priors(survey_points, covariances=None, n_inducing=400
             return gp
 
 
-def plot_save_gp_model(gp, output_path, name, points, n=100, n_contours=100, post_axis_count=1000):
+def plot_save_gp_model(gp, loss, output_path, name, points, n=100, n_contours=100, post_axis_count=1000):
     """
     function to save and plot some things for a given svgp model.
     """
@@ -373,33 +377,45 @@ def plot_save_gp_model(gp, output_path, name, points, n=100, n_contours=100, pos
 
     # Save loss for tunning of stopping criterion
     loss_array_name_complete = os.path.join(output_path, name + "_loss.npy")
-    np.save(loss_array_name_complete, np.asarray(gp.loss))
+    if isinstance(loss, np.ndarray):
+        np.save(loss_array_name_complete, loss)
+    else:
+        np.save(loss_array_name_complete, np.asarray(gp.loss))
 
     # Save posterior
     # TODO Plotting over agent points only
-    print(f"Saving posterior - {name}")
+    time_start = time.time()
     x = points[:, 0]
     y = points[:, 1]
     post_name_complete = os.path.join(output_path, name + "_post.npy")
     gp.save_posterior(post_axis_count, min(x), max(x), min(y), max(y),
                           post_name_complete, verbose=False)
+    time_end = time.time()
+    print(f"Saving posterior - {name} - {time_end - time_start}")
 
     # save figures
-    print(f"Plotting results - {name}")
+    time_start = time.time()
     inputs = points[:, 0:2]
     targets = points[:, 2]
+    time_end = time.time()
+    print(f"Plotting results - {name}")
 
     post_plot_name_complete = os.path.join(output_path, name + ".png")
     gp.plot(inputs, targets, post_plot_name_complete,
                 n=n, n_contours=n_contours)
 
     loss_plot_name_complete = os.path.join(output_path, name + "_loss.png")
-    gp.plot_loss(loss_plot_name_complete)
+    if isinstance(loss, np.ndarray):
+        save_loss_plot(loss, loss_plot_name_complete)
+    else:
+        gp.plot_loss(loss_plot_name_complete)
 
-def plot_save_gp_models(gp_models, transfer_count_initial, output_path, agent_points, n=100, n_contours=100):
-    '''
+def plot_save_gp_models(gp_models, model_losses,
+                        transfer_count_initial, output_path, agent_points,
+                        n=100, n_contours=100):
+    """
     This can accept a List[List[List[SVGP]]] or List[List[List[OrderedDict]]]
-    '''
+    """
     # Loop over the models produced
     # Multiple transfer counts (scenarios) are possible
     for scenario_i, scenario_gps in enumerate(gp_models):
@@ -415,57 +431,94 @@ def plot_save_gp_models(gp_models, transfer_count_initial, output_path, agent_po
                         continue
                     model= SVGP(n_inducing=n_inducing_points)
                     model.load_state_dict(model_params)
+                    model_loss = model_losses[scenario_i][agent_i][transfer_i]
+                else:
+                    model_loss = None
                 name = f"scenario_{current_total_transfer_count}_agent_{agent_i}_transfer_{transfer_i}"
-                plot_save_gp_model(gp=model, output_path=output_path, name=name,
+                plot_save_gp_model(gp=model, loss=model_loss, output_path=output_path, name=name,
                                    points=agent_points[agent_i], n=n, n_contours=n_contours)
 
     return
 
+def save_loss_plot(loss_array, fname):
+    """
+    function to save and plot some things for a given svgp model loss.
+
+    Parameters
+    ----------
+    loss_array: np.ndarray
+        array of loss values
+    fname: str
+        name of file to save
+    """
+
+    # plot
+    fig, ax = plt.subplots(1)
+    ax.plot(loss_array, 'k-')
+
+    # format
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('ELBO')
+    ax.set_yscale('log')
+    plt.tight_layout()
+
+    # save
+    fig.savefig(fname, bbox_inches='tight', dpi=1000)
+
 # Define the mission
 agent_count = 2  # nummber of agents
 transfer_count_start = 3  # total number of transfers between agents
-transfer_count_end = 8
+transfer_count_end = 10
 movement_axis = 'y'
 
 # GP parameters
-max_iter = 20  # 250
+max_iter = 200  # 250
 n_inducing_points = 400
-gp_learning_rate = 1e-1  # These parameters havent been touched and are from gp_map_training.py
+gp_learning_rate = 1e-1  # These parameters haven't been touched and are from gp_map_training.py
 gp_rtol = 1e-12
 gp_n_window = 2000
 gp_auto = False
 gp_verbose = True
 
+# Setup parameters
+flag_clear_output_dir = True
+
 # Training parameters
 flag_baseline = False
 do_new_baseline = True  # This will perform the baseline with no communication but with inia
-method = 'i'  # 'b': baseline, 'f': federated, 'i': independent
+method = 'f'  # 'b': baseline, 'f': federated, 'i': independent
 verbose_baseline = False
 do_final_training = False
 verbose_final_training = False
 do_final_aggregate = False
 verbose_final_aggregate = True
 
+# Analysis parameters
 flag_final_analysis = True
 flag_save_model_params = True
-compare_baseline_to_aggregated = False
+compare_baseline_to_aggregated = False  # NOT IMPLEMENTED
 
 # dataset
 input_type = 'di'
-file_path = "/home/julianvaldez/kth_projects/UWExploration/utils/uw_tests/datasets/lost_targets/pcl_cleaned.npy"
-# output_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_output"
-output_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_scenario_output"
-# file_path = "/Users/julian/KTH/Projects/UWExploration/utils/uw_tests/datasets/lost_targets/pcl.npy"
+# Root data directory contains the relevant dataset while the root output directory contains the the output directory
+root_data_dir = "/home/julianvaldez/kth_projects/UWExploration/utils/uw_tests/datasets/lost_targets"
+root_output_dir = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping"
+file_name = "pcl_cleaned.npy"
+file_path = os.path.join(root_data_dir, file_name)
 
 if method == 'b':
-    output_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_baseline_scenario_output"
+    output_path = os.path.join(root_output_dir, "baseline_scenario_output")
 elif method =='i':
-    output_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_independent_scenario_output"
+    output_path = os.path.join(root_output_dir, "independent_scenario_output")
 else:
-    output_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_federated_scenario_output"
+    output_path = os.path.join(root_output_dir, "federated_scenario_output")
 
 # Begin the scenario
 print(f"Running {method} scenario")
+
+if flag_clear_output_dir:
+    print(f"Clearing output directory: {output_path}")
+    remove_files_in_directory(output_path)
 
 # Load data as a Nx3 array of survey points, [x, y, z]
 complete_survey_points = np.load(file_path)
@@ -480,7 +533,10 @@ parameters = {
     "method": method,
     "n_inducing_points": n_inducing_points
 }
+
 yaml_file_path = os.path.join(output_path, "parameters.yaml")
+# Ensure the directory exists
+os.makedirs(os.path.dirname(yaml_file_path), exist_ok=True)
 with open(yaml_file_path, "w") as file:
     yaml.dump(parameters, file)
 
@@ -516,8 +572,6 @@ models: List[List[List[SVGP]]] = [[[] for _ in range(agent_count)] for _ in rang
 # The param dict does not contain the model itself, or its training losses so those need to be stored seperately
 model_param_dicts: List[List[List[OrderedDict]]] = [[[] for _ in range(agent_count)] for _ in range(len(transfer_counts))]  # This should mirror the models, used for the new method of setting up the GPs
 model_losses: List[List[List[np.ndarray]]] = [[[] for _ in range(agent_count)] for _ in range(len(transfer_counts))]  # this should mirror the models, used for the new method of setting up the GPs (param
-
-params = [[[] for _ in range(agent_count)] for _ in range(len(transfer_counts))]  # This is a little redundent with models
 
 # Loop over the various scenarios, Varying the number of transfers
 for transfer_count_i, transfer_count in enumerate(transfer_counts):
@@ -650,7 +704,7 @@ for transfer_count_i, transfer_count in enumerate(transfer_counts):
             # NEW METHOD
             # Here we also have to save the loss of the model fitting process
             model_param_dicts[transfer_count_i][agent_ind].append(current_gp.state_dict())
-            model_losses[transfer_count_i][agent_ind].append(np.array(current_gp.losses))
+            model_losses[transfer_count_i][agent_ind].append(np.array(current_gp.loss))
 
         # Aggregate the models
         # Determine the hyperparameters of the individual models
@@ -682,7 +736,7 @@ for transfer_count_i, transfer_count in enumerate(transfer_counts):
             # transfer_inducing_points.append(model_inducing_points)
             # transfer_inducing_means.append(model_inducing_means)
 
-            # NEW METHOD# NEW METHOD
+            # NEW METHOD
             agent_param_dicts = model_param_dicts[transfer_count_i][agent_i]
             if len(agent_param_dicts) == 0:
                 print(f"No model params found for agent {agent_i}")
@@ -712,7 +766,7 @@ for transfer_count_i, transfer_count in enumerate(transfer_counts):
 
         print(f"{transfer_id}Aggregated hyperparameters: {aggregated_model_params}")
 
-    # Perform final training on complete data available to each agent
+    # Perform final training and/or aggregation at the end of each scenario
     if do_final_training:
         print("Performing final training")
         # Compute a model for all agents given their limited data
@@ -750,7 +804,6 @@ for transfer_count_i, transfer_count in enumerate(transfer_counts):
                 # model_name_complete = os.path.join(output_path, model_name + "_post.npy")
                 # models[i][-1].save_posterior(1000, min(x), max(x), min(y), max(y),
                 #                              model_name_complete, verbose=False)
-
 
     if do_final_aggregate:
         # This is mostly from the past, now aggregating can happen at each transfer
@@ -804,13 +857,8 @@ for transfer_count_i, transfer_count in enumerate(transfer_counts):
         if verbose_final_aggregate:
             plot_save_gp_model(gp=fed_gp, output_path=output_path, name="model_aggregated_no_train", points=complete_survey_points)
 
-if flag_final_analysis:
-    print("Running final analysis")
-    plot_save_gp_models(gp_models=model_param_dicts, transfer_count_initial=transfer_count_start,
-                        output_path=output_path,
-                        agent_points=agent_points)
-
 if flag_save_model_params:
+    print("Saving models")
     # Save the models OLD METHOD
     pickle_name = os.path.join(output_path, "models.pickle")
     with open(pickle_name, 'wb') as handle_models:
@@ -823,8 +871,16 @@ if flag_save_model_params:
 
     # Save the param dicts NEW METHOD
     pickle_lossess_name = os.path.join(output_path, "model_losses.pickle")
-    with open(pickle_params_name, 'wb') as handle_losses:
+    with open(pickle_lossess_name, 'wb') as handle_losses:
         pickle.dump(obj=model_losses, file=handle_losses, protocol=pickle.HIGHEST_PROTOCOL)
+
+if flag_final_analysis:
+    print("Running final analysis")
+    plot_save_gp_models(gp_models=model_param_dicts,
+                        model_losses=model_losses,
+                        transfer_count_initial=transfer_count_start,
+                        output_path=output_path,
+                        agent_points=agent_points)
 
 if compare_baseline_to_aggregated:
     if flag_baseline == False or do_final_aggregate == False:

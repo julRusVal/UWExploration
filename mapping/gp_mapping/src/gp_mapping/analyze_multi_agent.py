@@ -1,10 +1,13 @@
 import os
 import re
+from operator import index
+
 import numpy as np
 import pickle
 import metrics
 import matplotlib.pyplot as plt
 
+from system_helperss import load_yaml
 
 def extract_numbers_from_template(directory):
     """
@@ -36,37 +39,108 @@ def extract_numbers_from_template(directory):
     else:
         return np.empty((0, 3))  # Return an empty array if no matches are found
 
-# select method
-method = 'b'
-if method == 'b':
-    directory_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_baseline_scenario_output"
-    model_pickle = None
-elif method =='i':
-    directory_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_independent_scenario_output"
-    model_pickle = None
-else:
-    directory_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_federated_scenario_output"
-    model_pickle = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_federated_scenario_output/models.pickle"
+def check_results(index, directory_path):
+    index = 0
+    loss_name = f"scenario_{extracted_array[index][0]}_agent_{extracted_array[index][1]}_transfer_{extracted_array[index][2]}_loss.npy"
+    elbo_name = f"scenario_{extracted_array[index][0]}_agent_{extracted_array[index][1]}_transfer_{extracted_array[index][2]}_post.npy"
 
-# directory_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_baseline_scenario_output/"
-# directory_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_scenario_output/"  # Replace with your directory path
-# model_pickle = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_scenario_output/models.pickle"
+    loss_array = np.load(os.path.join(directory_path, loss_name))
+    smoothing_window = 5 # please make odd
+    smoothed_loss = np.convolve(loss_array, np.ones(smoothing_window) / smoothing_window, mode='valid')
+    convergence_index = metrics.detect_convergence(smoothed_loss, threshold=0.01, window=5)
+    # correct for smoothing window
+    convergence_index = int(convergence_index + smoothing_window//2)
 
+    print(convergence_index)
+
+    # plot
+    fig, ax = plt.subplots(1)
+    ax.plot(loss_array, 'k-')
+
+    # Add a vertical line for convergence
+    if convergence_index > 0:
+        ax.axvline(x=convergence_index, color='red', linestyle='--', label=f'Convergence {index}')
+
+    # format
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('ELBO')
+    # ax.set_yscale('log')
+    plt.legend()
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
+# === Parameters ===
+# Data parameters
+root_output_dir = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping"
+method = 'i'  # select method
+model_pickle_path = None  # if set to None will load from directory
+param_dicts_pickle_path = None  # if left as None will load from directory
+model_losses_pickle_path = None  # if left as None will load from directory
+parameters_yaml_path = None  # if left as None will load from directory
+
+# Convergence parameters
 smoothing_window = 5  # please make odd, set to 0 to not perform smoothing
 convergence_threshold = 0.02
 convergence_window = 5
 
-if model_pickle is not None:
-    with open(model_pickle, 'rb') as f:
+ignore_first_transfer = True
+
+# === Setup ===
+if method == 'b':
+    directory_path = os.path.join(root_output_dir, "baseline_scenario_output")
+    model_pickle_path = None
+elif method =='i':
+    directory_path = os.path.join(root_output_dir, "independent_scenario_output")
+else:
+    directory_path = os.path.join(root_output_dir, "federated_scenario_output")
+
+# Load the models and param dictionaries and meta-data
+# Pickled models
+if model_pickle_path is None:
+    model_pickle_path = os.path.join(directory_path, "models.pickle")
+
+if model_pickle_path is not None and os.path.isfile(model_pickle_path):
+    with open(model_pickle_path, 'rb') as f:
         models = pickle.load(f)
 else:
     models = []
 
+# Pickled param dicts
+if param_dicts_pickle_path is None:
+    param_dicts_pickle_path = os.path.join(directory_path, "model_param_dicts.pickle")
+
+if param_dicts_pickle_path is not None and os.path.isfile(param_dicts_pickle_path):
+    with open(param_dicts_pickle_path, 'rb') as f:
+        model_param_dicts = pickle.load(f)
+else:
+    model_param_dicts = []
+
+# Pickled losses
+if model_losses_pickle_path is None:
+    model_losses_pickle_path = os.path.join(directory_path, "model_losses.pickle")
+
+if model_losses_pickle_path is not None and os.path.isfile(model_losses_pickle_path):
+    with open(model_losses_pickle_path, 'rb') as f:
+        model_losses = pickle.load(f)
+else:
+    model_losses = []
+
+# Parameters
+if parameters_yaml_path is None:
+    parameters_yaml_path = os.path.join(directory_path, "parameters.yaml")
+
+parameters = load_yaml(parameters_yaml_path)
+print(parameters)
+
+# Extract the numbers from the file names
 if os.path.exists(directory_path):
     extracted_array = extract_numbers_from_template(directory_path)
     print("Extracted Numbers:\n", extracted_array)
 else:
     print(f"Error: Directory '{directory_path}' does not exist.")
+    assert False
 
 # Status
 # - Extracts numbers from file names in a directory matching the pattern
@@ -78,9 +152,6 @@ else:
 
 # TODO: Check models pickling, doesnt appear all of the models are being saved or this was from an old run
 # TODO: Lets do some plotting!!!
-
-# Allow for ignoring the first transfer?
-ignore_first_transfer = True
 
 transfer_counts = []  # List of length N where N is the number of total transfers explored
 all_convergences = []  # List of list of length N (N from above), with inner list contains Number of Convergences for each transfer
@@ -149,37 +220,7 @@ plt.show()
 print("Transfer Count:", transfer_counts)
 print("Average Convergences:", avg_convergences)
 
+if True:
+    check_results(index=0, directory_path=directory_path)
 
-# index = 0
-# loss_name = f"scenario_{extracted_array[index][0]}_agent_{extracted_array[index][1]}_transfer_{extracted_array[index][2]}_loss.npy"
-# elbo_name = f"scenario_{extracted_array[index][0]}_agent_{extracted_array[index][1]}_transfer_{extracted_array[index][2]}_post.npy"
-#
-# loss_array = np.load(os.path.join(directory_path, loss_name))
-# smoothing_window = 5 # please make odd
-# smoothed_loss = np.convolve(loss_array, np.ones(smoothing_window) / smoothing_window, mode='valid')
-# convergence_index = metrics.detect_convergence(smoothed_loss, threshold=0.01, window=5)
-# # correct for smoothing window
-# convergence_index = int(convergence_index + smoothing_window//2)
-#
-# print(convergence_index)
-#
-# # plot
-# fig, ax = plt.subplots(1)
-# ax.plot(loss_array, 'k-')
-#
-# # Add a vertical line for convergence
-# if convergence_index > 0:
-#     ax.axvline(x=convergence_index, color='red', linestyle='--', label=f'Convergence {index}')
-#
-# # format
-# ax.set_xlabel('Iteration')
-# ax.set_ylabel('ELBO')
-# # ax.set_yscale('log')
-# plt.legend()
-# plt.tight_layout()
-#
-# # Show the plot
-# plt.show()
-
-# Plotting
 print("done!!")

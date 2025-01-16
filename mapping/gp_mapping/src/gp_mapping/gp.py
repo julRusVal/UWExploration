@@ -452,7 +452,12 @@ class SVGP(VariationalGP):
         # save
         fig.savefig(fname, bbox_inches='tight', dpi=1000)
 
+        plt.close(fig=fig)
+
     def plot_loss(self, fname):
+        """
+        Plots loss
+        """
 
         # plot
         fig, ax = plt.subplots(1)
