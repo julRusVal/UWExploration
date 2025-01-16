@@ -7,22 +7,28 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
     std::string sim_odom_top, throttle_top, thruster_top, inclination_top;
     std::string sim_pings_top,sim_fls_meas_top, sim_sss_top, mbes_sim_as,fls_sim_as, sss_sim_as;
     nh_->param<std::string>("odom_sim", sim_odom_top, "/sim_auv/odom");
+    // Frames
     nh_->param<std::string>("world_frame", world_frame_, "world");
     nh_->param<std::string>("map_frame", map_frame_, "map");
     nh_->param<std::string>("odom_frame", odom_frame_, "odom");
+    // Links
     nh_->param<std::string>("base_link", base_frame_, "base_link");
     nh_->param<std::string>("mbes_link", mbes_frame_, "mbes_link");
     nh_->param<std::string>("fls_link", fls_frame_, "fls_link");
     nh_->param<std::string>("sss_link", sss_frame_, "sss_link");
+    // Topics
     nh_->param<std::string>("mbes_pings_topic", sim_pings_top, "/sim/mbes_pings");
     nh_->param<std::string>("fls_meas_topic", sim_fls_meas_top, "/sim/fls_measurement"); //TODO
     nh_->param<std::string>("sss_pings_topic", sim_sss_top, "/sim/sss_pings");
+    // Subscribers
     nh_->param<std::string>("throttle_cmd", throttle_top, "/throttle");
     nh_->param<std::string>("thruster_cmd", thruster_top, "/thruster");
     nh_->param<std::string>("inclination_cmd", inclination_top, "/inclination");
+    // Action servers
     nh_->param<std::string>("mbes_sim_as", mbes_sim_as, "mbes_sim_action");
     nh_->param<std::string>("fls_sim_as", fls_sim_as, "fls_sim_server");
     nh_->param<std::string>("sss_sim_as", sss_sim_as, "sss_sim_action");
+    // Parameters
     nh_->param<int>("n_beams_mbes", beams_num_, 100);
     nh_->param<int>("n_beams_sss", sss_num_, 100);
     nh_->param<std::string>("synch_topic", synch_name_, "/pf/synch");
@@ -33,15 +39,13 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
     throttle_sub_ = nh_->subscribe(throttle_top, 1, &AUVMotionModel::throttleCB, this);
     sim_ping_pub_ = nh_->advertise<sensor_msgs::PointCloud2>(sim_pings_top, 3);
     sim_sss_pub_ = nh_->advertise<auv_model::Sidescan>(sim_sss_top, 3);
-    sim_fls_pub_ = nh_->advertise<auv_2_ros::FlsReading>(sim_fls_meas_top, 3);
-
+    sim_fls_pub_ = nh_->advertise<auv_model::FlsReading>(sim_fls_meas_top, 3);
 
     start_replay_ = false;
 
     ac_mbes_ = new actionlib::SimpleActionClient<auv_model::MbesSimAction>(mbes_sim_as, true);
     ac_sss_ = new actionlib::SimpleActionClient<auv_model::SssSimAction>(sss_sim_as, true);
-    ac_fls_ = new actionlib::SimpleActionClient<auv_2_ros::FlsSimAction>(fls_sim_as, true);
-
+    ac_fls_ = new actionlib::SimpleActionClient<auv_model::FlsSimAction>(fls_sim_as, true);
 
     tfListener_ = new tf2_ros::TransformListener(tfBuffer_);
 }
@@ -79,11 +83,7 @@ void AUVMotionModel::init(){
     prev_odom_.pose.pose.orientation.z = 0;
     prev_odom_.pose.pose.orientation.w = 1;
 
-    while(!ac_->waitForServer(ros::Duration(1.0))  && ros::ok()){
-        ROS_INFO_NAMED(node_name_, "Waiting for action server");
-    }
-
-    while(!ac_->waitForServer(ros::Duration(1.0))  && ros::ok()){
+    while(!ac_mbes_->waitForServer(ros::Duration(1.0))  && ros::ok()){
         ROS_INFO_NAMED(node_name_, "Waiting for MBES action server");
     }
 
@@ -278,7 +278,7 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
     geometry_msgs::Transform transform_msg;
     tf::transformTFToMsg(tf_map_fls, transform_msg);
 
-    auv_2_ros::FlsSimGoal fls_goal;
+    auv_model::FlsSimGoal fls_goal;
     fls_goal.map2fls_tf.header.frame_id = map_frame_;
     fls_goal.map2fls_tf.child_frame_id = fls_frame_;
     fls_goal.map2fls_tf.header.stamp = new_base_link_.header.stamp;
@@ -291,10 +291,10 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
         std_msgs::Header header;
         std_msgs::Float32 range;
         std_msgs::Float32 angle;
-        auv_2_ros::FlsReading fls_msg;
+        auv_model::FlsReading fls_msg;
 
-
-        auv_2_ros::FlsSimResult fls_res = *ac_fls_->getResult();
+        // TODO JRV check this....
+        auv_model::FlsSimResult fls_res = *ac_fls_->getResult();
 
 
         header = fls_res.header;

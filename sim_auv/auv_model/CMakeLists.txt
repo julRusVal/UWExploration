@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
     actionlib
     std_msgs
     sensor_msgs
-    #auv_2_ros
+    auv_2_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,6 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   Sidescan.msg
+  FlsReading.msg
 )
 
 # Generate actions in the 'action' folder
@@ -62,6 +63,7 @@ add_message_files(
    FILES
    MbesSim.action
    SssSim.action
+   FlsSim.action
  )
 
 ## Generate added messages and services with any dependencies listed here

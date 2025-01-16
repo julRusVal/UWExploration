@@ -21,7 +21,6 @@ int main(int argc, char** argv){
     ros::Timer timer1 = nh.createTimer(ros::Duration(rate_odom), &AUVMotionModel::updateMotion, auv_mm);
     ros::Timer timer2 = nh.createTimer(ros::Duration(rate_mbes), &AUVMotionModel::updateMbes, auv_mm);
     ros::Timer timer3 = nh.createTimer(ros::Duration(rate_sss), &AUVMotionModel::updateSss, auv_mm);
-    ros::Timer timer4 = nh.createTimer(ros::Duration(rate_meas), &AUVMotionModel::updateMeas, auv_mm);
     ros::Timer timer5 = nh.createTimer(ros::Duration(rate_fls_meas), &AUVMotionModel::updateFlsMeas, auv_mm);
 
 

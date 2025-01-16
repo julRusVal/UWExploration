@@ -28,12 +28,15 @@
 #include <tf_conversions/tf_eigen.h>
 #include <sensor_msgs/PointCloud2.h>
 
+// Actions
 #include <actionlib/client/simple_action_client.h>
 #include <auv_model/MbesSimAction.h>
 #include <auv_model/SssSimAction.h>
+#include <auv_model/FlsSimAction.h>
+
+// Messages
+#include <auv_model/FlsReading.h> //TODO change to auv_model
 #include <auv_model/Sidescan.h>
-#include <auv_2_ros/FlsSimAction.h>
-#include <auv_2_ros/FlsReading.h>
 
 
 using namespace Eigen;
@@ -79,8 +82,7 @@ private:
 
     actionlib::SimpleActionClient<auv_model::MbesSimAction> *ac_mbes_;
     actionlib::SimpleActionClient<auv_model::SssSimAction> *ac_sss_;
-
-    actionlib::SimpleActionClient<auv_2_ros::FlsSimAction>* ac_fls_;
+    actionlib::SimpleActionClient<auv_model::FlsSimAction>* ac_fls_;
 
 
     Eigen::Isometry3d map_tf_;
