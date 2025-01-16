@@ -1,4 +1,8 @@
 Work Towards Multi-agent distributed SVGP based mapping
+Scripts other than the following were added as part of this work:
+- convergence.py
+- gp.p
+- gp_map_training.py
 
 # Proof of concept
 Compare the results utilizing binned datasets with the results using the full dataset.
