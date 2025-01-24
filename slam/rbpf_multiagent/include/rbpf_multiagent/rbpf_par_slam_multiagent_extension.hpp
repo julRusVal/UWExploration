@@ -58,9 +58,8 @@
 #include "tf/transform_datatypes.h"
 #include "tf_conversions/tf_eigen.h"
 
-#include <auv_2_ros/FlsReading.h>
-
-
+//#include <auv_2_ros/FlsReading.h>
+#include <auv_model/FlsReading.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -113,7 +112,7 @@ class RbpfSlamMultiExtension: public RbpfSlam
 
     void survey_area_cb(const visualization_msgs::MarkerArray& marker_array); //& sign is used to denote a reference parameter. Avoids copying full variable
     void wp_counter_cb(const std_msgs::Int32& wp_counter_msg);
-    void rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading);
+    void rbpf_update_fls_cb(const auv_model::FlsReading& fls_reading);
     void update_rviz_cb(const ros::TimerEvent &);
     void update_plots(const ros::TimerEvent &);
     void odom_callback(const nav_msgs::OdometryConstPtr& odom_msg);

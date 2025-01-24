@@ -121,6 +121,7 @@ find_package(Boost REQUIRED)
 catkin_package(
  INCLUDE_DIRS include
 #  LIBRARIES auv_particle_filter
+ LIBRARIES rbpf_slam
  CATKIN_DEPENDS message_runtime actionlib_msgs sensor_msgs std_msgs slam_msgs
 #  DEPENDS system_lib
 )

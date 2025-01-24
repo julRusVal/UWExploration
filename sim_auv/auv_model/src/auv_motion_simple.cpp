@@ -5,7 +5,7 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
     node_name_(node_name), nh_(&nh){
 
     std::string sim_odom_top, throttle_top, thruster_top, inclination_top;
-    std::string sim_pings_top,sim_fls_meas_top, sim_sss_top, mbes_sim_as,fls_sim_as, sss_sim_as;
+    std::string sim_pings_top, sim_fls_meas_top, sim_sss_top, mbes_sim_as,fls_sim_as, sss_sim_as;
     nh_->param<std::string>("odom_sim", sim_odom_top, "/sim_auv/odom");
     // Frames
     nh_->param<std::string>("world_frame", world_frame_, "world");
@@ -33,10 +33,11 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
     nh_->param<int>("n_beams_sss", sss_num_, 100);
     nh_->param<std::string>("synch_topic", synch_name_, "/pf/synch");
 
-    odom_pub_ = nh_->advertise<nav_msgs::Odometry>(sim_odom_top, 1);
     thruster_sub_ = nh_->subscribe(thruster_top, 1, &AUVMotionModel::thrustCB, this);
     incl_sub_ = nh_->subscribe(inclination_top, 1, &AUVMotionModel::inclinationCB, this);
     throttle_sub_ = nh_->subscribe(throttle_top, 1, &AUVMotionModel::throttleCB, this);
+
+    odom_pub_ = nh_->advertise<nav_msgs::Odometry>(sim_odom_top, 1);
     sim_ping_pub_ = nh_->advertise<sensor_msgs::PointCloud2>(sim_pings_top, 3);
     sim_sss_pub_ = nh_->advertise<auv_model::Sidescan>(sim_sss_top, 3);
     sim_fls_pub_ = nh_->advertise<auv_model::FlsReading>(sim_fls_meas_top, 3);
@@ -99,9 +100,10 @@ void AUVMotionModel::init(){
     try {
         tflistener_.waitForTransform(map_frame_, odom_frame_, ros::Time(0), ros::Duration(10.0) );
         tflistener_.lookupTransform(map_frame_, odom_frame_, ros::Time(0), tf_map_odom_);
-        ROS_INFO("Locked transform map --> odom");
+        ROS_INFO("Locked transform map --> ODOM");
     }
     catch(tf::TransformException &exception) {
+        ROS_INFO("ODOM sensor transform error");
         ROS_ERROR("%s", exception.what());
         ros::Duration(1.0).sleep();
     }
@@ -109,9 +111,10 @@ void AUVMotionModel::init(){
     try {
         tflistener_.waitForTransform(base_frame_, mbes_frame_, ros::Time(0), ros::Duration(10.0) );
         tflistener_.lookupTransform(base_frame_, mbes_frame_, ros::Time(0), tf_base_mbes_);
-        ROS_INFO("Locked transform base --> mbes sensor");
+        ROS_INFO("Locked transform base --> MBES sensor");
     }
     catch(tf::TransformException &exception) {
+        ROS_INFO("MBES sensor transform error");
         ROS_ERROR("%s", exception.what());
         ros::Duration(1.0).sleep();
     }
@@ -119,9 +122,10 @@ void AUVMotionModel::init(){
     try {
         tflistener_.waitForTransform(base_frame_, fls_frame_, ros::Time(0), ros::Duration(10.0) );
         tflistener_.lookupTransform(base_frame_, fls_frame_, ros::Time(0), tf_base_fls_);
-        ROS_INFO("Locked transform base --> fls sensor");
+        ROS_INFO("Locked transform base --> FLS sensor");
     }
     catch(tf::TransformException &exception) {
+        ROS_INFO("FLS sensor transform error");
         ROS_ERROR("%s", exception.what());
         ros::Duration(1.0).sleep();
     }
@@ -130,10 +134,11 @@ void AUVMotionModel::init(){
     {
         tflistener_.waitForTransform(base_frame_, sss_frame_, ros::Time(0), ros::Duration(10.0));
         tflistener_.lookupTransform(base_frame_, sss_frame_, ros::Time(0), tf_base_sss_);
-        ROS_INFO("Locked transform base --> sss sensor");
+        ROS_INFO("Locked transform base --> SSS sensor");
     }
     catch (tf::TransformException &exception)
     {
+        ROS_INFO("SSS sensor transform error");
         ROS_ERROR("%s", exception.what());
         ros::Duration(1.0).sleep();
     }
@@ -230,7 +235,7 @@ void AUVMotionModel::updateMbes(const ros::TimerEvent&){
 
 //        clock_t tStart = clock();
     // Don't start survey until PF is up
-    ROS_INFO("updateMeas");
+    ROS_INFO("updateMbes");
     if(start_replay_ != true){
         ROS_INFO_NAMED(node_name_, "AUV Sim model waiting for PF to send synch signal");
         return;
@@ -259,12 +264,16 @@ void AUVMotionModel::updateMbes(const ros::TimerEvent&){
         mbes_msg = mbes_res.sim_mbes;
         sim_ping_pub_.publish(mbes_msg);
     }
+    else {
+        ROS_INFO("MBES action server not available");
+    }
     //        printf("AUV Motion time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 }
 
 void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
 
 //        clock_t tStart = clock();
+    ROS_INFO("updateFlsMeas");
     // Don't start survey until PF is up
     if(start_replay_ != true){
         ROS_INFO_NAMED(node_name_, "AUV Sim model waiting for PF to send synch signal");
@@ -278,11 +287,21 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
     geometry_msgs::Transform transform_msg;
     tf::transformTFToMsg(tf_map_fls, transform_msg);
 
+    // Verify the frames being used in the transformation
+//    ROS_INFO("Transformation from map to fls: map_frame=%s, fls_frame=%s", map_frame_.c_str(), fls_frame_.c_str());
+
     auv_model::FlsSimGoal fls_goal;
     fls_goal.map2fls_tf.header.frame_id = map_frame_;
     fls_goal.map2fls_tf.child_frame_id = fls_frame_;
     fls_goal.map2fls_tf.header.stamp = new_base_link_.header.stamp;
     fls_goal.map2fls_tf.transform = transform_msg;
+
+    // Publish goal to action server
+//    ROS_INFO("Sending goal to AUV action server: map2fls_tf.header.stamp=%f, map2fls_tf.frame_id=%s, child_frame_id=%s",
+//    fls_goal.map2fls_tf.header.stamp.toSec(),
+//    fls_goal.map2fls_tf.header.frame_id.c_str(),
+//    fls_goal.map2fls_tf.child_frame_id.c_str());
+
     ac_fls_->sendGoal(fls_goal);
 
     ac_fls_->waitForResult(ros::Duration(1.0));
@@ -296,6 +315,13 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
         // TODO JRV check this....
         auv_model::FlsSimResult fls_res = *ac_fls_->getResult();
 
+        // Verify received result header and values
+//        ROS_INFO("Received result: header.stamp=%f, header.frame_id=%s, range=%f, angle=%f",
+//        fls_res.header.stamp.toSec(),
+//        fls_res.header.frame_id.c_str(),
+//        fls_res.range.data,
+//        fls_res.angle.data);
+
 
         header = fls_res.header;
         range = fls_res.range;
@@ -304,16 +330,18 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
         fls_msg.range = range;
         fls_msg.angle = angle;
         //print result in terminal
+//        ROS_INFO("Publishing FlsReading message to sim_fls_pub_");
         sim_fls_pub_.publish(fls_msg);
     }
     else {
+        ROS_INFO("FLS action server not available");
     }
     //        printf("AUV Motion time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 }
 
 void AUVMotionModel::updateSss(const ros::TimerEvent &)
 {
-
+    ROS_INFO("updateSss");
     //        clock_t tStart = clock();
     // Don't start survey until PF is up
     if (start_replay_ != true)
@@ -345,6 +373,9 @@ void AUVMotionModel::updateSss(const ros::TimerEvent &)
         auv_model::SssSimResult sss_res = *ac_sss_->getResult();
         sss_msg = sss_res.sim_sss;
         sim_sss_pub_.publish(sss_msg);
+    }
+    else{
+        ROS_INFO("SSS action server not available");
     }
     //        printf("AUV Motion time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 }

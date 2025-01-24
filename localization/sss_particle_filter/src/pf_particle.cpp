@@ -120,10 +120,20 @@ void pfParticle::compute_weight_sss(const cv::Mat real_sss_patch)
 {
     if (real_sss_patch.rows <= sss_patch_.rows)
     {
-        // std::cout << "Particle " << this->index_ << " real patch " << real_sss_patch.rows << ", " << real_sss_patch.cols << std::endl;
-        // std::cout << "Particle " << this->index_ << " expected patch " << this->sss_patch_.rows << ", " << this->sss_patch_.cols << std::endl;
-
+        // Only consider a region of the expected with the same size as the real patch
         cv::Mat exp_sss_patch = sss_patch_.rowRange(sss_patch_.rows-real_sss_patch.rows, sss_patch_.rows);
+
+        std::cout << "Particle " << this->index_ << std::endl;
+        std::cout << "Real patch " << real_sss_patch.rows << ", " << real_sss_patch.cols << std::endl;
+        std::cout << "Particle patch " << this->sss_patch_.rows << ", " << this->sss_patch_.cols << std::endl;
+        std::cout << "Expected patch " << exp_sss_patch.rows << ", " << exp_sss_patch.cols << std::endl;
+
+        // std::cout << "Particle " << this->index_ << " expected patch " << this->sss_patch_.rows << ", " << this->sss_patch_.cols << std::endl;
+        //std::cout << "Particle " << this->index_ << " expected patch " << this->sss_patch_.rows << ", " << this->sss_patch_.cols << std::endl;
+
+
+        // Debugging
+
         w_ = this->getMSSIM(real_sss_patch, exp_sss_patch);
         
         // Save to disk for debugging

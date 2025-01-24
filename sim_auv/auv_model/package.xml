@@ -26,8 +26,14 @@
   <depend>actionlib</depend>
   <depend>actionlib_msgs</depend>
   <exec_depend>eigen_conversions</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
+  <!-- <exec_depend>std_msgs</exec_depend> -->
   <exec_depend>sensor_msgs</exec_depend>
+
+  <!-- Added to generate message headers -->
+  <depend>std_msgs</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

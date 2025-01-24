@@ -236,11 +236,16 @@ void pfLocalization::sss_cb(const auv_model::SidescanConstPtr &msg)
     {
         // Beams in vehicle mbes frame
         // Store in pings history
-        std::cout << "Starting sss cb " << ping_cnt_ << std::endl;
+        // std::cout << "Starting sss cb " << ping_cnt_ << std::endl;
         auto t1 = high_resolution_clock::now();
 
-        cv::Mat port(1, msg->port_channel.size(), CV_8UC1);
-        cv::Mat stbd(1, msg->starboard_channel.size(), CV_8UC1);
+        auto port_size = msg->port_channel.size();
+        auto stbd_size = msg->starboard_channel.size();
+
+        // std::cout << "Port size " << port_size << " Stbd size " << stbd_size << std::endl;
+
+        cv::Mat port(1, port_size, CV_8UC1);
+        cv::Mat stbd(1, stbd_size, CV_8UC1);
         for (size_t i = 0; i < msg->port_channel.size(); ++i)
         {
             port.at<uint8_t>(0, i) = msg->port_channel[i];
@@ -253,6 +258,7 @@ void pfLocalization::sss_cb(const auv_model::SidescanConstPtr &msg)
         cv::Mat meas;
         cv::hconcat(flippedPort, stbd, meas);
         sss_full_image_.push_back(meas);
+        ping_cnt_++;
 
         // For debugging
         if (sss_full_image_.rows == 50)
@@ -281,13 +287,29 @@ void pfLocalization::sss_cb(const auv_model::SidescanConstPtr &msg)
         // Compute expected measurements for every particle in their latest pose
         this->expected_measurements(odom_latest_);
 
+        // I was having issues of the sizes causing invalid slices when computing the weights or differening sizes
+        // OLD && sss_full_image_.rows >= submap_size_
         if (ping_cnt_ % submap_size_ == 0)
         {
-            this->compute_weights(sss_full_image_.rowRange(sss_full_image_.rows - submap_size_, sss_full_image_.rows));
+            // Debugging
+            std::cout << "Start: sss cb compute weights " << ping_cnt_ << std::endl;
+            auto full_image_rows = sss_full_image_.rows;
+            // auto submap_rows = sss_full_image_.rows - submap_size_;
 
-            std::cout << "Saving real patch image " << sss_full_image_.rowRange(sss_full_image_.rows - submap_size_, sss_full_image_.rows).rows << std::endl;
+            // std::cout << "Full image rows " << full_image_rows << std::endl;
+
+            // Compute the weights
+            // Safely handle rowRange to prevent out-of-bounds access
+            int start_row = std::max(sss_full_image_.rows - submap_size_, 0);
+            int end_row = sss_full_image_.rows;
+            this->compute_weights(sss_full_image_.rowRange(start_row, end_row));
+
+            std::cout << "Saving real patch image " << sss_full_image_.rowRange(start_row, end_row).rows << std::endl;
+            // JRV
+            double x = odom_latest_.pose.pose.position.x;
+            double y = odom_latest_.pose.pose.position.y;
             std::string filename = "./sss_real_patch_"+ std::to_string(ping_cnt_) + ".png";
-            bool success = cv::imwrite(filename, sss_full_image_.rowRange(sss_full_image_.rows - submap_size_, sss_full_image_.rows));
+            bool success = cv::imwrite(filename, sss_full_image_.rowRange(start_row, end_row));
 
             std::vector<double> weights;
             for (int i = 0; i < pc_; i++)
@@ -296,8 +318,9 @@ void pfLocalization::sss_cb(const auv_model::SidescanConstPtr &msg)
                 weights.push_back(particles_.at(i).w_);
             }
             this->resample(weights);
+            std::cout << "End: sss cb compute weights " << ping_cnt_ << std::endl;
         }
-        std::cout << "Done with sss cb" << std::endl;
+        // std::cout << "Done with sss cb" << ping_cnt_ << std::endl;
 
         // auto t2 = high_resolution_clock::now();
         // duration<double, std::milli> ms_double = t2 - t1;
@@ -401,6 +424,10 @@ void pfLocalization::expected_measurements(nav_msgs::Odometry &odom)
 
 void pfLocalization::compute_weights(const cv::Mat real_sss_patch)
 {
+    // Debugging
+    std::cout << "Starting compute weights " << std::endl;
+    std::cout << "Matrix size: " << real_sss_patch.rows << "x" << real_sss_patch.cols << std::endl;
+
     auto t1 = high_resolution_clock::now();
 
     // Sequential version

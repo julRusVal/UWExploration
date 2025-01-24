@@ -57,8 +57,8 @@
 #include "tf/transform_datatypes.h"
 #include "tf_conversions/tf_eigen.h"
 
-#include <auv_2_ros/FlsReading.h>
-
+//#include <auv_2_ros/FlsReading.h>
+#include <auv_model/FlsReading.h>
 
 
 #include <algorithm>

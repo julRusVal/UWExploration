@@ -312,7 +312,7 @@ bool RbpfSlamMultiExtension::empty_srv_multi(std_srvs::Empty::Request &req, std_
     return true;
 }
 
-void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_2_ros::FlsReading& fls_reading)
+void RbpfSlamMultiExtension::rbpf_update_fls_cb(const auv_model::FlsReading& fls_reading)
 {
     // ROS_WARN("time diff = %f", ros::Time::now().toSec() - fls_reading.header.stamp.toSec());
     ros::Time timestamp = fls_reading.header.stamp;
