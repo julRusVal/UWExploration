@@ -135,7 +135,7 @@ catkin_package(
 include_directories(
   include
   ${EIGEN_INCLUDE_DIRS} 
-	${PCL_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -160,6 +160,7 @@ add_executable(rbpf_par_slam_node src/rbpf_par_slam_node.cpp
                 src/rbpf_par_slam.cpp)
 
 add_dependencies(rbpf_par_slam_node ${catkin_EXPORTED_TARGETS})
+# add_dependencies(rbpf_slam_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(rbpf_par_slam_node ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 target_link_libraries(rbpf_par_slam_node Threads::Threads)

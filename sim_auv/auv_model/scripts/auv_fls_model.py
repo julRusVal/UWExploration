@@ -16,9 +16,11 @@ from geometry_msgs.msg import Point, Transform, PointStamped
 from sensor_msgs import point_cloud2
 from scipy.ndimage import gaussian_filter1d
 
-# For sim mbes action client
+# For sim fls action client
 import actionlib
-from auv_2_ros.msg import FlsSimAction, FlsSimResult
+# from auv_2_ros.msg import FlsSimAction, FlsSimResult
+from auv_model.msg import FlsSimAction, FlsSimResult  # Remove auv_2_ros dependency
+# from auv_model.msg import FlsReading
 import tf2_ros
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Quaternion

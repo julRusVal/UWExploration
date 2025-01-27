@@ -9,12 +9,10 @@
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="torroba18@todo.todo">torroba18</maintainer>
 
-
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>TODO</license>
-
 
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
@@ -31,7 +29,7 @@
   <depend>actionlib_msgs</depend>
   <depend>std_msgs</depend>
   <depend>auv_model</depend>
-   <build_depend>message_generation</build_depend>
+  <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->

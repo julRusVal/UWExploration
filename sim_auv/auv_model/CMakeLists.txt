@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
     actionlib
     std_msgs
     sensor_msgs
-    auv_2_ros
+    #  auv_2_ros
     message_generation
 )
 

@@ -135,9 +135,11 @@ catkin_package(
 include_directories(
   include
   ${EIGEN_INCLUDE_DIRS} 
-	${PCL_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
+# ${rbpf_slam_INCLUDE_DIRS}  # Added by JRV
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/rbpf_multiagent.cpp
@@ -148,10 +150,12 @@ add_executable(rbpf_multiagent_node
                 src/rbpf_multiagent.cpp
                 src/rbpf_par_slam_multiagent_extension.cpp)
 
-add_dependencies(rbpf_multiagent_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-## add_dependencies(rbpf_multiagent_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} rbpf_slam)
+# add_dependencies(rbpf_multiagent_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(rbpf_multiagent_node ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(rbpf_multiagent_node rbpf_slam)
+target_link_libraries(rbpf_multiagent_node
+                        rbpf_slam
+                        ${catkin_LIBRARIES})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
