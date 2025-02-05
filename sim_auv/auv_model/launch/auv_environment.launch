@@ -9,26 +9,13 @@
     <arg name="debug" default="0"/>
     <arg name="multi_agent" default="false"/>
 
-	<!-- Rates for simulating missions  -->
-    <arg name="odom_rate" default="0.1"/>
-	<arg name="mbes_rate" default="0.1"/>
-	<arg name="sss_rate" default="0.1"/>
-	<!-- Rate for replaying real missions  -->
-    <arg name="replay_rate" default="0.05"/>
-    <!-- <arg name="replay_rate" default="1"/> -->
-	
-	<!-- MBES sim sensor -->
-	<arg name="n_beams_mbes" default="100"/>	
-	<arg name="mbes_open_angle" default="2.0" />
-
-	<!-- SSS sensor -->
-	<arg name="n_beams_sss" default="500"/>	<!-- Per SSS head -->
-	<arg name="sss_open_angle" default="2.0" />
-
     <!-- Real data  -->
     <arg name="path" default="$(find uw_tests)/datasets/$(arg dataset)/"/>
     <arg name="cereal_trajectory" default="$(arg path)/mbes_pings.cereal"/>
+	<!-- Rate for replaying real missions  -->
+    <arg name="replay_rate" default="0.05"/>
 
+	<!-- Odom parameters-->
 	<!-- Coordinates of odom frame wrt the map frame. By default, the AUV start the mission here -->
     <arg name="x" default="-50.0"/>
 	<arg name="y" default="-50.0"/>
@@ -36,7 +23,23 @@
 	<arg name="roll" default="0.0"/>
 	<arg name="pitch" default="0.0"/>
 	<arg name="yaw" default="0.0"/>
+	<!-- Rate for simulating missions  -->
+	<arg name="odom_rate" default="0.1"/>
 
+	<!-- Payload parameters  -->
+	<!-- Rates for simulating missions  -->
+
+	<!-- MBES sim sensor -->
+	<arg name="n_beams_mbes" default="100"/>
+	<arg name="mbes_open_angle" default="2.0" />
+	<arg name="mbes_rate" default="0.1"/>
+
+	<!-- SSS sensor -->
+	<arg name="n_beams_sss" default="500"/>	<!-- Per SSS head -->
+	<arg name="sss_open_angle" default="2.0" />
+	<arg name="sss_rate" default="0.1"/>
+
+    <!-- FLS sensor parameters -->
 	<arg name="fls_horizontal_angle" default="135"/>
     <arg name="fls_vertical_angle" default="60"/>
     <arg name="fls_max_range" default="50.0"/>
@@ -44,10 +47,8 @@
 	<arg name="fls_angle_std" default="0.001"/>
 	<arg name="fls_meas_period" default="0.1"/>
 
+    <!-- multi agent -->
     <arg name="num_auvs" default="1"/>
-
-
-
 
 	<group ns="$(arg namespace)">
 

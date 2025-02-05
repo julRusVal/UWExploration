@@ -9,6 +9,7 @@ from move_base_msgs.msg import MoveBaseFeedback, MoveBaseResult, MoveBaseAction,
 import actionlib
 import rospy
 import tf
+from rospy.core import rospyinfo
 from std_msgs.msg import Float64, Header, Bool, Time, Int32MultiArray, Int32
 import math
 import dubins
@@ -49,6 +50,10 @@ class W2WMissionPlanner(object):
         rospy.Subscriber(self.path_topic, Path, self.path_cb, queue_size=1)
         self.latest_path = Path()
 
+        # The common timestamps for the waypoints
+        rospy.Subscriber('/multi_agent/common_timestamps',Int32MultiArray,self.common_timestamps_cb,queue_size=1)
+        self.common_timestamps = None
+
         # LC waypoints, individually
         rospy.Subscriber(self.wp_topic, PoseStamped, self.wp_cb, queue_size=1)
 
@@ -56,9 +61,6 @@ class W2WMissionPlanner(object):
         # to stop the vehicle until the LC area has been selected
         rospy.Subscriber(self.relocalize_topic, Bool, self.start_relocalize, queue_size=1)
         self.relocalizing = False
-
-        rospy.Subscriber('/multi_agent/common_timestamps',Int32MultiArray,self.common_timestamps_cb,queue_size=1)
-        self.common_timestamps = None
 
         # The client to send each wp to the server
         self.ac = actionlib.SimpleActionClient(self.planner_as_name, MoveBaseAction)
@@ -73,7 +75,6 @@ class W2WMissionPlanner(object):
         self.wp_old = None
         self.wp_artificial_old = None
 
-
         self.point_marker_pub = rospy.Publisher('artificial_wps', MarkerArray, queue_size=1)
         self.arrival_time_pub = rospy.Publisher('arrival_time', Time, queue_size=1)
         self.wp_counter_pub = rospy.Publisher(self.wp_counter_topic, Int32, queue_size=1)
@@ -83,33 +84,74 @@ class W2WMissionPlanner(object):
         self.finished_pub = rospy.Publisher('/finished/' + self.namespace, Bool, queue_size=1)
         self.started = False
 
-        rospy.loginfo("Waiting for synch service")
-        synch_top = rospy.get_param("~synch_topic", '/pf_synch')
-        rospy.wait_for_service(synch_top)
-        rospy.loginfo("Synch service started")
+        #
+        self.spawner_status_param_name = rospy.get_param('spawner_status_param_name','/spawner_status')
+        self.spawner_status = False  # Holds most recent status of the spawner
+        self.spawner_status_output = True # Indicates if the spawner status should be output
+
+        self.mission_planner_count_param_name = rospy.get_param('mission_planner_count_param_name','/mission_planner_count')
+        self.mission_planner_counted = False
+
+        rospy.loginfo(f"MISSION PLANNER {rospy.get_namespace()}")
+
+        self.signal_online()
+
+        # rospy.loginfo("Waiting for synch service")
+        # synch_top = rospy.get_param("~synch_topic", '/pf_synch')
+        # rospy.wait_for_service(synch_top)
+        # rospy.loginfo("Synch service started")
+
+        # JRV: I have removed the synch service, since it appears it's not used in the code
+        # This should be tested
+
+        rospy.loginfo("Ignoring the synce service for now!")
 
         while not rospy.is_shutdown():
 
-            if self.latest_path.poses and not self.relocalizing:
+            # Update the spawner status
+            if rospy.has_param(self.spawner_status_param_name):
+                self.spawner_status = rospy.get_param(self.spawner_status_param_name)
+
+            # Wait for valid spawner status
+            if not self.spawner_status:
+                if self.spawner_status_output:
+                    rospy.loginfo("Spawner status: %s", self.spawner_status)
+                    self.spawner_status_output = False
+                continue
+
+            if self.latest_path.poses and not self.relocalizing and self.common_timestamps is not None:
                 self.started = True
                 # Get next waypoint in path
-                # rospy.loginfo("Sending WP")
+                rospy.loginfo("Sending WP")
+                rospy.loginfo("Spawner status: %s", self.spawner_status)
                 wp = self.latest_path.poses[0]
                 del self.latest_path.poses[0]
 
                 goal_pose = copy.deepcopy(wp)
-                goal_pose.header.stamp = rospy.Time(0)
+                goal_pose.header.stamp = rospy.Time.now()
 
                 robot_pose_local = PoseStamped()
                 robot_pose_local.header.frame_id = self.base_frame
-                robot_pose_local.header.stamp = rospy.Time(0)
+                robot_pose_local.header.stamp = rospy.Time.now()
 
-                robot_pose = self.listener.transformPose( #we need to send all wp's in map frame in order to be able to check if wp is reached correctly. Otherwise we would never stop (due to how we check if reached). Also it's cheaper to transform once for each robot rather than trasnforming for all wps in the dubins path
-                    self.map_frame, robot_pose_local)
+                # we need to send all wp's in map frame in order to be able to check if wp is reached correctly.
+                # Otherwise we would never stop (due to how we check if reached).
+                # Also, it's cheaper to transform once for each robot rather than transforming for all wps in the dubins path
+                if self.listener.canTransform(self.map_frame, self.base_frame, rospy.Time(0)):
+                    robot_pose = self.listener.transformPose(self.map_frame, robot_pose_local)
+                    rospy.loginfo(f"{rospy.get_name()}: Transformed pose from {self.map_frame} to {self.base_frame}")
+                else:
+                    rospy.loginfo(f"{rospy.get_name()}: Could not transform {self.map_frame} to {self.base_frame}")
+                    continue
 
+                self.wp_counter_pub.publish(Int32(self.wp_counter)) #Keep track of where we are in the
 
-                self.wp_counter_pub.publish(Int32(self.wp_counter)) #Keep track of where we are in the path
-                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'simple_maxturn' :
+                # Dubins and simple_maxturn follower type
+                if self.wp_follower_type == 'dubins' or self.wp_follower_type == 'simple_maxturn':
+
+                    # Debugging
+                    rospy.loginfo(f"{rospy.get_name(): <20} WP {self.wp_counter} of {len(self.latest_path.poses)}")
+
                     if self.wp_old is None:
                         self.wp_old = robot_pose
                         self.wp_artificial_old = robot_pose
@@ -167,6 +209,7 @@ class W2WMissionPlanner(object):
                             self.ac.wait_for_result()
                             # rospy.loginfo("WP reached, moving on to next one")
 
+                # Simple follower type
                 elif self.wp_follower_type == 'simple':
                     #Publish path to rviz
                     path = Path()
@@ -191,18 +234,33 @@ class W2WMissionPlanner(object):
                 self.started = False
                 rospy.loginfo_once("Mission finished")
 
-    def start_relocalize(self, bool_msg):
-        self.relocalizing = bool_msg.data
+    def wait_for_tf(self, target_frame: str, source_frame: str, timeout: int = 5):
+        """Waits for the transform to become available."""
+        rospy.loginfo(f"Waiting for transform from {source_frame} to {target_frame}...")
+        try:
+            self.listener.waitForTransform(target_frame, source_frame, rospy.Time(0), rospy.Duration(timeout))
+            # rospy.loginfo(f"Transform available: {source_frame} → {target_frame}")
+            return True
+        except tf.Exception as e:
+            rospy.logerr(f"Transform failed: {e}")
+            return False
+
+    def signal_online(self):
+        """
+        Signals that the mission planner is online.
+        """
+        if self.mission_planner_counted:
+            return
+
+        current_count = rospy.get_param(self.mission_planner_count_param_name, 0)
+        rospy.set_param(self.mission_planner_count_param_name, current_count + 1)
+        rospy.loginfo(f"{rospy.get_namespace()}: Mission planner online, count: {current_count + 1}")
+        self.mission_planner_counted = True
 
     def path_cb(self, path_msg):
         self.latest_path = path_msg
         rospy.loginfo("Path received with number of wp: %d",
                       len(self.latest_path.poses))
-
-    def wp_cb(self, wp_msg):
-        # Waypoints for LC from the backseat driver
-        rospy.loginfo("LC wp received")
-        self.latest_path.poses.insert(0, wp_msg)
 
     def common_timestamps_cb(self, msg):
         rospy.loginfo("Received common timestamps from path pattern generator")
@@ -226,6 +284,14 @@ class W2WMissionPlanner(object):
             turn_duration = 2 #seconds
         data[1:] = data[1:] + np.arange(1,n_turns)*turn_duration #arange vector is [1 2 3 4 .... n_turns-1]
         self.common_timestamps = list(data) #remove the first one at 0 since it's the start time
+
+    def start_relocalize(self, bool_msg):
+        self.relocalizing = bool_msg.data
+
+    def wp_cb(self, wp_msg):
+        # Waypoints for LC from the backseat driver
+        rospy.loginfo("LC wp received")
+        self.latest_path.poses.insert(0, wp_msg)
 
     def generate_dubins_path(self,goal_pose,robot_pose):
         robot_heading = tf.transformations.euler_from_quaternion([robot_pose.pose.orientation.x,robot_pose.pose.orientation.y,robot_pose.pose.orientation.z,robot_pose.pose.orientation.w])[2]

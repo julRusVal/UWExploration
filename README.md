@@ -19,7 +19,7 @@ Only required if working with the **bathy_graph_slam** package (currently under 
 Python deps:
 ```
 sudo apt install python3-pygame python3-scipy python3-configargparse python3-numpy
-pip install configargparse pygame 
+pip install configargparse pygame dubins
 ```
 Make sure your scipy version is >= 1.4.0
 

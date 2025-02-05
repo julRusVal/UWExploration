@@ -21,6 +21,10 @@ class AUVSpawner():
         self.vehicle_model = rospy.get_param('vehicle_model','hugin')
         self.spawn_sep = rospy.get_param('spawn_separation',10)
 
+        # Set up parameters for the spawner status
+        self.spawner_status_param_name = rospy.get_param('~spawner_status_param_name','/spawner_status')
+        rospy.set_param(self.spawner_status_param_name, False)
+        self.spawn_counter = 0
         
         self.fls_horizontal_angle = rospy.get_param("~fls_horizontal_angle", 135)
         self.fls_vertical_angle = rospy.get_param("~fls_vertical_angle", 60)
@@ -43,7 +47,6 @@ class AUVSpawner():
         self.spawn_pos_paths_sub = rospy.Subscriber(self.spawn_pos_path_array_topic, AgentPathArray, self.callback)
 
         self.t_start_pub = rospy.Publisher('/multi_agent/t_start', Time, queue_size=1)
-
 
         self.message_srv = rospy.ServiceProxy('/display_rviz_message', DisplayRvizMessage)
         rospy.wait_for_service('/display_rviz_message',timeout=5)
@@ -74,14 +77,16 @@ class AUVSpawner():
                 #4. OK Display text in rviz
                 #5. Add Integral part to w2w_planner
 
-                        
-                
-
-
                 x = i*self.spawn_sep
                 yaw = math.pi/2
 
                 self.spawn_auv(x,0,0,0,0,yaw,namespace)
+                self.spawn_counter += 1
+
+        # Indicate that all AUVs have been spawned
+        if self.spawn_counter == self.num_auvs:
+            rospy.loginfo("Setting spawner status to True")
+            rospy.set_param(self.spawner_status_param_name, True)
                 
             # rospy.sleep(3)
 
@@ -97,21 +102,24 @@ class AUVSpawner():
             x,y,z = start_pose.position.x, start_pose.position.y-startup_distance, start_pose.position.z
             namespace = self.vehicle_model + '_' + str(agent_id)
             self.spawn_auv(x,y,z,roll,pitch,yaw,namespace)
+            self.spawn_counter += 1
+
+        # Indicate that all AUVs have been spawned
+        rospy.loginfo("Setting spawner status to True")
+        rospy.set_param(self.spawner_status_param_name, True)
         #wait for user to press enter before publishing paths
-        self.display_message_in_rviz("Press 'Enter' in terminal to start survey, once all AUVs are spawned...")
-        rospy.loginfo("Press Enter to publish paths...")
+        #self.display_message_in_rviz("Press 'Enter' in terminal to start survey, once all AUVs are spawned...")
+        #rospy.loginfo("Press Enter to publish paths...")
         # input()
-        time.sleep(10)
+        #time.sleep(10)
         self.t_start_pub.publish(rospy.Time.now())
         self.path_array_pub.publish(msg)
         self.display_message_in_rviz("Survey started!")
         self.display_message_in_rviz("")
 
 
-
     def display_message_in_rviz(self, message):
         self.message_srv(DisplayRvizMessageRequest(String(message)))
-            
             
 
     def spawn_auv(self,x,y,z,roll,pitch,yaw,namespace):

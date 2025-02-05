@@ -162,7 +162,8 @@ class W2WPathPlanner(object):
                 self.t = rospy.Time.now()
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                rospy.logwarn("Transform to base frame not available yet")
+                pose_frame = goal_point.header.frame_id
+                rospy.logwarn(f"{rospy.get_name()} Transform from {pose_frame} to {self.base_frame} not available yet")
             pass
 
             # Publish feedback

@@ -41,7 +41,7 @@
 
     <!-- Specific args for SLAM -->
     <arg name="node_name_rbpf_multi" default="rbpf_multi_setup_node"/>
-    <arg name="rbpf" default="true"/>
+    <arg name="rbpf" default="false"/>
     <arg name="particle_count" default="50"/>
     <arg name="particle_count_neighbours" default="50"/>
     <arg name="num_particle_handlers" default="1"/>
@@ -55,8 +55,6 @@
     <arg name="fls_range_std" default="0.0001"/>  
     <arg name="fls_angle_std" default="0.000174533"/> <!-- 0.1 deg -->
     <arg name="particle_spread_std_factor" default="0.01"/>
-
-
 
     <!-- Specific args for path relayer -->
     <arg name="node_name_relay" default="path_relay_node"/>
@@ -78,8 +76,6 @@
     <arg name="exiting_line" default="false"/>
     <arg name="pattern_generation" default="true"/>
     <arg name="survey_area_topic" default="/multi_agent/survey_area"/>
-
-
 
     <!-- Specific args for auxiliary nodes -->
     <arg name="auxiliary_enabled" default="false"/>
@@ -105,7 +101,6 @@
     <param name="dubins_turning_radius" value="$(arg dubins_turning_radius)"/>
 
 
-
     <!-- Spawn AUVs -->
     <node type="auv_spawner.py" pkg="multi_agent" name="$(arg node_name_spawner)" output="screen">
         <param name="mode" value="$(arg mode)"/>
@@ -121,13 +116,12 @@
         <param name="fls_meas_period" value="0.1"/> <!-- seconds -->
         <param name="odom_period" value="$(arg odom_period)"/>
         <param name="mbes_meas_period" value="$(arg mbes_meas_period)"/>
-        
     </node>
+
 
     <!-- Enable navigation for AUVs -->
     <node type="auv_navigation.py" pkg="multi_agent" name="$(arg node_name_navigation)" output="screen">
-        <param name="navigation_launch_file" value="$(find basic_navigation)/launch/basic_mission.launch"/>    
-        
+        <param name="navigation_launch_file" value="$(find basic_navigation)/launch/basic_mission.launch"/>
         <param name="manual_control" value="$(arg manual_control)"/> 
         <param name="max_thrust" value="$(arg max_thrust)"/>
         <param name="max_throttle" value="$(arg max_throttle)"/>
@@ -138,8 +132,6 @@
         <param name="time_sync" value="$(arg time_sync)"/>
         <param name="odom_period" value="$(arg odom_period)"/>
         <!-- <param name="wp_counter_topic"  value="/$(arg namespace)/wp_counter" /> -->
-
-        
     </node>
 
     <!-- Relay paths to all AUVs -->
@@ -171,7 +163,6 @@
     </group>
 
     <!-- Start rviz message display service  -->
-
     <node type="display_message_service.py" pkg="rviz_visualization" name="display_rviz_message_service" output="screen">
     </node>
 

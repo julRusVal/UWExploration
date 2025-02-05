@@ -35,6 +35,7 @@ install/*
 
 *.code*
 .vscode/*
+.idea/
 
 # Datasets
 datasets/

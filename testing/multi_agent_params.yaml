@@ -1,0 +1,94 @@
+# multi_agent_params.yaml
+
+# --- High-level numeric/string parameters ---
+num_auvs: 2
+vehicle_model: "hugin"
+namespace: "hugin_0"
+
+mode: "sim"
+dataset: "asko"
+
+path_array_topic: "/multi_agent/path_array"
+path_array_spawn_pos_topic: "/multi_agent/spawn_pos/path_array"
+spawn_separation: 10
+
+# --- param names ---
+# These are the param names used to signal the states of nodes
+spawner_status_param_name: "spawner_status"
+mission_planner_count_param_name: "mission_planner_count"
+
+# --- Front-looking sonar parameters ---
+fls_horizontal_angle: 90.0
+fls_vertical_angle: 30.0
+fls_max_range: 50.0
+fls_range_std: 0.0001
+fls_angle_std: 0.000174533
+
+# --- Timing / period settings ---
+odom_period: 0.01
+mbes_meas_period: 0.1
+
+# --- Navigation & control ---
+manual_control: false
+max_thrust: 3.0
+max_throttle: 1.0
+# Options include: 'simple', 'simple_maxturn', and 'dubins
+waypoint_follower_type: "simple_maxturn"
+dubins_turning_radius: 3.0
+dubins_step_size: 0.5
+goal_tolerance: 1.0
+time_sync: true
+
+# --- Pattern Generation ---
+pattern_generation: true
+swath: 20.0
+speed: 1.0                # Typically set to max_throttle
+straight_slack: 0.0
+overlap_between_rows: -10.0
+overlap_between_lanes: 0.0
+double_sided: false
+center_x: false
+center_y: false
+exiting_line: false
+survey_area_topic: "/multi_agent/survey_area"
+path_bottom_left: [-68.0, -206.0, 0.0]  # [x, y, z]
+path_top_right: [0.0, 12.0, 0.0] # Set either to None to select bounding corners with the GUI
+
+# --- Visualization & plotting ---
+rviz_helper: false
+animate_plots: true
+save_final_plots: false
+plots_results_path: "/home/julianvaldez/multi_agent_results/plots"
+record_launch_parameters_and_arguments: false
+
+# --- RBPF-related ---
+rbpf: false
+particle_count: 50
+particle_count_neighbours: 50
+num_particle_handlers: 1
+results_path: "/home/julianvaldez/multi_agent_results/rbpf"
+rbpf_sensor_FLS: true
+rbpf_sensor_MBES: false
+# Options include: 'disabled', 'realistic', 'unlimited'
+comms_type: "disabled"
+init_covariance: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+motion_covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.00001]
+resampling_noise_covariance: [0.1, 0.1, 0.0, 0.0, 0.0, 0.0]
+particle_spread_std_factor: 0.01
+
+weight_slicing: "top"
+pmp: "poly"
+
+# --- Auxiliary nodes ---
+auxiliary_enabled: true
+
+# --- Example node names (if you rely on these as ROS params) ---
+node_name_spawner: "auv_spawn_node"
+node_name_navigation: "auv_navigation_node"
+node_name_relay: "path_relay_node"
+node_name_helper: "rviz_helper_node"
+node_name_pattern: "path_pattern_generator_node"
+node_name_rbpf_multi: "rbpf_multi_setup_node"
+
+# Parameters for a multi-agent simulation
+

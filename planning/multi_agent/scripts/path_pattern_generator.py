@@ -30,15 +30,30 @@ class PatternGenerator():
 
         self.num_auvs = rospy.get_param('num_auvs',1)
         self.vehicle_model = rospy.get_param('vehicle_model','hugin')
-        
-        self.paths_sub = rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_cb)
-        # self.goal = None
-        self.bottom_left = None
-        self.top_right = None
 
+        # Defines the frame id that the goals are given in, for the generated paths and the survey area
+        self.default_frame_id = "map"
+
+        # I want to allow for the user to define the bounding corners of the survey area from the yaml file
+        # If they are not defined, the user can use the 2D Nav Goal tool in the RViz window to define them
+        # Locally path_bottom_left = PoseStamped()
+        self.path_bottom_left = PatternGenerator.pose_from_param(self,'path_bottom_left')
+        self.path_top_right = PatternGenerator.pose_from_param(self, 'path_top_right')
+
+        if self.path_bottom_left is None or self.path_top_right is None:
+            # Subscribe to the goal topic
+            self.goal_sub = rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_cb)
+
+        # Publishers used to send messages to the planner, w2w_planner for now
         self.spawn_pos_path_array_topic = rospy.get_param('path_array_spawn_pos_topic', '/multi_agent/spawn_pos/path_array')
         self.spawn_pos_path_array_pub = rospy.Publisher(self.spawn_pos_path_array_topic, AgentPathArray, queue_size=1)
         self.paths = AgentPathArray()
+        self.valid_paths = False
+        self.goal = None
+
+        self.time_array_pub = rospy.Publisher('/multi_agent/common_timestamps', Int32MultiArray, queue_size=1)
+        self.time_array = None
+        self.valid_time_array = False
 
         self.survey_area_topic = rospy.get_param('survey_area_topic', '/multi_agent/survey_area')
         self.survey_marker_pub = rospy.Publisher(self.survey_area_topic, MarkerArray, queue_size=1)
@@ -69,49 +84,137 @@ class PatternGenerator():
 
         self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
 
-        self.time_array = None
-        self.time_array_pub = rospy.Publisher('/multi_agent/common_timestamps', Int32MultiArray, queue_size=1)
+        rospy.Timer(rospy.Duration(1), self.publish_survey_area)
 
-        rospy.Timer(rospy.Duration(1.0), self.publish_survey_area)
-        
+        # The pattern generator should wait for the spawner to be online before generating the pattern
+        self.spawner_status_param_name = rospy.get_param('spawner_status_param_name',
+                                                         '/spawner_status')
+        self.spawn_online = False  # This is the status of the spawner node, lack of parameter means it is offline
+        self.spawner_status = False  # This is the status of the spawning, True indicates all AUVs have been spawned
+
+        self.mission_planner_count_name = rospy.get_param('mission_planner_count_param_name',
+                                                          '/mission_planner_count')
+        self.mission_planner_count = -1
+        self.valid_mission_planner_count = False
+
+        self.safe_path_publishing_timer = rospy.Timer(rospy.Duration(1), self.safe_path_publishing_cb)
+
+        rospy.loginfo(f"PATH GENERATOR:: Name: {rospy.get_name()} - Namespace: {rospy.get_namespace()}")
+
+        # Status report to terminal
+        # If the corner goals are set through the yaml file, self.generate_lawn_mower_pattern() will be called in the __init__ method
+        self.status_reported = False
+        if not self.status_reported:
+            rospy.loginfo("Pattern Generator node is ready!")
+            if self.path_bottom_left is None or self.path_top_right is None:
+                rospy.loginfo("Choose bounding corners using 2D Nav Goal tool in the RViz window")
+            else:
+                rospy.loginfo("Bounding corners have been pre-defined")
+                rospy.loginfo("Generating lawn mower pattern")
+
+                self.generate_lawn_mower_pattern()
+            self.status_reported = True
+
         rospy.spin()
 
 
     def message_timer_cb(self, event):
-        if self.bottom_left is None:
+        if self.path_bottom_left is None:
             self.display_message_in_rviz("Choose bottom left corner using 2D Nav Goal tool...")
-        elif self.top_right is None:
+        elif self.path_top_right is None:
             self.display_message_in_rviz("Choose top right corner using 2D Nav Goal tool...")
         else:
             self.display_message_in_rviz("")
             self.message_timer.shutdown()
 
+    def safe_path_publishing_cb(self, event):
+        """
+        Callback for publishing the path in a safe manner that waits for the spawner to be online.
+        :return:
+        """
+        self.update_spawner_status()
+        self.update_mission_planner_count()
+
+        if self.spawn_online and self.valid_mission_planner_count and self.valid_paths and self.valid_time_array:
+
+            self.spawn_pos_path_array_pub.publish(self.paths)
+            rospy.loginfo("Safely published paths")
+            self.time_array_pub.publish(Int32MultiArray(data=self.time_array))
+            rospy.loginfo("Safely published time array")
+
+            self.safe_path_publishing_timer.shutdown()
+
+            # Reset the paths and time_array
+            self.paths = AgentPathArray()
+            self.valid_paths = False
+            self.goal = None
+
+            self.time_array = None
+            self.valid_time_array = False
+
+    def update_spawner_status(self):
+        """Update the status of the spawner node"""
+        if rospy.has_param(self.spawner_status_param_name):
+            self.spawn_online = True
+            self.spawner_status = rospy.get_param(self.spawner_status_param_name)
+        else:
+            self.spawn_online = False
+            self.spawner_status = False
+
+    def update_mission_planner_count(self):
+        """Update the count of the mission planner node"""
+        if rospy.has_param(self.mission_planner_count_name):
+            self.mission_planner_count = rospy.get_param(self.mission_planner_count_name)
+            self.valid_mission_planner_count = ( self.mission_planner_count == self.num_agents)
+
+        else:
+            self.mission_planner_count = -1
+            self.valid_mission_planner = False
+
     def goal_cb(self, msg):
+        """
+        Callback for the goal subscriber
+        :param msg: PoseStamped message1
+        :return:
+        """
         # rospy.loginfo("Received goal")
         # self.rect_height = self.distance_hugin_0_to_goal(msg)
         # print("rect_height: ", self.rect_height)
         # self.generate_lawn_mower_pattern()
-        if self.bottom_left is None:
-            self.bottom_left = msg
-            rospy.loginfo("Received bottom left corner")
 
-        elif self.top_right is None:
-            self.top_right = msg
-            rospy.loginfo("Received top right corner")
+        def debug_goal_cb(pose_msg : PoseStamped, label :str):
+            x = pose_msg.pose.position.x
+            y = pose_msg.pose.position.y
+            z = pose_msg.pose.position.z
+
+            rospy.loginfo(f"{label} -> Pose Coordinates: x: {x}, y: {y}, z: {z}")
+
+        # Process the goal messages as they come in
+        if self.path_bottom_left is None:
+            self.path_bottom_left = msg
+            debug_goal_cb(msg, "Bottom Left")
+
+        elif self.path_top_right is None:
+            self.path_top_right = msg
+            debug_goal_cb(msg, "Top Right")
             # self.publish_survey_area()
-            self.generate_lawn_mower_pattern()
+            # self.generate_lawn_mower_pattern()
         else:
             rospy.loginfo("Survey area already defined!")
+
+        if self.path_bottom_left is not None and self.path_top_right is not None:
+            rospy.loginfo("Generating lawn mower pattern")
+            self.generate_lawn_mower_pattern()
     
     def publish_survey_area(self, event=None):
         """Publishes a marker representing the survey area as a rectangle"""
-        if self.bottom_left and self.top_right:
+        if self.path_bottom_left and self.path_top_right:
             # Create marker array
             marker_array = MarkerArray()
 
             # Create a line strip marker for the rectangle
             marker_rect = Marker()
-            marker_rect.header.frame_id = "map"
+            marker_rect.header.frame_id = self.default_frame_id
             marker_rect.header.stamp = rospy.Time.now()
             marker_rect.type = Marker.LINE_STRIP
             marker_rect.id = 0
@@ -129,11 +232,11 @@ class PatternGenerator():
             # Add points to the line strip marker to define the rectangle
             # Assuming that bottom_left and top_right are PoseStamped objects
             points = [
-                    self.bottom_left.pose.position,
-                    Point(self.top_right.pose.position.x, self.bottom_left.pose.position.y, 0.0),
-                    self.top_right.pose.position,
-                    Point(self.bottom_left.pose.position.x, self.top_right.pose.position.y, 0.0),
-                    self.bottom_left.pose.position  # Closing the loop
+                    self.path_bottom_left.pose.position,
+                    Point(self.path_top_right.pose.position.x, self.path_bottom_left.pose.position.y, 0.0),
+                    self.path_top_right.pose.position,
+                    Point(self.path_bottom_left.pose.position.x, self.path_top_right.pose.position.y, 0.0),
+                    self.path_bottom_left.pose.position  # Closing the loop
                     ]
 
             # Append points to the marker
@@ -179,8 +282,37 @@ class PatternGenerator():
     #     # Publish the marker array
     #     self.message_pub.publish(marker_array)
 
+    def pose_from_param(self, param_name):
+        """
+        Get a PoseStamped object from a parameter.
+        The parameter should be a list of 3 elements [x, y, z].
+        This will do some basic error checking and return None if the parameter is not set or is the wrong size.
+        """
 
-    
+        param_value = rospy.get_param(param_name, None)
+        if param_value is None:
+            rospy.logerr(f"Parameter {param_name} is not set")
+            return None
+
+        if not isinstance(param_value, list):
+            rospy.logerr(f"Parameter {param_name} is not a list")
+            return None
+
+        if len(param_value) != 3:
+            rospy.logerr(f"Parameter {param_name} is not the correct size")
+            return None
+
+        pose = PoseStamped()
+
+        pose.header.frame_id = self.default_frame_id
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.orientation.w = 1.0
+
+        pose.pose.position.x = param_value[0]
+        pose.pose.position.y = param_value[1]
+        pose.pose.position.z = param_value[2]
+        return pose
+
     def distance_hugin_0_to_goal(self, goal):
         """Calculate the distance from Hugin 0 to the goal, using the tf tree"""
         try:
@@ -208,10 +340,10 @@ class PatternGenerator():
     def calc_rect_height_N_width(self):
         """Calculate the height and width of the rectangle"""
         # Calculate the height of the rectangle
-        self.rect_height = abs(self.bottom_left.pose.position.y - self.top_right.pose.position.y)
+        self.rect_height = abs(self.path_bottom_left.pose.position.y - self.path_top_right.pose.position.y)
 
         # Calculate the width of the rectangle
-        self.rect_width = abs(self.bottom_left.pose.position.x - self.top_right.pose.position.x)
+        self.rect_width = abs(self.path_bottom_left.pose.position.x - self.path_top_right.pose.position.x)
 
     def generate_lawn_mower_pattern(self):
         self.calc_rect_height_N_width()
@@ -242,7 +374,7 @@ class PatternGenerator():
         for agent_idx, timed_path in enumerate(timed_paths_list):
             path_msg = Path()
             path_msg.header.stamp = rospy.Time.now()
-            path_msg.header.frame_id = "map"  # Assuming the waypoints are in the map frame
+            path_msg.header.frame_id = self.default_frame_id # Assuming the waypoints are in the map frame
             times = []
             # Create PoseStamped messages for each waypoint
             for wp_id, waypoint in enumerate(timed_path.wps):
@@ -272,27 +404,30 @@ class PatternGenerator():
             self.paths.path_array.append(agent_path)
             if self.time_array is None:
                 self.time_array = times
-                self.time_array_pub.publish(Int32MultiArray(data=self.time_array))
+                self.valid_time_array = True
+                # This is published by the safe_path_publishing_cb
+                # self.time_array_pub.publish(Int32MultiArray(data=self.time_array))
 
             # timed_path.visualize(ax, wp_labels=False, circles=True, alpha=0.1, c='k') #Uncomment to plot the paths in separate window
 
         # Publish AgentPathArray containing all agent paths
         self.paths.header.stamp = rospy.Time.now()
-        self.paths.header.frame_id = "map"  # Assuming the paths are in the map frame
-        self.spawn_pos_path_array_pub.publish(self.paths)
-        print("Published paths")
+        self.paths.header.frame_id = self.default_frame_id  # Assuming the paths are in the map frame
+        self.valid_paths = True
+        # self.spawn_pos_path_array_pub.publish(self.paths)
+        # rospy.loginfo("Published paths")
 
-        plt.show()
+        ## plt.show()
 
         # rospy.loginfo("Publishing AgentPathArray")
         # self.path_array_pub.publish(self.paths)
         #Reset
-        self.paths = AgentPathArray()
-        self.goal = None
+        # self.paths = AgentPathArray()
+        # self.goal = None
 
     def transform_waypoints(self, timed_paths_list):
         # Check if self.bottom_left is defined
-        if self.bottom_left is None:
+        if self.path_bottom_left is None:
             rospy.logwarn("Bottom left corner is not defined.")
             return timed_paths_list  # Return the original list
 
@@ -301,8 +436,8 @@ class PatternGenerator():
             left_most_index = 0
         else:
             left_most_index = 1
-        translation_x = self.bottom_left.pose.position.x - timed_paths_list[-1].wps[left_most_index].pose[0] #the order of the agent ids is reversed in the timed_paths_list, so take the last one to get the waypoints of the first auv
-        translation_y = self.bottom_left.pose.position.y - timed_paths_list[-1].wps[left_most_index].pose[1]
+        translation_x = self.path_bottom_left.pose.position.x - timed_paths_list[-1].wps[left_most_index].pose[0] #the order of the agent ids is reversed in the timed_paths_list, so take the last one to get the waypoints of the first auv
+        translation_y = self.path_bottom_left.pose.position.y - timed_paths_list[-1].wps[left_most_index].pose[1]
 
         # Transform waypoints for agent 0
         for timed_path in timed_paths_list:
@@ -338,7 +473,6 @@ if __name__ == '__main__':
 
     try:
         launcher = PatternGenerator()
-
 
     except rospy.ROSInterruptException:
         rospy.logerr("Couldn't launch pattern_generator node")
