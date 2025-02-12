@@ -9,7 +9,11 @@ import tf2_ros
 from geometry_msgs.msg import TransformStamped
 
 class PathRelay():
-    def __init__(self):
+    def __init__(self, node_name='path_relay'):
+        #
+        rospy.init_node(node_name, anonymous=True)
+
+        # Get parameters
         self.num_auvs = rospy.get_param('num_auvs',1)
         self.vehicle_model = rospy.get_param('vehicle_model','hugin')
         # self.pattern_generator = rospy.get_param('pattern_generation','true')
@@ -29,21 +33,36 @@ class PathRelay():
             self.pub_dict[i] = rospy.Publisher(namespace + '/waypoints', Path, queue_size=1)
 
         rate = 10 #Hz
-        rate = rospy.Rate(rate)
+        self.rate = rospy.Rate(rate)
+        self.timer_duration = 1 / rate  # Used for timer
 
-        while not rospy.is_shutdown():
+        # Use a timer to periodically check and process paths
+        rospy.Timer(rospy.Duration(0.1), self.process_paths)
+
+        # while not rospy.is_shutdown():
             
-            while len(self.paths.path_array) > 0:
-                AgentPath_instance = self.paths.path_array.pop()
-                agent_path = AgentPath_instance.path
-                agent_id = AgentPath_instance.agent_id
-                # if self.pattern_generator:
-                #     start_pose = agent_path.poses[0].pose
-                #     self.teleport_agent_to_pose(agent_id, start_pose)
-                self.pub_dict[agent_id].publish(agent_path)
-                rospy.loginfo(str("Published lawn mover path for agent: " + str(agent_id)))
-                rate.sleep()
+        #     while len(self.paths.path_array) > 0:
+        #         AgentPath_instance = self.paths.path_array.pop()
+        #         agent_path = AgentPath_instance.path
+        #         agent_id = AgentPath_instance.agent_id
+        #         # if self.pattern_generator:
+        #         #     start_pose = agent_path.poses[0].pose
+        #         #     self.teleport_agent_to_pose(agent_id, start_pose)
+        #         self.pub_dict[agent_id].publish(agent_path)
+        #         rospy.loginfo(str("Published lawn mover path for agent: " + str(agent_id)))
+        #         rate.sleep()
         
+    def process_paths(self, event):
+        while len(self.paths.path_array) > 0:
+            AgentPath_instance = self.paths.path_array.pop()
+            agent_path = AgentPath_instance.path
+            agent_id = AgentPath_instance.agent_id
+            # if self.pattern_generator:
+            #     start_pose = agent_path.poses[0].pose
+            #     self.teleport_agent_to_pose(agent_id, start_pose)
+            self.pub_dict[agent_id].publish(agent_path)
+            rospy.loginfo(str("Published lawn mover path for agent: " + str(agent_id)))
+            self.rate.sleep()
 
     def path_array_cb(self, msg):
         # rospy.loginfo("Received AgentPathArray")
@@ -72,9 +91,6 @@ class PathRelay():
     #     print("TELEPORT with transform: ", transform_stamped)
 
 if __name__ == '__main__':
-
-    rospy.init_node('path_relay')
-
     try:
         launcher = PathRelay()
         rospy.spin()
