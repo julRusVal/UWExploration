@@ -24,9 +24,25 @@ class W2WPathPlanner(object):
     _feedback = MoveBaseFeedback()
     _result = MoveBaseResult()
 
+    def goal_cb(self, goal):
+        """
+        Callback for the goal subscriber
+        """
+        rospy.loginfo("Goal received")
+        
+        self.goal_recieved = True
+        success = True
+        
+        self.nav_goal = goal.target_pose.pose
+        self.nav_goal_frame = goal.target_pose.header.frame_id
+        if self.nav_goal_frame is None or self.nav_goal_frame == '':
+            rospy.logwarn("Goal has no frame id! Using map by default")
+            self.nav_goal_frame = self.map_frame
+
     def execute_cb(self, goal):
 
-        # rospy.loginfo("Goal received")
+        rospy.loginfo("Goal received")
+        self.goal_recieved = True
 
         success = True
         self.nav_goal = goal.target_pose.pose
@@ -34,6 +50,7 @@ class W2WPathPlanner(object):
         if self.nav_goal_frame is None or self.nav_goal_frame == '':
             rospy.logwarn("Goal has no frame id! Using map by default")
             self.nav_goal_frame = self.map_frame
+
         # print("planner rate", self.rate)
         r = rospy.Rate(self.rate)  #NOTE(by Koray): This value has to match the timer rate in auv_motion calling AUVMotion::updateMotion, arg called "odom_rate" in auv_environment.launch. This is handled autonmatically if all is launched through multi_agent.launch.
         counter = 0
@@ -90,6 +107,7 @@ class W2WPathPlanner(object):
                 if self.t:
                     dt = (rospy.Time.now() - self.t).to_sec()
                     # print("dt: ", dt)
+                    rospy.loginfo(f"Rate: {self.rate} - dt: {dt}")
                     self.int_throttle_error += throttle_error * dt
                     self.int_thrust_error += thrust_error * dt
                     der_throttle_error = (throttle_error - self.prev_throttle_error) / dt
@@ -106,6 +124,7 @@ class W2WPathPlanner(object):
                 #     sign = np.copysign(1, thrust_error)
                 #     yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
 
+                
                 if self.do_max_turn and self.wp_follower_type == 'simple_maxturn':
                     self.goal_tolerance = self.goal_tolerance_max_turn
                     yaw_setpoint = np.copysign(self.max_thrust,self.k) # Do a maximum turn
@@ -116,6 +135,7 @@ class W2WPathPlanner(object):
                                     self.D_thrust * der_thrust_error)
                     sign = np.copysign(1, thrust_error)
                     yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
+                
                 
                 if self.wp_follower_type == 'simple_maxturn':
                     throttle_level = self.max_throttle
@@ -180,6 +200,155 @@ class W2WPathPlanner(object):
         rospy.loginfo('%s: Succeeded' % self._action_name)
         self._reset_params()
         self._as.set_succeeded(self._result)
+
+    def execute_timer(self, event):
+
+        # Preempted
+        if self._as.is_preempt_requested():
+            rospy.loginfo('%s: Preempted' % self._action_name)
+            self._as.set_preempted()
+            self.nav_goal = None
+            self.goal_recieved = False
+
+            # Stop thruster
+            self.motion_command(0., 0., 0.)
+            return
+
+        # Case: No Active goal
+        # Conditions: nav_goal is None and goal_recieved is False
+        if self.nav_goal is None and self.goal_recieved is False:
+            if not self.goal_waiting_logged:
+                rospy.loginfo("Waiting for Nav goal")
+                self.goal_waiting_logged = True
+            return
+        
+        # Case: nav_goal is empter but goal_recieved is True
+        if self.nav_goal is None:
+            # Stop thruster
+            t = rospy.Time.now()
+            self.motion_command(0.,0.,0.)
+
+            rospy.loginfo('%s: Succeeded' % self._action_name)
+            self._reset_params()
+            self._as.set_succeeded(self._result)
+            return
+
+        # Transform goal map --> base frame
+        goal_point = PointStamped()
+        goal_point.header.frame_id = self.nav_goal_frame
+        goal_point.header.stamp = rospy.Time(0)
+        goal_point.point.x = self.nav_goal.position.x
+        goal_point.point.y = self.nav_goal.position.y
+        goal_point.point.z = self.nav_goal.position.z
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.nav_goal_frame
+        goal_pose.header.stamp = rospy.Time(0)
+        goal_pose.pose.position = self.nav_goal.position
+        goal_pose.pose.orientation = self.nav_goal.orientation
+        
+        try:
+            goal_point_local = self.listener.transformPoint(
+                self.base_frame, goal_point)
+            
+            x = goal_point_local.point.x
+            y = goal_point_local.point.y
+
+            throttle_error = np.linalg.norm(np.array([x + y]))
+            thrust_error = math.atan2(y,x)
+            
+            if self.do_max_turn is None:
+                radius = self.dubins_turning_radius
+                h = 0
+                if y >= 0: #= to include the case when wp is straight infront of the auv
+                    self.k = radius
+                elif y < 0:
+                    self.k = -radius
+                
+                self.do_max_turn = self._point_on_circle(x,y,radius,h,self.k)
+                # rospy.loginfo("Do max turn: %s", self.do_max_turn)
+
+            
+            if self.t:
+                dt = (rospy.Time.now() - self.t).to_sec()
+                # print("dt: ", dt)
+                self.int_throttle_error += throttle_error * dt
+                self.int_thrust_error += thrust_error * dt
+                der_throttle_error = (throttle_error - self.prev_throttle_error) / dt
+                der_thrust_error = (thrust_error - self.prev_thrust_error) / dt
+            else:
+                der_throttle_error = 0
+                der_thrust_error = 0
+            
+            # if not self.do_max_turn or self.wp_follower_type != 'simple_maxturn':
+            #     self.goal_tolerance = self.goal_tolerance_original
+            #     yaw_setpoint = (self.P_thrust * thrust_error + 
+            #                     self.I_thrust * self.int_thrust_error +
+            #                     self.D_thrust * der_thrust_error)
+            #     sign = np.copysign(1, thrust_error)
+            #     yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
+
+            if self.do_max_turn and self.wp_follower_type == 'simple_maxturn':
+                self.goal_tolerance = self.goal_tolerance_max_turn
+                yaw_setpoint = np.copysign(self.max_thrust,self.k) # Do a maximum turn
+            else:
+                self.goal_tolerance = self.goal_tolerance_original
+                yaw_setpoint = (self.P_thrust * thrust_error + 
+                                self.I_thrust * self.int_thrust_error +
+                                self.D_thrust * der_thrust_error)
+                sign = np.copysign(1, thrust_error)
+                yaw_setpoint = sign * min(self.max_thrust, abs(yaw_setpoint))
+            
+            if self.wp_follower_type == 'simple_maxturn':
+                throttle_level = self.max_throttle
+            else:
+                throttle_level = (self.P_throttle * throttle_error + 
+                                self.I_throttle * self.int_throttle_error +
+                                self.D_throttle * der_throttle_error)
+                throttle_level = min(self.max_throttle, throttle_level)
+    
+            # throttle_level = self.max_throttle
+
+            if self.time_sync:
+                if self.t_arrival: #if you have an arrival time, boost the throttle to guarantee you arrive on time
+                    boost = 1.0
+                    if self.t_start is None:
+                        self.t_start = time.time()
+                    t = time.time()-self.t_start
+                    delta_t = self.t_arrival-t
+                    # rospy.loginfo("time left %f s", delta_t)
+                    distance = np.linalg.norm(np.array([goal_point_local.point.x, goal_point_local.point.y]))
+                    throttle_level = distance/delta_t
+                    # rospy.loginfo("throttle level %f m/s", throttle_level)
+
+            #TODO:
+            #1. OK - Create common time tags for all agents in pattern generator, they all should have common time tags 
+            #2. OK - Use these common time tags to boost the throttle of agents that are behind in the pattern
+                ## - Instead of proportional appriach, calc distance and needed velocity to catch up
+            #3. OK - Double check why Dubins planner sometimes generates the longer paths
+            #4. OK - Add time sync as arg
+            #5. OK - Edit aux launch file to generate cool lookingmaps in rviz
+            #6. OK - Look into time sync some more, the arrays are weird... Se continue comment
+            #7. OK - Ensure backwards compatibility with old launch files
+            #8. OK - Write documentation in README
+            #9. OK - Max turn weird circulating behavior, increase tolerance
+            #10. OK - Time sync is not working, they're not catching up as expected
+            #8. Start looking into PF
+            #9. OK - Add dubins back
+
+            self.motion_command(throttle_level, yaw_setpoint, 0.)
+            self.t = rospy.Time.now()
+
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            pose_frame = goal_point.header.frame_id
+            rospy.logwarn(f"{rospy.get_name()} Transform from {pose_frame} to {self.base_frame} not available yet")
+            pass
+
+        # Publish feedback
+        if self.counter % 10 == 0:
+            self._as.publish_feedback(self._feedback)
+
+        self.counter += 1
 
     def motion_command(self, throttle_level, thruster_angle, inclination_angle):
         
@@ -250,6 +419,7 @@ class W2WPathPlanner(object):
     def __init__(self, name):
 
         self.timer_rate = 20 #Hz
+        
         t = time.time()
         while not np.isclose((t-int(t)) % (1/self.timer_rate), 0,atol=1e-4):
             t = time.time()
@@ -316,6 +486,8 @@ class W2WPathPlanner(object):
         self._as = actionlib.SimpleActionServer(
             self.as_name, MoveBaseAction, execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
+
+
         rospy.loginfo("Announced action server with name: %s", self.as_name)
 
         rospy.spin()
@@ -327,6 +499,11 @@ class W2WPathPlanner(object):
         #         print("here")
         #         self.timer_callback(None)
         #         t_old = t
+
+        # States
+        self.goal_recieved = False  # Used to check if a goal has been recieved
+        self.goal_waiting_logged = False  # Used to log that the goal is waiting
+        self.counter = 0 # Used to count the number of iterations
 
 if __name__ == '__main__':
 

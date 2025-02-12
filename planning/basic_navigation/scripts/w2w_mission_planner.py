@@ -84,7 +84,13 @@ class W2WMissionPlanner(object):
         self.finished_pub = rospy.Publisher('/finished/' + self.namespace, Bool, queue_size=1)
         self.started = False
 
-        #
+        # Checks performed
+        # - spawner is running (new)
+        # - Valid transform from map to base_link (new)
+        # - path is received
+        # - common timestamps are received
+        # - relocalizing is not active
+    
         self.spawner_status_param_name = rospy.get_param('spawner_status_param_name','/spawner_status')
         self.spawner_status = False  # Holds most recent status of the spawner
         self.spawner_status_output = True # Indicates if the spawner status should be output
@@ -92,6 +98,10 @@ class W2WMissionPlanner(object):
         self.mission_planner_count_param_name = rospy.get_param('mission_planner_count_param_name','/mission_planner_count')
         self.mission_planner_counted = False
 
+        self.transform_valid = False  # Indicates if the transform is valid
+        self.transform_logged = False  # Indicates if the transform status has been logged
+
+        #
         rospy.loginfo(f"MISSION PLANNER {rospy.get_namespace()}")
 
         self.signal_online()
@@ -119,6 +129,14 @@ class W2WMissionPlanner(object):
                     self.spawner_status_output = False
                 continue
 
+            # Wait 
+            if not self.listener.canTransform(self.map_frame, self.base_frame, rospy.Time(0)):
+                if not self.transform_logged:
+                    rospy.loginfo(f"{rospy.get_name()}: Waiting for transform from {self.map_frame} to {self.base_frame}")
+                    self.transform_logged = True
+                rospy.sleep(0.1)
+                continue
+
             if self.latest_path.poses and not self.relocalizing and self.common_timestamps is not None:
                 self.started = True
                 # Get next waypoint in path
@@ -127,17 +145,23 @@ class W2WMissionPlanner(object):
                 wp = self.latest_path.poses[0]
                 del self.latest_path.poses[0]
 
+                # Sets up poses for transformation
+                # The Stamp is set to 0 to get the latest transform after the transform is available
                 goal_pose = copy.deepcopy(wp)
-                goal_pose.header.stamp = rospy.Time.now()
-
+                # goal_pose.header.stamp = rospy.Time.now()
+                
                 robot_pose_local = PoseStamped()
                 robot_pose_local.header.frame_id = self.base_frame
-                robot_pose_local.header.stamp = rospy.Time.now()
+                # robot_pose_local.header.stamp = rospy.Time.now()
 
                 # we need to send all wp's in map frame in order to be able to check if wp is reached correctly.
                 # Otherwise we would never stop (due to how we check if reached).
                 # Also, it's cheaper to transform once for each robot rather than transforming for all wps in the dubins path
                 if self.listener.canTransform(self.map_frame, self.base_frame, rospy.Time(0)):
+                    # Set goal_pose and robot_pose_local stamps
+                    goal_pose.header.stamp = rospy.Time(0)
+                    robot_pose_local.header.stamp = rospy.Time(0)
+                    # Perform transform
                     robot_pose = self.listener.transformPose(self.map_frame, robot_pose_local)
                     rospy.loginfo(f"{rospy.get_name()}: Transformed pose from {self.map_frame} to {self.base_frame}")
                 else:

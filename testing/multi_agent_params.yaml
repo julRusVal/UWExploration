@@ -25,7 +25,7 @@ fls_range_std: 0.0001
 fls_angle_std: 0.000174533
 
 # --- Timing / period settings ---
-odom_period: 0.01
+odom_period: 0.05
 mbes_meas_period: 0.1
 
 # --- Navigation & control ---
