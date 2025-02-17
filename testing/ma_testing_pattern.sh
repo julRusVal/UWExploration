@@ -20,7 +20,7 @@ sleep 2
 tmux new-window -t mysession:2
 # need to find the rviz file
 # tmux send-keys -t mysession:2 "rviz -d /home/sam/auv_ws/src/UWExploration/localization/sss_particle_filter/sss_pf.rviz" C-m
-tmux send-keys -t mysession:2 "rviz -d /home/julianvaldez/catkin_ws/src/UWExploration/testing/rviz/basic_config_v2.rviz" C-m
+tmux send-keys -t mysession:2 "rviz -d /home/sam/auv_ws/src/UWExploration/testing/rviz/basic_config_v2.rviz" C-m
 tmux rename-window -t mysession:2 "rviz"
 
 # Run the environment in window 3

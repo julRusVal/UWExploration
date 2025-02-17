@@ -1,3 +1,23 @@
+
+/**
+ * @file ma_map_mbes_node.cpp
+ * @brief This file contains the implementation of the MapConstructor class and the main function for the ma_map_mbes_node ROS node.
+ * 
+ * NOTE: This is currently not really any different from the map_mbes_node.cpp file.
+ * 
+ * The MapConstructor class is responsible for constructing a map from MBES (Multi-Beam Echo Sounder) pings and odometry data.
+ * It subscribes to MBES pings and odometry topics, synchronizes the messages, and transforms the pings into the map frame.
+ * The class also provides a service to save the constructed map to a PCD file.
+ * 
+ * The main function initializes the ROS node, creates instances of the MapConstructor class for each AUV (Autonomous Underwater Vehicle),
+ * and starts the ROS event loop.
+ * 
+ * If might be better to have a single node per vehicle...
+ * 
+ * @author Julian Valdez
+ * @date 2023-10-05
+ */
+
 #include <ros/ros.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
@@ -31,17 +51,14 @@ class MapConstructor{
 
 public:
 
-    MapConstructor(std::string node_name, ros::NodeHandle &nh, std::string auv_name, ros::Publisher map_pub__,PointCloudT &mbes_map__ ) : node_name_(node_name), nh_(&nh),mbes_map_(mbes_map__)
-    {
-        ROS_INFO_NAMED(node_name_, "Initializing map constructor for AUV: %s", auv_name.c_str());
+    MapConstructor(std::string node_name, ros::NodeHandle &nh, std::string auv_name, ros::Publisher map_pub__, PointCloudT &mbes_map__, int ping_skip, double voxel_size)
+        : node_name_(node_name), nh_(&nh), auv_name_(auv_name), mbes_map_(mbes_map__), ping_skip_(ping_skip), voxel_size_(voxel_size), ping_count_(0) {
+        
+        ROS_INFO_NAMED(node_name_, "Initializing M.A. map constructor for AUV: %s", auv_name.c_str());
         std::string pings_top, odom_top, save_map_srv_name, map_topic;
-        // nh_->param<std::string>("mbes_pings", pings_top, "/gt/mbes_pings");
-        // nh_->param<std::string>("odom_topic", odom_top, "/gt/odom");
+        
         nh_->param<std::string>("map_frame", map_frame_, "map");
-        // nh_->param<std::string>("odom_frame", odom_frame_, "odom");
-        // nh_->param<std::string>("base_link", base_frame_, "base_frame");
-        // nh_->param<std::string>("mbes_link", mbes_frame_, "mbes_frame");
-        // nh_->param<std::string>("map_topic", map_topic, "/map_mbes");
+
         nh_->param<bool>("publish_mbes_cloud", publish_mbes_, true);
         nh_->param<std::string>("mode", mode_, "sim");
 
@@ -50,6 +67,7 @@ public:
         odom_frame_ = auv_name + "/odom";
         base_frame_ = auv_name + "/base_link";
         mbes_frame_ = auv_name + "/mbes_link";
+
 
         // Synchronizer for MBES and odom msgs
         mbes_subs_.subscribe(*nh_, pings_top, 30);
@@ -100,29 +118,44 @@ public:
         return true;
     }
 
-    void addPingCB(const sensor_msgs::PointCloud2Ptr &mbes_ping,
-                   const nav_msgs::OdometryPtr &odom_msg)
+    void addPingCB(const sensor_msgs::PointCloud2Ptr &mbes_ping, const nav_msgs::OdometryPtr &odom_msg)
     {
-        // ROS_INFO("Adding ping to map");
+        if (++ping_count_ % ping_skip_ != 0) return;  // Skip pings
+        
+        ROS_INFO_NAMED(node_name_, "Adding ping to map: %s", auv_name_.c_str());
         tf::Transform odom_base_tf;
         tf::poseMsgToTF(odom_msg->pose.pose, odom_base_tf);
         
         PointCloudT pcl_ping;
         pcl::fromROSMsg(*mbes_ping, pcl_ping);
         pcl_ros::transformPointCloud(pcl_ping, pcl_ping, tf_map_odom_ * odom_base_tf * tf_base_mbes_);
+        
+        // Apply voxel grid filter only if voxel_size_ > 0
+        if (voxel_size_ > 0) {
+            pcl::VoxelGrid<PointT> voxel_filter;
+            voxel_filter.setInputCloud(pcl_ping.makeShared());
+            voxel_filter.setLeafSize(voxel_size_, voxel_size_, voxel_size_);
+            voxel_filter.filter(pcl_ping);
+        }
+        
         mbes_map_ += pcl_ping;
-
-        if(publish_mbes_){
-            // For live visualization in rviz
+        
+        if (publish_mbes_) {
             pcl::toROSMsg(mbes_map_, *mbes_ping);
             mbes_ping->header.frame_id = map_frame_;
             map_pub_.publish(*mbes_ping);
         }
     }
 
+private:
     std::string node_name_;
     ros::NodeHandle *nh_;
     bool publish_mbes_;
+    std::string auv_name_;
+
+    int ping_skip_;
+    double voxel_size_;
+    int ping_count_;
 
     message_filters::Subscriber<sensor_msgs::PointCloud2> mbes_subs_;
     message_filters::Subscriber<nav_msgs::Odometry> odom_subs_;
@@ -146,8 +179,6 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "map_mbes_node");
     ros::NodeHandle nh("~");
-
-    // ROS_INFO_NAMED(node_name_, "Initializing map constructor for AUVs");
     // tf_map_odom_
     // tf_base_mbes_
     // mbes_map_
@@ -156,6 +187,9 @@ int main(int argc, char **argv)
     PointCloudT mbes_map_;
     ros::Publisher map_pub_;
 
+    int skip_filter = 5;
+    double voxel_filter = 0.0;
+
     map_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/map/fused_mbes_pings", 2, false);
 
     int num_auvs = nh.param<int>("num_auvs", 1);
@@ -163,7 +197,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < num_auvs; i++)
     {
         std::string auv_name = "hugin_" + std::to_string(i);
-        boost::shared_ptr<MapConstructor> map_constructor(new MapConstructor(auv_name+"_map_mbes_node", nh, auv_name, map_pub_, mbes_map_));    
+        boost::shared_ptr<MapConstructor> map_constructor(new MapConstructor(auv_name+"_map_mbes_node", nh, auv_name, map_pub_, mbes_map_, skip_filter, voxel_filter));    
         map_constructors[i] = map_constructor;
     }
     // boost::shared_ptr<MapConstructor> map_constructor(new MapConstructor("map_mbes_node", nh));

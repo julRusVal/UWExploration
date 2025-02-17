@@ -29,13 +29,15 @@ sleep 2
 # -----------------------------------------------------------------------------
 tmux new-window -t $SESSION -n 'load_params'
 tmux send-keys -t $SESSION:1 "
+echo 'Clearing parameters...'
+rosparam delete \/
 echo 'Loading parameters from $PARAM_FILE ...'
 rosparam load $PARAM_FILE
 rosparam get \/
 " C-m
 
 # Optional small delay so params are definitely on the server
-sleep 1
+sleep 3
 
 # -----------------------------------------------------------------------------
 # Window 2: RVIZ
@@ -210,13 +212,17 @@ rosrun plot_generator plot_generator_service.py \\
 #Window 9: Auxiliary Nodes
 # Conditional: If auxiliary_enabled == true, launch auxiliary nodes
 # -----------------------------------------------------------------------------
+# I was having issues with the parameter being read correctly
+# For now it is hardcoded to run the auv_env_aux.launch file
+
 AUX_ENABLED_VALUE=$(rosparam get auxiliary_enabled)
 tmux new-window -t $SESSION -n 'auxiliary'
 if [ "$AUX_ENABLED_VALUE" = "true" ]; then
   tmux send-keys -t $SESSION:9 "
+  echo \$(rosparam get auxiliary_enabled)
   echo 'auxiliary_enabled is true -- Launching auxiliary nodes...'
 
-  AUX_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_env_aux.launch)
+  AUX_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_env_aux.launch
 
  roslaunch auv_model auv_env_aux.launch \\
   mode:=\$(rosparam get mode) \\
@@ -225,68 +231,82 @@ if [ "$AUX_ENABLED_VALUE" = "true" ]; then
   namespace:=\$(rosparam get namespace)
   " C-m
 else
-   tmux send-keys -t $SESSION:9 "
+
+  tmux send-keys -t $SESSION:9 "
+  echo \$(rosparam get auxiliary_enabled)
   echo 'auxiliary_enabled is false -- Skipping auxiliary nodes...'
   " C-m
 fi
 
+# tmux send-keys -t $SESSION:9 "
+# echo 'auxiliary_enabled is true -- Launching auxiliary nodes...'
+
+# AUX_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_env_aux.launch
+
+# roslaunch auv_model auv_env_aux.launch \\
+# mode:=\$(rosparam get mode) \\
+# dataset:=\$(rosparam get dataset) \\
+# num_auvs:=\$(rosparam get num_auvs) \\
+# namespace:=\$(rosparam get namespace)
+# " C-m
+
 # -----------------------------------------------------------------------------
 # Conditional: If rbpf == true, launch RBPF node
 # -----------------------------------------------------------------------------
-RBPF_VALUE=$(rosparam get rbpf)
-tmux new-window -t $SESSION -n 'rbpf_multi'
-if [ "$RBPF_VALUE" = "true" ]; then
-  tmux send-keys -t $SESSION:10 "
-  echo 'rbpf is true -- Starting RBPF multi-agent...'
+# RBPF_VALUE=$(rosparam get rbpf)
+# tmux new-window -t $SESSION -n 'rbpf_multi'
+# if [ "$RBPF_VALUE" = "true" ]; then
+#   tmux send-keys -t $SESSION:10 "
+#   echo 'rbpf is true -- Starting RBPF multi-agent...'
 
-  RBPF_NAME=\$(rosparam get node_name_rbpf_multi)
-  PARTICLE_COUNT=\$(rosparam get particle_count)
-  PARTICLE_COUNT_NEIGH=\$(rosparam get particle_count_neighbours)
-  NUM_PARTICLE_HANDLERS=\$(rosparam get num_particle_handlers)
-  RESULTS_PATH=\$(rosparam get results_path)
-  RBPF_SENSOR_FLS=\$(rosparam get rbpf_sensor_FLS)
-  RBPF_SENSOR_MBES=\$(rosparam get rbpf_sensor_MBES)
-  COMMS_TYPE=\$(rosparam get comms_type)
-  INIT_COV=\$(rosparam get init_covariance)
-  MOTION_COV=\$(rosparam get motion_covariance)
-  RESAMPLING_COV=\$(rosparam get resampling_noise_covariance)
-  FLS_RANGE_STD=\$(rosparam get fls_range_std)
-  FLS_ANGLE_STD=\$(rosparam get fls_angle_std)
-  PARTICLE_SPREAD=\$(rosparam get particle_spread_std_factor)
-  WEIGHT_SLICING=\$(rosparam get weight_slicing)
-  PMP=\$(rosparam get pmp)
-  NUM_AUVS=\$(rosparam get num_auvs)
-  MAX_THROTTLE=\$(rosparam get max_throttle)
-  SURVEY_AREA=\$(rosparam get survey_area_topic)
-  MODE=\$(rosparam get mode)
+#   RBPF_NAME=\$(rosparam get node_name_rbpf_multi)
+#   PARTICLE_COUNT=\$(rosparam get particle_count)
+#   PARTICLE_COUNT_NEIGH=\$(rosparam get particle_count_neighbours)
+#   NUM_PARTICLE_HANDLERS=\$(rosparam get num_particle_handlers)
+#   RESULTS_PATH=\$(rosparam get results_path)
+#   RBPF_SENSOR_FLS=\$(rosparam get rbpf_sensor_FLS)
+#   RBPF_SENSOR_MBES=\$(rosparam get rbpf_sensor_MBES)
+#   COMMS_TYPE=\$(rosparam get comms_type)
+#   INIT_COV=\$(rosparam get init_covariance)
+#   MOTION_COV=\$(rosparam get motion_covariance)
+#   RESAMPLING_COV=\$(rosparam get resampling_noise_covariance)
+#   FLS_RANGE_STD=\$(rosparam get fls_range_std)
+#   FLS_ANGLE_STD=\$(rosparam get fls_angle_std)
+#   PARTICLE_SPREAD=\$(rosparam get particle_spread_std_factor)
+#   WEIGHT_SLICING=\$(rosparam get weight_slicing)
+#   PMP=\$(rosparam get pmp)
+#   NUM_AUVS=\$(rosparam get num_auvs)
+#   MAX_THROTTLE=\$(rosparam get max_throttle)
+#   SURVEY_AREA=\$(rosparam get survey_area_topic)
+#   MODE=\$(rosparam get mode)
 
-  rosrun rbpf_multiagent rbpf_setup_4_all_agents.py \\
-    __name:=\$RBPF_NAME \\
-    _particle_count:=\$PARTICLE_COUNT \\
-    _particle_count_neighbours:=\$PARTICLE_COUNT_NEIGH \\
-    _num_particle_handlers:=\$NUM_PARTICLE_HANDLERS \\
-    _results_path:=\"\$RESULTS_PATH\" \\
-    _mode:=\$MODE \\
-    _rbpf_sensor_FLS:=\$RBPF_SENSOR_FLS \\
-    _rbpf_sensor_MBES:=\$RBPF_SENSOR_MBES \\
-    _comms_type:=\$COMMS_TYPE \\
-    _init_covariance:=\"\$INIT_COV\" \\
-    _motion_covariance:=\"\$MOTION_COV\" \\
-    _resampling_noise_covariance:=\"\$RESAMPLING_COV\" \\
-    _fls_range_std:=\$FLS_RANGE_STD \\
-    _fls_angle_std:=\$FLS_ANGLE_STD \\
-    _particle_spread_std_factor:=\$PARTICLE_SPREAD \\
-    _weight_slicing:=\"\$WEIGHT_SLICING\" \\
-    _pmp:=\"\$PMP\" \\
-    _num_auvs:=\$NUM_AUVS \\
-    _max_throttle:=\$MAX_THROTTLE \\
-    _survey_area_topic:=\$SURVEY_AREA
-  " C-m
-else
-  tmux send-keys -t $SESSION:10 "
-  echo 'rbpf is false -- Skipping RBPF multi-agent...'
-  " C-m
-fi
+#   rosrun rbpf_multiagent rbpf_setup_4_all_agents.py \\
+#     __name:=\$RBPF_NAME \\
+#     _particle_count:=\$PARTICLE_COUNT \\
+#     _particle_count_neighbours:=\$PARTICLE_COUNT_NEIGH \\
+#     _num_particle_handlers:=\$NUM_PARTICLE_HANDLERS \\
+#     _results_path:=\"\$RESULTS_PATH\" \\
+#     _mode:=\$MODE \\
+#     _rbpf_sensor_FLS:=\$RBPF_SENSOR_FLS \\
+#     _rbpf_sensor_MBES:=\$RBPF_SENSOR_MBES \\
+#     _comms_type:=\$COMMS_TYPE \\
+#     _init_covariance:=\"\$INIT_COV\" \\
+#     _motion_covariance:=\"\$MOTION_COV\" \\
+#     _resampling_noise_covariance:=\"\$RESAMPLING_COV\" \\
+#     _fls_range_std:=\$FLS_RANGE_STD \\
+#     _fls_angle_std:=\$FLS_ANGLE_STD \\
+#     _particle_spread_std_factor:=\$PARTICLE_SPREAD \\
+#     _weight_slicing:=\"\$WEIGHT_SLICING\" \\
+#     _pmp:=\"\$PMP\" \\
+#     _num_auvs:=\$NUM_AUVS \\
+#     _max_throttle:=\$MAX_THROTTLE \\
+#     _survey_area_topic:=\$SURVEY_AREA
+#   " C-m
+# else
+#   tmux send-keys -t $SESSION:10 "
+#   echo 'rbpf is false -- Skipping RBPF multi-agent...'
+#   " C-m
+# fi
 
 # -----------------------------------------------------------------------------
 # Finally, attach to the tmux session

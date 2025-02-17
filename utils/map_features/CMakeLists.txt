@@ -115,6 +115,18 @@ target_link_libraries(map_mbes_node
    ${PCL_LIBRARIES}
 )
 
+# Multi-agent version
+add_executable(ma_map_mbes_node
+    src/ma_map_mbes_node.cpp)
+
+add_dependencies(ma_map_mbes_node
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
+    ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(ma_map_mbes_node
+   ${catkin_LIBRARIES}
+   ${PCL_LIBRARIES}
+)
 
 #############
 ## Install ##

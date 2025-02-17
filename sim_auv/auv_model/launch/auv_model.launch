@@ -79,7 +79,7 @@
         <!-- Topics -->
         <param name="mbes_pings_topic" value="/$(arg namespace)/$(arg mode)/mbes_pings" />
         <param name="sss_pings_topic" value="/$(arg namespace)/$(arg mode)/sss_pings" />
-        <param name="fls_meas_topic" value="/sim/$(arg namespace)/fls_measurement" />
+        <param name="fls_meas_topic" value="/$(arg namespace)/$(arg mode)/fls_measurement" />
         <param name="synch_topic" value="/$(arg app)/synch" />
         <!-- Commands -->
         <param name="throttle_cmd" value="/$(arg namespace)/throttle_cmd" />

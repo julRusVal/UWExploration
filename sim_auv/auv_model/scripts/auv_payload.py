@@ -6,6 +6,7 @@ import rospy
 import sys
 import numpy as np
 import time
+import os
 
 # from scipy.spatial.transform import Rotation as rot
 
@@ -33,6 +34,8 @@ class auv_payload(object):
         # Load mesh
         svp_path = rospy.get_param('~sound_velocity_prof')
         mesh_path = rospy.get_param('~mesh_path')
+        
+        # MBES parameters
         self.mbes_angle = rospy.get_param("~mbes_open_angle", np.pi/180. * 60.)
         self.mbes_frame = rospy.get_param(
             '~mbes_link', 'mbes_link')  # mbes frame_id
@@ -42,6 +45,13 @@ class auv_payload(object):
         else:
             sound_speeds = csv_data.csv_asvp_sound_speed.read_data(svp_path)
 
+        # Check if the file exists and is in the correct format
+        if not mesh_path.endswith('.npz'):
+            rospy.logerr("Mesh file is not in the correct format (.npz)")
+            sys.exit(1)
+        if not os.path.isfile(mesh_path):
+            rospy.logerr("Mesh file does not exist")
+            sys.exit(1)
         data = np.load(mesh_path)
         V, F, bounds = data['V'], data['F'], data['bounds']
         print(bounds)
