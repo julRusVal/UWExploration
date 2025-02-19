@@ -121,7 +121,7 @@
         <param name="fls_angle_std" value="$(arg fls_angle_std)" />
         <param name="fls_enable_topic" value="/$(arg namespace)/fls_sim_enable" />
 
-        <param name="scan_area_marker_topic" value="/sim/$(arg namespace)/fls_scan_area" />
+        <param name="scan_area_marker_topic" value="/$(arg namespace)/$(arg mode)/fls_scan_area" />
     </node>
 
     <group if="$(eval app == 'basic')">

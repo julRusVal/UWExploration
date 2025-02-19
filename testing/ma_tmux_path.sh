@@ -188,25 +188,25 @@ rosrun rviz_visualization display_message_service.py
 " C-m
 
 # -----------------------------------------------------------------------------
-# Window 8: Plot Generator
+# Window 8: Mapper
 # -----------------------------------------------------------------------------
-tmux new-window -t $SESSION -n 'plot_generator'
+tmux new-window -t $SESSION -n 'mapper'
 tmux send-keys -t $SESSION:8 "
-echo 'Starting plot_generator_service...'
+# echo 'Starting mapping...'
 
-ANIMATE=\$(rosparam get animate_plots)
-SAVE_FINAL=\$(rosparam get save_final_plots)
-RESULTS_PATH=\$(rosparam get plots_results_path)
-VEHICLE_MODEL=\$(rosparam get vehicle_model)
-RECORD_ARGS=\$(rosparam get record_launch_parameters_and_arguments)
+# ANIMATE=\$(rosparam get animate_plots)
+# SAVE_FINAL=\$(rosparam get save_final_plots)
+# RESULTS_PATH=\$(rosparam get plots_results_path)
+# VEHICLE_MODEL=\$(rosparam get vehicle_model)
+# RECORD_ARGS=\$(rosparam get record_launch_parameters_and_arguments)
 
-rosrun plot_generator plot_generator_service.py \\
-  _animate_plots:=\$ANIMATE \\
-  _save_final_plots:=\$SAVE_FINAL \\
-  _results_path:=\"\$RESULTS_PATH\" \\
-  _vehicle_model:=\"\$VEHICLE_MODEL\" \\
-  _record_launch_parameters_and_arguments:=\$RECORD_ARGS
-" C-m
+# rosrun plot_generator plot_generator_service.py \\
+#   _animate_plots:=\$ANIMATE \\
+#   _save_final_plots:=\$SAVE_FINAL \\
+#   _results_path:=\"\$RESULTS_PATH\" \\
+#   _vehicle_model:=\"\$VEHICLE_MODEL\" \\
+#   _record_launch_parameters_and_arguments:=\$RECORD_ARGS
+# " C-m
 
 # -----------------------------------------------------------------------------
 #Window 9: Auxiliary Nodes
@@ -224,7 +224,7 @@ if [ "$AUX_ENABLED_VALUE" = "true" ]; then
 
   AUX_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_env_aux.launch
 
- roslaunch auv_model auv_env_aux.launch \\
+ roslaunch auv_model ma_auv_env_aux.launch \\
   mode:=\$(rosparam get mode) \\
   dataset:=\$(rosparam get dataset) \\
   num_auvs:=\$(rosparam get num_auvs) \\
@@ -251,12 +251,13 @@ fi
 # " C-m
 
 # -----------------------------------------------------------------------------
+# Window 11: rbpf
 # Conditional: If rbpf == true, launch RBPF node
 # -----------------------------------------------------------------------------
 # RBPF_VALUE=$(rosparam get rbpf)
 # tmux new-window -t $SESSION -n 'rbpf_multi'
 # if [ "$RBPF_VALUE" = "true" ]; then
-#   tmux send-keys -t $SESSION:10 "
+#   tmux send-keys -t $SESSION:11 "
 #   echo 'rbpf is true -- Starting RBPF multi-agent...'
 
 #   RBPF_NAME=\$(rosparam get node_name_rbpf_multi)
@@ -303,7 +304,7 @@ fi
 #     _survey_area_topic:=\$SURVEY_AREA
 #   " C-m
 # else
-#   tmux send-keys -t $SESSION:10 "
+#   tmux send-keys -t $SESSION:11 "
 #   echo 'rbpf is false -- Skipping RBPF multi-agent...'
 #   " C-m
 # fi
@@ -312,3 +313,24 @@ fi
 # Finally, attach to the tmux session
 # -----------------------------------------------------------------------------
 tmux attach-session -t $SESSION
+
+# -----------------------------------------------------------------------------
+# Window ???: Plot Generator
+# -----------------------------------------------------------------------------
+# tmux new-window -t $SESSION -n 'plot_generator'
+# tmux send-keys -t $SESSION:???"
+# echo 'Starting plot_generator_service...'
+
+# ANIMATE=\$(rosparam get animate_plots)
+# SAVE_FINAL=\$(rosparam get save_final_plots)
+# RESULTS_PATH=\$(rosparam get plots_results_path)
+# VEHICLE_MODEL=\$(rosparam get vehicle_model)
+# RECORD_ARGS=\$(rosparam get record_launch_parameters_and_arguments)
+
+# rosrun plot_generator plot_generator_service.py \\
+#   _animate_plots:=\$ANIMATE \\
+#   _save_final_plots:=\$SAVE_FINAL \\
+#   _results_path:=\"\$RESULTS_PATH\" \\
+#   _vehicle_model:=\"\$VEHICLE_MODEL\" \\
+#   _record_launch_parameters_and_arguments:=\$RECORD_ARGS
+# " C-m

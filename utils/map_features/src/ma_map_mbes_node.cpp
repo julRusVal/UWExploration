@@ -52,10 +52,16 @@ class MapConstructor{
 public:
 
     MapConstructor(std::string node_name, ros::NodeHandle &nh, std::string auv_name, ros::Publisher map_pub__, PointCloudT &mbes_map__, int ping_skip, double voxel_size)
-        : node_name_(node_name), nh_(&nh), auv_name_(auv_name), mbes_map_(mbes_map__), ping_skip_(ping_skip), voxel_size_(voxel_size), ping_count_(0) {
+        : node_name_(node_name), nh_(&nh), auv_name_(auv_name), mbes_map_(mbes_map__), ping_count_(0) {
         
         ROS_INFO_NAMED(node_name_, "Initializing M.A. map constructor for AUV: %s", auv_name.c_str());
         std::string pings_top, odom_top, save_map_srv_name, map_topic;
+
+        // Load ROS params
+        nh_->param<int>("ping_skip", ping_skip_, 1);
+        nh_->param<double>("voxel_size", voxel_size_, 0.0);
+        nh_->param<int>("point_skip", point_skip_, 1);
+        point_skip_ = std::max(1, point_skip_);
         
         nh_->param<std::string>("map_frame", map_frame_, "map");
 
@@ -129,6 +135,16 @@ public:
         PointCloudT pcl_ping;
         pcl::fromROSMsg(*mbes_ping, pcl_ping);
         pcl_ros::transformPointCloud(pcl_ping, pcl_ping, tf_map_odom_ * odom_base_tf * tf_base_mbes_);
+
+        // Retain only every nth point, but skip this step if point_skip_ is 1
+        PointCloudT filtered_ping;
+        if (point_skip_ > 1) {
+            for (size_t i = 0; i < pcl_ping.size(); i += point_skip_) {
+                filtered_ping.push_back(pcl_ping[i]);
+            }
+        } else {
+            filtered_ping = pcl_ping;  // Avoid unnecessary iteration
+        }
         
         // Apply voxel grid filter only if voxel_size_ > 0
         if (voxel_size_ > 0) {
@@ -156,6 +172,7 @@ private:
     int ping_skip_;
     double voxel_size_;
     int ping_count_;
+    int point_skip_;
 
     message_filters::Subscriber<sensor_msgs::PointCloud2> mbes_subs_;
     message_filters::Subscriber<nav_msgs::Odometry> odom_subs_;

@@ -9,6 +9,10 @@
     <!-- <arg name="odom_frame" default="$(arg namespace)/odom"/> -->
     <arg name="load_dataset" default="true"/>
 	<arg name="num_auvs" default="1"/>
+	<!-- This controls how the map_mbes_map  handles data--> 
+	<arg name="ping_skip" default="1"/>
+	<arg name="voxel_size" default="0.0"/>
+	<arg name="point_skip" default="1"/>
 
 
 	<!-- <group ns="$(arg namespace)"> -->
@@ -48,6 +52,10 @@
 		<param name="publish_mbes_cloud" type= "bool" value="True" />
 		<param name="num_auvs" value="$(arg num_auvs)" />
 		<param name="mode" value="$(arg mode)" />
+		<param name="ping_skip" value="$(arg ping_skip)" />
+		<param name="voxel_size" value="$(arg voxel_size)" />
+		<param name="point_skip" value="$(arg point_skip)" />
+
 	</node>
 
 </launch>

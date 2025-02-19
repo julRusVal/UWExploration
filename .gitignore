@@ -38,6 +38,6 @@ install/*
 .idea/
 
 # Datasets
-datasets/
+datasets/*
 
 utils/plot_generator/data_collection/test_run*

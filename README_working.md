@@ -15,3 +15,6 @@ Some refactoring has occured in the main repository, so the changes are not dire
 
 ## Removed
 - slam/rbpf_multiagent/CATKIN_IGNORE
+
+## changed some topics to conform to convention
+Topics 

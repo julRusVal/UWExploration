@@ -58,7 +58,7 @@ path_top_right: [0.0, 12.0, 0.0] # Set either to None to select bounding corners
 rviz_helper: false
 animate_plots: true
 save_final_plots: false
-plots_results_path: "/home/julianvaldez/multi_agent_results/plots"
+plots_results_path: "/home/sam/multi_agent_results/plots"
 record_launch_parameters_and_arguments: false
 
 # --- RBPF-related ---
@@ -66,7 +66,7 @@ rbpf: false
 particle_count: 50
 particle_count_neighbours: 50
 num_particle_handlers: 1
-results_path: "/home/julianvaldez/multi_agent_results/rbpf"
+results_path: "/home/sam/multi_agent_results/rbpf"
 rbpf_sensor_FLS: true
 rbpf_sensor_MBES: false
 # Options include: 'disabled', 'realistic', 'unlimited'
@@ -80,7 +80,11 @@ weight_slicing: "top"
 pmp: "poly"
 
 # --- Auxiliary nodes ---
+# This includes launching mapping node
 auxiliary_enabled: true
+map_ping_skip: 1
+map_point_skip: 5
+map_voxel_size: 0.0
 
 # --- Example node names (if you rely on these as ROS params) ---
 node_name_spawner: "auv_spawn_node"
