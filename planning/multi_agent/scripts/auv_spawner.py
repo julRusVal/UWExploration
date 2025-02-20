@@ -35,7 +35,10 @@ class AUVSpawner():
         self.fls_period = rospy.get_param("~fls_meas_period") #seconds
         self.mbes_period = rospy.get_param("~mbes_meas_period") #seconds
         rospack = rospkg.RosPack()
+
+        # Launch files
         self.launch_file = rospy.get_param('~auv_launch_file',rospack.get_path('auv_model') + '/launch/auv_environment.launch')
+        self.map_launch_file = rospy.get_param('~map_launch_file',rospack.get_path('gp_mapping') + '/launch/ma_gp_mapping.launch')
 
         self.pattern_generator = rospy.get_param('pattern_generation','true')
 
@@ -102,6 +105,7 @@ class AUVSpawner():
             x,y,z = start_pose.position.x, start_pose.position.y-startup_distance, start_pose.position.z
             namespace = self.vehicle_model + '_' + str(agent_id)
             self.spawn_auv(x,y,z,roll,pitch,yaw,namespace)
+            self.spawn_auv_map(x,y,z,roll,pitch,yaw,namespace)
             self.spawn_counter += 1
 
         # Indicate that all AUVs have been spawned
@@ -123,6 +127,9 @@ class AUVSpawner():
             
 
     def spawn_auv(self,x,y,z,roll,pitch,yaw,namespace):
+        """
+        Spawns an AUV in the simulation environment at the given position and orientation
+        """
         proc = Popen(["roslaunch", self.launch_file, 
                             "mode:=" + self.mode,
                             "dataset:=" + self.dataset,
@@ -144,7 +151,27 @@ class AUVSpawner():
                             "fls_meas_period:=" + str(self.fls_period),
                             "meas_rate:=" + str(self.mbes_period),
                             ])
+                            
         rospy.loginfo(str("Spawned AUV: "+ str(namespace)) + str(" at x: " + str(x) + " y: " + str(y) + " z: " + str(z) + " roll: " + str(roll) + " pitch: " + str(pitch) + " yaw: " + str(yaw)))
+        
+    def spawn_auv_map(self,x,y,z,roll,pitch,yaw,namespace):
+        """
+        Spawns an AUV in the simulation environment at the given position and orientation
+        """
+        proc = Popen(["roslaunch", self.map_launch_file, 
+                            "mode:=" + self.mode,
+                            "dataset:=" + self.dataset,
+                            "namespace:=" + namespace,
+                            "x:=" + str(x), #This and yaw below are for the initial pose, such that the auvs are spawned along the x-axis heading looking along the y-axis
+                            "y:=" + str(y),
+                            "z:=" + str(z),
+                            "roll:=" + str(roll),
+                            "pitch:=" + str(pitch),
+                            "yaw:=" + str(yaw),
+                            ])
+                            
+        rospy.loginfo(str("Spawned Map: "+ str(namespace)) + str(" at x: " + str(x) + " y: " + str(y) + " z: " + str(z) + " roll: " + str(roll) + " pitch: " + str(pitch) + " yaw: " + str(yaw)))
+
 if __name__ == '__main__':
 
     rospy.init_node('auv_spawner')
