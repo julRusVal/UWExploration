@@ -107,7 +107,8 @@ class W2WPathPlanner(object):
                 if self.t:
                     dt = (rospy.Time.now() - self.t).to_sec()
                     # print("dt: ", dt)
-                    rospy.loginfo(f"Rate: {self.rate} - dt: {dt}")
+                    if self.debug_flag:
+                        rospy.loginfo(f"Rate: {self.rate} - dt: {dt}")
                     self.int_throttle_error += throttle_error * dt
                     self.int_thrust_error += thrust_error * dt
                     der_throttle_error = (throttle_error - self.prev_throttle_error) / dt
@@ -457,6 +458,9 @@ class W2WPathPlanner(object):
         self.prev_thrust_error = 0
 
         self.nav_goal = None
+
+        # Debug flags
+        self.debug_flag = rospy.get_param('~debug', False)
 
         #self.delta_t_array = []
         rospy.Subscriber('/multi_agent/t_start', Time, self.t_start_cb)

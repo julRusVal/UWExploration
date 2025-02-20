@@ -6,6 +6,7 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
 
     std::string sim_odom_top, throttle_top, thruster_top, inclination_top;
     std::string sim_pings_top, sim_fls_meas_top, sim_sss_top, mbes_sim_as,fls_sim_as, sss_sim_as;
+    bool debug_flag_;
     nh_->param<std::string>("odom_sim", sim_odom_top, "/sim_auv/odom");
     // Frames
     nh_->param<std::string>("world_frame", world_frame_, "world");
@@ -32,6 +33,8 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
     nh_->param<int>("n_beams_mbes", beams_num_, 100);
     nh_->param<int>("n_beams_sss", sss_num_, 100);
     nh_->param<std::string>("synch_topic", synch_name_, "/pf/synch");
+    // Deugging
+    nh_->param<bool>("debug_flag", debug_flag_, false);
 
     thruster_sub_ = nh_->subscribe(thruster_top, 1, &AUVMotionModel::thrustCB, this);
     incl_sub_ = nh_->subscribe(inclination_top, 1, &AUVMotionModel::inclinationCB, this);
@@ -44,11 +47,16 @@ AUVMotionModel::AUVMotionModel(std::string node_name, ros::NodeHandle &nh):
 
     start_replay_ = false;
 
+    // Changed auto spin to false
     ac_mbes_ = new actionlib::SimpleActionClient<auv_model::MbesSimAction>(mbes_sim_as, true);
     ac_sss_ = new actionlib::SimpleActionClient<auv_model::SssSimAction>(sss_sim_as, true);
     ac_fls_ = new actionlib::SimpleActionClient<auv_model::FlsSimAction>(fls_sim_as, true);
 
     tfListener_ = new tf2_ros::TransformListener(tfBuffer_);
+
+    fls_failure_count_ = 0;
+    sss_failure_count_ = 0;
+    mbes_failure_count_ = 0;
 }
 
 AUVMotionModel::~AUVMotionModel(){
@@ -84,6 +92,7 @@ void AUVMotionModel::init(){
     prev_odom_.pose.pose.orientation.z = 0;
     prev_odom_.pose.pose.orientation.w = 1;
 
+    // Wait for the required action servers
     while(!ac_mbes_->waitForServer(ros::Duration(1.0))  && ros::ok()){
         ROS_INFO_NAMED(node_name_, "Waiting for MBES action server");
     }
@@ -235,10 +244,13 @@ void AUVMotionModel::updateMbes(const ros::TimerEvent&){
 
 //        clock_t tStart = clock();
     // Don't start survey until PF is up
-    ROS_INFO("updateMbes");
     if(start_replay_ != true){
         ROS_INFO_NAMED(node_name_, "AUV Sim model waiting for PF to send synch signal");
         return;
+    }
+
+    if (debug_flag_){
+        ROS_INFO_NAMED(node_name_, "[%s] updateMbes", node_name_.c_str());
     }
 
     // Transformation map-->mbes
@@ -259,25 +271,34 @@ void AUVMotionModel::updateMbes(const ros::TimerEvent&){
     ac_mbes_->waitForResult(ros::Duration(1.0));
     actionlib::SimpleClientGoalState state = ac_mbes_->getState();
     if (state == actionlib::SimpleClientGoalState::SUCCEEDED){
+        // Reset failure counter
+        mbes_failure_count_ = 0;
         sensor_msgs::PointCloud2 mbes_msg;
         auv_model::MbesSimResult mbes_res = *ac_mbes_->getResult();
         mbes_msg = mbes_res.sim_mbes;
         sim_ping_pub_.publish(mbes_msg);
     }
     else {
-        ROS_INFO("MBES action server not available");
+        mbes_failure_count_++;
+        if (mbes_failure_count_ >= 100) {
+            ROS_INFO_NAMED(node_name_, "[%s] MBES action server not available", node_name_.c_str());
+            mbes_failure_count_ = 0;
+        }
     }
     //        printf("AUV Motion time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 }
 
 void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
 
-//        clock_t tStart = clock();
-    ROS_INFO("updateFlsMeas");
+    // clock_t tStart = clock();
     // Don't start survey until PF is up
     if(start_replay_ != true){
         ROS_INFO_NAMED(node_name_, "AUV Sim model waiting for PF to send synch signal");
         return;
+    }
+
+    if (debug_flag_){
+        ROS_INFO_NAMED(node_name_, "[%s] updateFlsMeas", node_name_.c_str());
     }
 
     // Transformation map-->fls
@@ -307,6 +328,9 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
     ac_fls_->waitForResult(ros::Duration(1.0));
     actionlib::SimpleClientGoalState state = ac_fls_->getState();
     if (state == actionlib::SimpleClientGoalState::SUCCEEDED){
+        // Reset failure counter
+        fls_failure_count_ = 0;
+
         std_msgs::Header header;
         std_msgs::Float32 range;
         std_msgs::Float32 angle;
@@ -334,20 +358,27 @@ void AUVMotionModel::updateFlsMeas(const ros::TimerEvent&){
         sim_fls_pub_.publish(fls_msg);
     }
     else {
-        ROS_INFO("FLS action server not available");
+        fls_failure_count_++;
+        if (fls_failure_count_ >= 100) {
+            ROS_INFO_NAMED(node_name_, "[%s] FLS action server not available", node_name_.c_str());
+            fls_failure_count_ = 0;
+        }
     }
     //        printf("AUV Motion time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 }
 
 void AUVMotionModel::updateSss(const ros::TimerEvent &)
 {
-    ROS_INFO("updateSss");
-    //        clock_t tStart = clock();
+    // clock_t tStart = clock();
     // Don't start survey until PF is up
     if (start_replay_ != true)
     {
         ROS_INFO_NAMED(node_name_, "AUV Sim model waiting for PF to send synch signal");
         return;
+    }
+
+    if (debug_flag_){
+        ROS_INFO_NAMED(node_name_, "[%s] updateSss", node_name_.c_str());
     }
 
     // Transformation map-->mbes
@@ -369,13 +400,19 @@ void AUVMotionModel::updateSss(const ros::TimerEvent &)
     actionlib::SimpleClientGoalState state = ac_sss_->getState();
     if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
     {
+        // Reset failure counter
+        sss_failure_count_ = 0;
         auv_model::Sidescan sss_msg;
         auv_model::SssSimResult sss_res = *ac_sss_->getResult();
         sss_msg = sss_res.sim_sss;
         sim_sss_pub_.publish(sss_msg);
     }
     else{
-        ROS_INFO("SSS action server not available");
+        sss_failure_count_++;
+        if (sss_failure_count_ >= 100){
+            ROS_INFO_NAMED(node_name_, "[%s] SSS action server not available", node_name_.c_str());
+            sss_failure_count_ = 0;
+        }
     }
     //        printf("AUV Motion time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 }

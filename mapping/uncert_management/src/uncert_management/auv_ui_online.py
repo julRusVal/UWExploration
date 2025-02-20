@@ -165,11 +165,14 @@ class auv_ui_online(object):
         self.ac_manipulate = actionlib.SimpleActionClient(manipulate_gp_name, ManipulatePosteriorAction)
         while not self.ac_manipulate.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
             print("Waiting for Manipulate AS ")
+        rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {manipulate_gp_name}")
 
         # sample_gp_name = rospy.get_param("~sample_gp_server")
         # self.ac_sample = actionlib.SimpleActionClient(sample_gp_name, SamplePosteriorAction)
         # while not self.ac_sample.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
         #     print("Waiting for sample AS ")
+
+        rospy.loginfo(f"({rospy.get_name()}) Sample GP server: NOT USED")
 
         # Send to as and wait
         # ac_sample.send_goal(goal)
@@ -183,6 +186,7 @@ class auv_ui_online(object):
         self.mb_server = actionlib.SimpleActionServer(mb_gp_name, MinibatchTrainingAction,
                                                 execute_cb=self.mb_cb, auto_start = False)
         self.mb_server.start()
+        rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {mb_gp_name}")
 
         ip_top = rospy.get_param("~inducing_points_top")
         self.ip_pub = rospy.Publisher(ip_top, PointCloud2, queue_size=10)

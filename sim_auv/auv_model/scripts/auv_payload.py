@@ -62,6 +62,9 @@ class auv_payload(object):
         # 1431.1 m/s is assuming salinity doesn't change 
         # 1430.1 m/s is eyeballing from the altitude (using mesh) and nadir line in the sidescan waterfall image
 
+        # Debugging
+        self.debug_flag = rospy.get_param("~debug_flag", False) 
+
         self.svp = 1431.1 - 1 # mean sound speed (m/s) 
         isovelocity_sound_speeds = [csv_data.csv_asvp_sound_speed()]
         isovelocity_sound_speeds[0].dbars = np.arange(50)
@@ -88,12 +91,16 @@ class auv_payload(object):
         # Action server for MBES pings sim (necessary to be able to use UFO maps as well)
         sim_mbes_as = rospy.get_param('~mbes_sim_as', '/mbes_sim_server')
         server_mode = rospy.get_param("~server_mode", False)
+        if server_mode:
+            rospy.loginfo(f"({rospy.get_name()}): MBES action server set to auto_start (this can cause problems)")
         self.as_mbes = actionlib.SimpleActionServer(sim_mbes_as, MbesSimAction,
                                                     execute_cb=self.mbes_as_cb, auto_start=server_mode)
         
         # Action server for S pings sim (necessary to be able to use UFO maps as well)
         sim_sss_as = rospy.get_param('~sss_sim_as', '/sss_sim_server')
         server_mode = rospy.get_param("~server_mode", False)
+        if server_mode:
+            rospy.loginfo(f"({rospy.get_name()}): SSS action server set to auto_start (this can cause problems)")
         self.as_ping = actionlib.SimpleActionServer(sim_sss_as, SssSimAction,
                                                     execute_cb=self.sss_as_cb, auto_start=server_mode)
 
@@ -173,13 +180,15 @@ class auv_payload(object):
         start_time = time.time()
         # Rendering
         nbr_bins = goal.beams_num.data
-        print("Num of beams ", nbr_bins)
+        if self.debug_flag:
+            print("Num of beams ", nbr_bins)
         left, right = self.draper.project_ping(xtf_ping, nbr_bins) # project
         # sss = sss[::-1]  # Reverse beams for same order as real pings
         
         self.avg_time.append(time.time() - start_time)
         if len(self.avg_time) == 10:
-            print("Raytracing time ", (np.asarray(self.avg_time).sum()/10.))
+            if self.debug_flag:
+                print("Raytracing time ", (np.asarray(self.avg_time).sum()/10.))
             self.avg_time.pop()
 
         port_channel = np.copy(np.array(left.time_bin_model_intensities)*255.)

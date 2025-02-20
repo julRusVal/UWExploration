@@ -73,6 +73,8 @@ class FLSModel(object):
         # # Action server for FLS pings sim (necessary to be able to use UFO maps as well)
         sim_fls_as = rospy.get_param('~fls_sim_as', '/fls_sim_server')
         server_mode = rospy.get_param("~server_mode", False)
+        if server_mode:
+            rospy.loginfo(f"({rospy.get_name()}): FLS action server set to auto_start (this can cause problems)")
         self.as_ping = actionlib.SimpleActionServer(sim_fls_as, FlsSimAction,
                                                     execute_cb=self.fls_as_cb, auto_start=server_mode)
         #Publish scan area to rviz

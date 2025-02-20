@@ -35,7 +35,7 @@
 #include <auv_model/FlsSimAction.h>
 
 // Messages
-#include <auv_model/FlsReading.h> //TODO change to auv_model
+#include <auv_model/FlsReading.h>
 #include <auv_model/Sidescan.h>
 
 
@@ -103,6 +103,11 @@ private:
 
     int beams_num_, sss_num_;
     bool start_replay_;
+    bool debug_flag_;
+
+    int fls_failure_count_;
+    int sss_failure_count_;
+    int mbes_failure_count_;
 };
 
 
