@@ -34,7 +34,7 @@ install/*
 # *.rviz
 
 *.code*
-.vscode/*
+# .vscode/*
 .idea/
 
 # Datasets

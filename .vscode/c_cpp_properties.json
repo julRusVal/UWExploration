@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/ros/noetic/include",
+                "/usr/include/eigen3",
+                "/usr/include/pcl-1.10",
+                "/usr/include",
+                "/home/sam/auv_ws/devel/include",
+                "/home/sam/auv_ws/src/UWExploration/sim_auv/auv_model/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang-8",
+            "cStandard": "c17",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-clang-arm64"
+        }
+    ],
+    "version": 4
+}

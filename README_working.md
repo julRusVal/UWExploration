@@ -18,3 +18,6 @@ Some refactoring has occured in the main repository, so the changes are not dire
 
 ## changed some topics to conform to convention
 Topics 
+
+## Added vscode to the cached files
+This should not be merged back....
