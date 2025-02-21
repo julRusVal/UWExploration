@@ -10,9 +10,9 @@
     <arg name="load_dataset" default="true"/>
 	<arg name="num_auvs" default="1"/>
 	<!-- This controls how the map_mbes_map  handles data--> 
-	<arg name="ping_skip" default="1"/>
+	<arg name="ping_skip" default="5"/>
 	<arg name="voxel_size" default="0.0"/>
-	<arg name="point_skip" default="1"/>
+	<arg name="point_skip" default="5"/>
 
 
 	<!-- <group ns="$(arg namespace)"> -->
@@ -39,7 +39,7 @@
         <param name="map_mbes" value="/map_mbes" />
     </node> -->
 
-	<node type="ma_map_mbes_node" pkg="map_features" name="map_mbes_node" output="screen">
+	<node type="ma_map_mbes_node" pkg="map_features" name="ma_map_mbes_node" output="screen">
 		<!-- <param name="mbes_pings"  value="/$(arg mode)/$(arg namespace)/mbes_pings" /> -->
 		<!-- <param name="odom_topic"  value="/$(arg mode)/$(arg namespace)/odom" /> -->
 		<param name="map_frame" value="$(arg map_frame)" />
