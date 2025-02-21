@@ -130,6 +130,7 @@ class AUVSpawner():
         """
         Spawns an AUV in the simulation environment at the given position and orientation
         """
+        rospy.loginfo(f"Spawning AUV - Namespace: {namespace} - Mode:{self.mode}")
         proc = Popen(["roslaunch", self.launch_file, 
                             "mode:=" + self.mode,
                             "dataset:=" + self.dataset,
@@ -158,6 +159,7 @@ class AUVSpawner():
         """
         Spawns an AUV in the simulation environment at the given position and orientation
         """
+        rospy.loginfo(f"Spawning map for AUV - Namespace: {namespace} - Mode:{self.mode}")
         proc = Popen(["roslaunch", self.map_launch_file, 
                             "mode:=" + self.mode,
                             "dataset:=" + self.dataset,
