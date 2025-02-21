@@ -61,6 +61,7 @@ SPAWNER_NAME=\$(rosparam get node_name_spawner)
 MODE=\$(rosparam get mode)
 DATASET=\$(rosparam get dataset)
 AUV_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_environment.launch
+MAP_LAUNCH_FILE=\$(rospack find gp_mapping)/launch/ma_gp_mapping.launch
 FLS_HORIZONTAL=\$(rosparam get fls_horizontal_angle)
 FLS_VERTICAL=\$(rosparam get fls_vertical_angle)
 FLS_RANGE=\$(rosparam get fls_max_range)
@@ -72,6 +73,7 @@ rosrun multi_agent auv_spawner.py \\
   _mode:=\$MODE \\
   _dataset:=\$DATASET \\
   _auv_launch_file:=\$AUV_LAUNCH_FILE \\
+  _map_launch_file:=\$MAP_LAUNCH_FILE \\
   _fls_horizontal_angle:=\$FLS_HORIZONTAL \\
   _fls_vertical_angle:=\$FLS_VERTICAL \\
   _fls_max_range:=\$FLS_RANGE \\
@@ -192,6 +194,8 @@ rosrun rviz_visualization display_message_service.py
 # -----------------------------------------------------------------------------
 tmux new-window -t $SESSION -n 'mapper'
 tmux send-keys -t $SESSION:8 "
+echo 'Starting mapping...'
+" C-m
 # echo 'Starting mapping...'
 
 # ANIMATE=\$(rosparam get animate_plots)
@@ -221,8 +225,6 @@ if [ "$AUX_ENABLED_VALUE" = "true" ]; then
   tmux send-keys -t $SESSION:9 "
   echo \$(rosparam get auxiliary_enabled)
   echo 'auxiliary_enabled is true -- Launching auxiliary nodes...'
-
-  AUX_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_env_aux.launch
 
  roslaunch auv_model ma_auv_env_aux.launch \\
   mode:=\$(rosparam get mode) \\
