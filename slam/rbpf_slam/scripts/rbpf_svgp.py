@@ -87,12 +87,22 @@ class SVGP_map():
         self._as_posterior = actionlib.SimpleActionServer(sample_gp_name, SamplePosteriorAction,
                                                      execute_cb=self.full_posterior_cb, auto_start=False)
         self._as_posterior.start()
+        rospy.loginfo(f"({rospy.get_name()}) Sample GP server: {sample_gp_name}")
 
         # AS for expected meas
         manipulate_gp_name = rospy.get_param("~manipulate_gp_server")
+        # Check if the node is a SVGP mapper
+        # If so will use the provided manipulate_gp_name
+        # Else will use the default naming convention /particle_#{manipulate_gp_name}
+        if "svgp_mapper" in rospy.get_name():
+            complete_manipulate_gp_name = manipulate_gp_name
+            rospy.loginfo(f"({rospy.get_name()}) Utilizing svgp mapper naming convention")
+        else:
+            complete_manipulate_gp_name = "/particle_" + str(self.particle_id) + manipulate_gp_name
         self._as_manipulate = actionlib.SimpleActionServer("/particle_" + str(self.particle_id) + manipulate_gp_name, ManipulatePosteriorAction, 
                                                 execute_cb=self.manipulate_posterior_cb, auto_start = False)
         self._as_manipulate.start()
+        rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {complete_manipulate_gp_name}")
         
         self.training = False
         self.plotting = False
@@ -104,6 +114,8 @@ class SVGP_map():
         self.ac_mb = actionlib.SimpleActionClient(mb_gp_name, MinibatchTrainingAction)
         while not self.ac_mb.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
             print("Waiting for MB AS ", particle_id)
+            rospy.loginfo(f"({rospy.get_name()}) Waiting for Minibatch GP server")
+        rospy.loginfo(f"({rospy.get_name()}) Minibatch GP Client: {mb_gp_name}")
 
          # Subscription to GP inducing points from RBPF
         ip_top = rospy.get_param("~inducing_points_top")
@@ -613,12 +625,23 @@ class SVGP_map():
 if __name__ == '__main__':
 
     rospy.init_node('rbpf_svgp' , disable_signals=False)
-    node_name = rospy.get_name()
+    full_node_name = rospy.get_name()
     namespace = rospy.get_namespace()
-    node_name = node_name.replace(namespace, '')
-    hdl_number = int(node_name.split('_')[2])
-    particles_per_hdl = rospy.get_param("~num_particles_per_handler")
 
+    # Get the handler number from the node name unless 'svgp_mapper' is in the name
+    if "svgp_mapper" in full_node_name:
+        hdl_number = 0
+        particles_per_hdl = 1
+    else:
+        node_name = full_node_name.replace(namespace, '')  # node name without namespace
+
+        hdl_number = int(node_name.split('_')[2])
+        particles_per_hdl = rospy.get_param("~num_particles_per_handler")
+
+    rospy.loginfo(f"({full_node_name}): Starting node rbpf_svgp")
+    rospy.loginfo(f"({full_node_name}): Handler number: {hdl_number}")
+    rospy.loginfo(f"({full_node_name}): Number of particles per handler: {particles_per_hdl}")
+    
     try:
         particles_svgps = []
         # particles_ids = []

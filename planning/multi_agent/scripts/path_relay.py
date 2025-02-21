@@ -25,7 +25,10 @@ class PathRelay():
 
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
 
-        # rospy.loginfo("Enabling AUV navigation...")
+        rospy.loginfo(f"({rospy.get_name()}): Started")
+        rospy.loginfo(f"({rospy.get_name()}): Subscribing to {self.path_array_topic}")
+        # Logging
+        self.path_array_cb_logged = False
 
         #Create publishers for each AUV
         for i in range(self.num_auvs):
@@ -65,7 +68,9 @@ class PathRelay():
             self.rate.sleep()
 
     def path_array_cb(self, msg):
-        # rospy.loginfo("Received AgentPathArray")
+        if not self.path_array_cb_logged:
+            rospy.loginfo(f"({rospy.get_name()}): Received AgentPathArray")
+            self.path_array_cb_logged = True
         self.paths = msg
 
     # def teleport_agent_to_pose(self, agent_id, pose):

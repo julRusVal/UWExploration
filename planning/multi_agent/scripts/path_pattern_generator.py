@@ -51,6 +51,17 @@ class PatternGenerator():
         self.valid_paths = False
         self.goal = None
 
+        # Publishers for sending the outer perimeter (as Path) to each AUV
+        self.pub_dict = {} # Dictionary of publishers for each AUV
+        self.perimeter_path_msg = None
+        self.perimeter_path_msg_logged = False
+        for i in range(self.num_auvs):
+            namespace = self.vehicle_model + '_' + str(i)
+            self.pub_dict[i] = rospy.Publisher(namespace + '/gp/waypoints', Path, queue_size=1)
+
+        rospy.Timer(rospy.Duration(1), self.publish_survey_perimeter_path)  # Publish the survey area as a Path message for gp mapping
+        
+        # Publisher for the common timestamps
         self.time_array_pub = rospy.Publisher('/multi_agent/common_timestamps', Int32MultiArray, queue_size=1)
         self.time_array = None
         self.valid_time_array = False
@@ -84,7 +95,8 @@ class PatternGenerator():
 
         self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
 
-        rospy.Timer(rospy.Duration(1), self.publish_survey_area)
+        rospy.Timer(rospy.Duration(1), self.publish_survey_area)  # Publish the survey area as a rectangle for visualization
+        rospy.Timer(rospy.Duration(1), self.publish_survey_perimeter_path)  # Publish the survey area as a Path message for gp mapping
 
         # The pattern generator should wait for the spawner to be online before generating the pattern
         self.spawner_status_param_name = rospy.get_param('spawner_status_param_name',
@@ -116,6 +128,7 @@ class PatternGenerator():
             self.status_reported = True
 
         rospy.spin()
+
 
 
     def message_timer_cb(self, event):
@@ -205,6 +218,45 @@ class PatternGenerator():
         if self.path_bottom_left is not None and self.path_top_right is not None:
             rospy.loginfo("Generating lawn mower pattern")
             self.generate_lawn_mower_pattern()
+    
+    def publish_survey_perimeter_path(self, event=None):
+        """
+        Publishes a Path message representing the survey area as a rectangle
+        """
+        if self.perimeter_path_msg is None:
+            self.construct_perimeter_path_msg()
+
+        if self.perimeter_path_msg is not None:
+            for publisher_id, publisher in self.pub_dict.items():
+                if not self.perimeter_path_msg_logged:
+                    rospy.loginfo(f"Publishing perimeter path for {publisher_id}")
+                publisher.publish(self.perimeter_path_msg)
+            self.perimeter_path_msg_logged = True
+
+    def construct_perimeter_path_msg(self):
+        if self.path_bottom_left and self.path_top_right:
+            path_msg = Path()
+            path_msg.header.frame_id = self.default_frame_id
+            path_msg.header.stamp = rospy.Time.now()
+
+            # Define the points of the rectangle
+            points = [
+                self.path_bottom_left.pose.position,
+                Point(self.path_top_right.pose.position.x, self.path_bottom_left.pose.position.y, 0.0),
+                self.path_top_right.pose.position,
+                Point(self.path_bottom_left.pose.position.x, self.path_top_right.pose.position.y, 0.0),
+                self.path_bottom_left.pose.position  # Closing the loop
+            ]
+
+            # Create PoseStamped messages for each point and add to the path
+            for point in points:
+                pose_stamped = PoseStamped()
+                pose_stamped.header = path_msg.header
+                pose_stamped.pose.position = point
+                pose_stamped.pose.orientation.w = 1.0  # Default orientation
+                path_msg.poses.append(pose_stamped)
+
+            self.perimeter_path_msg = path_msg
     
     def publish_survey_area(self, event=None):
         """Publishes a marker representing the survey area as a rectangle"""
