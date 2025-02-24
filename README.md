@@ -1,4 +1,4 @@
-# AUV Exploration
+# AUV Exploration!
 
 Collection of ROS packages for localization, map building and SLAM with autonomous underwater vehicles and sonar sensors.
 
