@@ -1,26 +1,51 @@
 #!/usr/bin/env python3
-import rospy
+"""
+This module contains the PatternGenerator class, which is responsible for generating and publishing path patterns for multiple autonomous underwater vehicles (AUVs) in a survey area.
+
+
+Classes:
+    PatternGenerator: A class to generate and publish path patterns for multiple AUVs.
+Functions:
+    __init__(self): Initializes the PatternGenerator class.
+    message_timer_cb(self, event): Callback for the message timer to display messages in RViz.
+    safe_path_publishing_cb(self, event): Callback for publishing the path in a safe manner that waits for the spawner to be online.
+    update_spawner_status(self): Updates the status of the spawner node.
+    update_mission_planner_count(self): Updates the count of the mission planner node.
+    goal_cb(self, msg): Callback for the goal subscriber.
+    publish_survey_perimeter_path(self, event=None): Publishes a Path message representing the survey area as a rectangle.
+    construct_perimeter_path_msg(self): Constructs the perimeter path message.
+    publish_survey_area(self, event=None): Publishes a marker representing the survey area as a rectangle.
+    display_message_in_rviz(self, message): Displays a message in RViz.
+    pose_from_param(self, param_name): Gets a PoseStamped object from a parameter.
+    distance_hugin_0_to_goal(self, goal): Calculates the distance from Hugin 0 to the goal using the tf tree.
+    calc_rect_height_N_width(self): Calculates the height and width of the rectangle.
+    generate_lawn_mower_pattern(self): Generates a lawn mower pattern for the survey area.
+    transform_waypoints(self, timed_paths_list): Transforms waypoints based on the bottom left corner.
+"""
+# General imports
 from subprocess import call, Popen
 import numpy as np
-import rospkg
-from multi_agent.msg import AgentPath, AgentPathArray
-from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped, Pose, Point
-from coop_cov import mission_plan
-import tf2_ros
-from tf2_geometry_msgs import do_transform_pose
 import matplotlib.pyplot as plt
+import copy
 
+# ROS import
+import rospy
+import rospkg
 import tf.transformations
-from geometry_msgs.msg import Quaternion
-
-from visualization_msgs.msg import Marker, MarkerArray
-
+import tf2_ros
 from rviz_visualization.srv import DisplayRvizMessage, DisplayRvizMessageRequest
 
+# ROS message imports
+from geometry_msgs.msg import PoseStamped, Pose, Point
+from nav_msgs.msg import Path
+from tf2_geometry_msgs import do_transform_pose
+from geometry_msgs.msg import Quaternion
+from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import String, Time, Int32MultiArray
+from multi_agent.msg import AgentPath, AgentPathArray
 
-import copy
+# 
+from coop_cov import mission_plan
 
 class PatternGenerator():
     def __init__(self):
@@ -50,6 +75,10 @@ class PatternGenerator():
         self.paths = AgentPathArray()
         self.valid_paths = False
         self.goal = None
+
+        # Dictionary of paths for each AUV
+        self.paths_dict = {} # Dictionary of paths for each AUV
+
 
         # Publishers for sending the outer perimeter (as Path) to each AUV
         self.pub_dict = {} # Dictionary of publishers for each AUV
@@ -128,8 +157,6 @@ class PatternGenerator():
             self.status_reported = True
 
         rospy.spin()
-
-
 
     def message_timer_cb(self, event):
         if self.path_bottom_left is None:
@@ -224,7 +251,7 @@ class PatternGenerator():
         Publishes a Path message representing the survey area as a rectangle
         """
         if self.perimeter_path_msg is None:
-            self.construct_perimeter_path_msg()
+            self.construct_complete_perimeter_path_msg()
 
         if self.perimeter_path_msg is not None:
             for publisher_id, publisher in self.pub_dict.items():
@@ -233,7 +260,19 @@ class PatternGenerator():
                 publisher.publish(self.perimeter_path_msg)
             self.perimeter_path_msg_logged = True
 
-    def construct_perimeter_path_msg(self):
+    def construct_agent_perimeter_path_msg(self):
+        """
+        Construct the perimeter path message as a rectangle using Path messages.
+        This perimeter includes the entire survey area.
+        """
+        # TODO: Implement this method
+        pass
+    
+    def construct_complete_perimeter_path_msg(self):
+        """
+        Construct the perimeter path message as a rectangle using Path messages.
+        This perimeter includes the entire survey area.
+        """
         if self.path_bottom_left and self.path_top_right:
             path_msg = Path()
             path_msg.header.frame_id = self.default_frame_id
@@ -259,7 +298,9 @@ class PatternGenerator():
             self.perimeter_path_msg = path_msg
     
     def publish_survey_area(self, event=None):
-        """Publishes a marker representing the survey area as a rectangle"""
+        """
+        Publishes a marker representing the complete survey area as a rectangle
+        """
         if self.path_bottom_left and self.path_top_right:
             # Create marker array
             marker_array = MarkerArray()
@@ -422,6 +463,7 @@ class PatternGenerator():
         
         # Transform waypoints for agent 0
         timed_paths_list = self.transform_waypoints(timed_paths_list)
+        
         # Publish waypoints as Path messages for each AUV
         for agent_idx, timed_path in enumerate(timed_paths_list):
             path_msg = Path()
