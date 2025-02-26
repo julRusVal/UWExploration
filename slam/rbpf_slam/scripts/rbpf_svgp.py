@@ -79,8 +79,19 @@ class SVGP_map():
 
         ## ROS INTERFACE
         self.particle_id = particle_id
-        self.storage_path = rospy.get_param("~results_path")
-        self.count_training = 0
+    
+        self.namespace = rospy.get_namespace().strip("/")
+        
+        # Results storage path
+        default_path = "/home/sam/auv_ws/src/UWExploration/utils/uw_tests/rbpf"
+        self.storage_path = rospy.get_param("~results_path", default_path)
+
+        # svgp_mapper node
+        # Used modify some behaviour when the instance is a SVGP mapper
+        # e.g. naming convention for the manipulate_gp_name
+        self.svgp_mapper = "svgp_mapper" in rospy.get_name()
+        if self.svgp_mapper:
+            rospy.loginfo(f"({rospy.get_name()}): Node in svgp mapper mode")
         
         # AS for posterior region
         sample_gp_name = rospy.get_param("~sample_gp_server")
@@ -94,12 +105,12 @@ class SVGP_map():
         # Check if the node is a SVGP mapper
         # If so will use the provided manipulate_gp_name
         # Else will use the default naming convention /particle_#{manipulate_gp_name}
-        if "svgp_mapper" in rospy.get_name():
+        if self.svgp_mapper:
             complete_manipulate_gp_name = manipulate_gp_name
-            rospy.loginfo(f"({rospy.get_name()}) Utilizing svgp mapper naming convention")
+            rospy.loginfo(f"({rospy.get_name()}): Utilizing svgp mapper naming convention")
         else:
             complete_manipulate_gp_name = "/particle_" + str(self.particle_id) + manipulate_gp_name
-        self._as_manipulate = actionlib.SimpleActionServer("/particle_" + str(self.particle_id) + manipulate_gp_name, ManipulatePosteriorAction, 
+        self._as_manipulate = actionlib.SimpleActionServer(complete_manipulate_gp_name, ManipulatePosteriorAction, 
                                                 execute_cb=self.manipulate_posterior_cb, auto_start = False)
         self._as_manipulate.start()
         rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {complete_manipulate_gp_name}")
@@ -113,8 +124,7 @@ class SVGP_map():
         mb_gp_name = rospy.get_param("~minibatch_gp_server")
         self.ac_mb = actionlib.SimpleActionClient(mb_gp_name, MinibatchTrainingAction)
         while not self.ac_mb.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
-            print("Waiting for MB AS ", particle_id)
-            rospy.loginfo(f"({rospy.get_name()}) Waiting for Minibatch GP server")
+            rospy.loginfo(f"({rospy.get_name()}) Waiting for Minibatch GP server: {mb_gp_name}")
         rospy.loginfo(f"({rospy.get_name()}) Minibatch GP Client: {mb_gp_name}")
 
          # Subscription to GP inducing points from RBPF
@@ -173,7 +183,8 @@ class SVGP_map():
 
         self.listener = tf.TransformListener()
 
-        print("Particle ", self.particle_id, " set up")
+        rospy.loginfo(f"({rospy.get_name()}): Particle " + str(self.particle_id) + " set up")
+        # print("Particle ", self.particle_id, " set up")
 
         # Remove Qt out of main thread warning (use with caution)
         warnings.filterwarnings("ignore")
@@ -193,7 +204,7 @@ class SVGP_map():
         # to share it with the rest
         response = ResampleResponse(True)
         if req.p_id == self.particle_id:
-            self.save("/home/orin/catkin_ws/src/UWExploration/utils/uw_tests/rbpf" + "/svgp_" + str(req.p_id) + ".pth")
+            self.save(self.storage_path + "/svgp_" + str(req.p_id) + ".pth")
             print("Particle ", req.p_id, " saved to disk")
         
         # if 0 == self.particle_id:    
@@ -210,7 +221,7 @@ class SVGP_map():
             ## Loading from disk
             # print("Particle ", self.particle_id,
             #       "loading particle ", req.p_id)
-            my_file = Path("/home/orin/catkin_ws/src/UWExploration/utils/uw_tests/rbpf" + "/svgp_" + str(req.p_id) + ".pth")
+            my_file = Path(self.storage_path + "/svgp_" + str(req.p_id) + ".pth")
             try:
                 if my_file.is_file():
                     self.load(str(my_file.as_posix()))
@@ -222,7 +233,6 @@ class SVGP_map():
 
         return response
             
- 
     def train_iteration(self):
 
         # Don't train until the inducing points from the RBPF node have been received
@@ -284,10 +294,11 @@ class SVGP_map():
                     # Store loss for postprocessing
                     self.loss.append(loss_np)
 
-                    if self.particle_id == 0:
-                        print("Particle ", self.particle_id,
-                            "with iterations: ", self.iterations)
-                    # print("Training time ", time.time() - time_start)
+                    if self.particle_id == 0 and self.iterations % 100 == 0:
+                        rospy.loginfo(f"({rospy.get_name()}): Particle {self.particle_id} with iterations {self.iterations}")
+                        # print("Particle ", self.particle_id,
+                        #     "with iterations: ", self.iterations)
+                        # print("Training time ", time.time() - time_start)
 
                 else:
                     rospy.logdebug("GP missed MB %s", self.particle_id)
@@ -300,7 +311,11 @@ class SVGP_map():
         # print("Done with the training ", self.particle_id)
 
     def ip_cb(self, ip_cloud):
-        print("Particle ", self.particle_id, " received inducing points")
+        if self.svgp_mapper:
+            rospy.loginfo(f"({rospy.get_name()}): SVGP mapper received inducing points")
+        else:
+            rospy.loginfo(f"({rospy.get_name()}): Particle {self.particle_id} received inducing points")   
+        
         
         if not self.inducing_points_received:
             # Store beams as array of 3D points
@@ -332,8 +347,19 @@ class SVGP_map():
                 np.asarray(pcl.points)[:, 0:2]).to(self.device).float()
 
             self.inducing_points_received = True
-            print("Particle ", self.particle_id, " starting training")
 
+            # Inducing points
+            min_x, min_y, _ = np.min(wp_locations, axis=0)
+            max_x, max_y, _ = np.max(wp_locations, axis=0)
+
+            if self.svgp_mapper:
+                rospy.loginfo(f"({rospy.get_name()}):Received wp_locations bounds: x({min_x}, {max_x}), y({min_y}, {max_y})")
+
+            # Final status message
+            if self.svgp_mapper:
+                rospy.loginfo(f"({rospy.get_name()}): SVGP mapper ready to train")
+            else:
+                rospy.loginfo(f"({rospy.get_name()}): Particle {self.particle_id} ready to train")
 
     ## AS for interfacing the sampling, plotting or saving to disk of the GP posterior
     def manipulate_posterior_cb(self, goal):
@@ -373,15 +399,14 @@ class SVGP_map():
             if goal.plot:
 
                 # Plot the loss
-                self.plot_loss(self.storage_path + '/particle_' + str(self.particle_id) 
-                        + '_training_loss_' + str(self.n_plot_loss) + '.png' )
+                self.plot_loss(f"{self.storage_path}/{self.namespace}_{self.particle_id}_training_loss_{self.n_plot_loss}.png" )
                 self.n_plot_loss += 1
 
                 # Plot the GP posterior
-                self.plot(beams[:,0:2], beams[:,2], 
-                            self.storage_path + '/particle_' + str(self.particle_id) 
-                            + '_training_' + str(self.n_plot) + '.png',
-                            n=50, n_contours=100 )
+                self.plot(beams[:,0:2], beams[:,2],
+                          f"{self.storage_path}/{self.namespace}_{self.particle_id}_training_{self.n_plot}.png",
+                          n=50, 
+                          n_contours=100 )
                 self.n_plot += 1
 
             # Save to disk 
@@ -419,8 +444,7 @@ class SVGP_map():
             result.success = True
             self._as_manipulate.set_succeeded(result)
             self.plotting = False
-            print("Saved GP ", self.particle_id, " after ", self.iterations, " iterations")
-
+            print(f"({rospy.get_name}): Saved GP ", self.particle_id, " after ", self.iterations, " iterations")
 
     def sample(self, x):
 
@@ -451,8 +475,6 @@ class SVGP_map():
         self.model.train()
         return dist.mean.cpu().numpy(), dist.variance.cpu().numpy()
         
-
-
     def full_posterior_cb(self, goal):
 
         # toggle evaluation mode
@@ -493,8 +515,6 @@ class SVGP_map():
         result = SamplePosteriorResult()
         result.posterior = cloud
         self._as_posterior.set_succeeded(result)
-
-
 
     def plot(self, inputs, targets, fname, n=80, n_contours=50):
 
