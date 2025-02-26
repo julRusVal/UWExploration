@@ -1,7 +1,7 @@
 # multi_agent_params.yaml
 
 # --- High-level numeric/string parameters ---
-num_auvs: 2
+num_auvs: 1
 vehicle_model: "hugin"
 namespace: "hugin_0"
 
@@ -51,8 +51,8 @@ center_x: false
 center_y: false
 exiting_line: false
 survey_area_topic: "/multi_agent/survey_area"
-path_bottom_left: [-68.0, -206.0, 0.0]  # [x, y, z]
-path_top_right: [0.0, 12.0, 0.0] # Set either to None to select bounding corners with the GUI
+path_bottom_left: [-68.0, -150.0, 0]  # [-68.0, -206.0, 0.0]  # [x, y, z]
+path_top_right: [0.0, -25.0, 0.0]  # [0.0, 12.0, 0.0] # Set either to None to select bounding corners with the GUI
 
 # --- Visualization & plotting ---
 rviz_helper: false

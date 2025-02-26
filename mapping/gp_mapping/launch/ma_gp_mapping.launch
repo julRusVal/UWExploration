@@ -36,7 +36,7 @@
     <arg name="particle_count"                  default="1"/>
     <arg name="num_particle_handlers"           default="1"/>
     <arg name="num_particles_per_handler"       default="1"/> 
-    <arg name="survey_finished_top"             default="/$(arg mode)/survey_finished"/>
+    <arg name="survey_finished_top"             default="/$(arg namespace)/finished"/>
     <arg name="svgp_mapper_name"                default="svgp_mapper"/>
 
     <!-- API for SVGP particles -->
@@ -46,7 +46,7 @@
     <arg name="gp_resample_top"                 default="/$(arg namespace)/gp/resample_top"/>
     <arg name="sample_gp_server"                default="/$(arg namespace)/gp/sample_server"/>
 
-    <arg name="results_path"                    default="/home/sam/catkin_workspaces/auv_ws/src/UWExploration/utils/uw_tests/datasets/lost_targets/"/>     
+    <arg name="results_path"                    default="/home/sam/auv_ws/src/UWExploration/utils/uw_tests/datasets/asko/svgp"/>
 
     <!-- <node type="particles_launcher.py" pkg="rbpf_slam" name="particle_launcher" output="screen">
         <param name="namespace" value="$(arg namespace)"/>  
@@ -71,7 +71,7 @@
         <param name="svgp_num_ind_points" value="400"/>     
         <param name="svgp_minibatch_size" value="1000"/>     
         <param name="svgp_learning_rate" value="1e-1"/>     
-        <param name="svgp_rtol" value="1e-3"/>     
+        <param name="svgp_rtol" value="1e-1"/>     
         <param name="svgp_n_window" type="int" value="400"/>     
         <param name="svgp_auto_stop" value="False"/>     
         <param name="svgp_verbose" value="True"/>     
