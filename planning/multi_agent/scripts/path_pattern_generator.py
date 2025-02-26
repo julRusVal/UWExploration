@@ -44,7 +44,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import String, Time, Int32MultiArray
 from multi_agent.msg import AgentPath, AgentPathArray
 
-# 
+# Local imports
 from coop_cov import mission_plan
 
 class PatternGenerator():
@@ -76,8 +76,17 @@ class PatternGenerator():
         self.valid_paths = False
         self.goal = None
 
-        # Dictionary of paths for each AUV
-        self.paths_dict = {} # Dictionary of paths for each AUV
+        # Dictionary of the individual paths for each AUV
+        # Initialize the dictionary the dictionary to contain None for each AUV
+        self.auv_paths_dict = {}
+        self.auv_perimeters_dict = {}
+        for i in range(self.num_auvs):
+            self.auv_paths_dict[i] = None
+            self.auv_perimeters_dict[i] = None
+
+        # Flags for plotting the paths for debugging
+        self.flag_plot_agent_perimeter = False
+        self.agent_perimeter_plotted = False
 
 
         # Publishers for sending the outer perimeter (as Path) to each AUV
@@ -87,8 +96,6 @@ class PatternGenerator():
         for i in range(self.num_auvs):
             namespace = self.vehicle_model + '_' + str(i)
             self.pub_dict[i] = rospy.Publisher(namespace + '/gp/waypoints', Path, queue_size=1)
-
-        rospy.Timer(rospy.Duration(1), self.publish_survey_perimeter_path)  # Publish the survey area as a Path message for gp mapping
         
         # Publisher for the common timestamps
         self.time_array_pub = rospy.Publisher('/multi_agent/common_timestamps', Int32MultiArray, queue_size=1)
@@ -125,7 +132,9 @@ class PatternGenerator():
         self.dubins_turning_radius = rospy.get_param('dubins_turning_radius', 5)
 
         rospy.Timer(rospy.Duration(1), self.publish_survey_area)  # Publish the survey area as a rectangle for visualization
-        rospy.Timer(rospy.Duration(1), self.publish_survey_perimeter_path)  # Publish the survey area as a Path message for gp mapping
+        # This wasn't the correct way of handling the perimeter path, Ideally each AUV should have its own unique perimeter path instead of the survey perimeter path
+        # rospy.Timer(rospy.Duration(1), self.publish_survey_perimeter_path)  # Publish the survey area as a Path message for gp mapping
+        rospy.Timer(rospy.Duration(1), self.publish_agent_perimeter_path)  # Publish the agent perimeter path for visualization
 
         # The pattern generator should wait for the spawner to be online before generating the pattern
         self.spawner_status_param_name = rospy.get_param('spawner_status_param_name',
@@ -193,7 +202,9 @@ class PatternGenerator():
             self.valid_time_array = False
 
     def update_spawner_status(self):
-        """Update the status of the spawner node"""
+        """
+        Update the status of the spawner node. This is used to determine if the spawner is online.
+        """
         if rospy.has_param(self.spawner_status_param_name):
             self.spawn_online = True
             self.spawner_status = rospy.get_param(self.spawner_status_param_name)
@@ -246,29 +257,56 @@ class PatternGenerator():
             rospy.loginfo("Generating lawn mower pattern")
             self.generate_lawn_mower_pattern()
     
-    def publish_survey_perimeter_path(self, event=None):
-        """
-        Publishes a Path message representing the survey area as a rectangle
-        """
-        if self.perimeter_path_msg is None:
-            self.construct_complete_perimeter_path_msg()
-
-        if self.perimeter_path_msg is not None:
-            for publisher_id, publisher in self.pub_dict.items():
-                if not self.perimeter_path_msg_logged:
-                    rospy.loginfo(f"Publishing perimeter path for {publisher_id}")
-                publisher.publish(self.perimeter_path_msg)
-            self.perimeter_path_msg_logged = True
 
     def construct_agent_perimeter_path_msg(self):
         """
         Construct the perimeter path message as a rectangle using Path messages.
         This perimeter includes the entire survey area.
         """
-        # TODO: Implement this method
-        pass
+
+        for agent_idx, perimeter_path in self.auv_paths_dict.items():
+
+            # check for valid agent path
+            if perimeter_path is None:
+                rospy.loginfo(f" Agent {agent_idx} path is not defined")
+                continue
+
+            # Check if perimeter_path is already defined
+            if self.auv_perimeters_dict[agent_idx] is not None:
+                continue
+
+            # Extract x and y coordinates from waypoints
+            coords = np.array([[wp.pose[0], wp.pose[1]] for wp in perimeter_path.wps])
+
+            # Find min and max for x and y coordinates
+            min_x, min_y = np.min(coords, axis=0)
+            max_x, max_y = np.max(coords, axis=0)
+
+            # Construct the perimeter path message as a rectangle
+            path_msg = Path()
+            path_msg.header.frame_id = self.default_frame_id
+            path_msg.header.stamp = rospy.Time.now()
+
+            # Define the points of the rectangle
+            points = [
+                Point(min_x, min_y, 0.0),
+                Point(max_x, min_y, 0.0),
+                Point(max_x, max_y, 0.0),
+                Point(min_x, max_y, 0.0)
+            ]
+
+            for point in points:
+                pose_stamped = PoseStamped()
+                pose_stamped.header = path_msg.header
+                pose_stamped.pose.position = point
+                pose_stamped.pose.orientation.w = 1.0  # Default orientation
+                path_msg.poses.append(pose_stamped)
+
+            self.auv_perimeters_dict[agent_idx] = path_msg
+
+            rospy.loginfo(f"Agent {agent_idx} bounding box: min_x={min_x}, min_y={min_y}, max_x={max_x}, max_y={max_y}")
     
-    def construct_complete_perimeter_path_msg(self):
+    def construct_survey_perimeter_path_msg(self):
         """
         Construct the perimeter path message as a rectangle using Path messages.
         This perimeter includes the entire survey area.
@@ -297,6 +335,39 @@ class PatternGenerator():
 
             self.perimeter_path_msg = path_msg
     
+    def publish_agent_perimeter_path(self, event=None):
+
+        for agent_idx, agent_perimeter_path in self.auv_perimeters_dict.items():
+            if agent_perimeter_path is None:
+                rospy.loginfo(f"Agent {agent_idx} perimeter path is not defined")
+                self.construct_agent_perimeter_path_msg()
+
+            if agent_perimeter_path is not None:
+                self.pub_dict[agent_idx].publish(agent_perimeter_path)
+                rospy.loginfo_once(f"Publishing agent perimeter path for {agent_idx}")
+
+        # Check if all agents have valid perimeter paths
+        # if all(self.auv_perimeters_dict.values()):
+        #     # Plot the paths only once
+        #     if self.flag_plot_agent_perimeter or not self.agent_perimeter_plotted:
+        #         self.plot_paths_with_names(list(self.auv_perimeters_dict.values()), 
+        #                                    [f"Agent {i}" for i in range(self.num_auvs)])
+        #     self.agent_perimeter_plotted = True
+
+    def publish_survey_perimeter_path(self, event=None):
+        """
+        Publishes a Path message representing the survey area as a rectangle
+        """
+        if self.perimeter_path_msg is None:
+            self.construct_survey_perimeter_path_msg()
+
+        if self.perimeter_path_msg is not None:
+            for publisher_id, publisher in self.pub_dict.items():
+                if not self.perimeter_path_msg_logged:
+                    rospy.loginfo(f"Publishing survey perimeter path for {publisher_id}")
+                publisher.publish(self.perimeter_path_msg)
+            self.perimeter_path_msg_logged = True
+
     def publish_survey_area(self, event=None):
         """
         Publishes a marker representing the complete survey area as a rectangle
@@ -463,6 +534,9 @@ class PatternGenerator():
         
         # Transform waypoints for agent 0
         timed_paths_list = self.transform_waypoints(timed_paths_list)
+
+        # Record the generated paths
+        self.record_generated_paths(timed_paths_list)
         
         # Publish waypoints as Path messages for each AUV
         for agent_idx, timed_path in enumerate(timed_paths_list):
@@ -520,6 +594,9 @@ class PatternGenerator():
         # self.goal = None
 
     def transform_waypoints(self, timed_paths_list):
+        """
+        Performs offsetting of the waypoints to make the paths start from the bottom left corner of the survey area.
+        """
         # Check if self.bottom_left is defined
         if self.path_bottom_left is None:
             rospy.logwarn("Bottom left corner is not defined.")
@@ -543,6 +620,61 @@ class PatternGenerator():
                 #     del timed_path.wps[wp_id]
         return timed_paths_list
     
+    def record_generated_paths(self, timed_paths_list):
+        """
+        Record the generated paths for each AUV.
+        Note: The list elements are in reverse order, so we need to correct the order when placing into the dictionary.
+        """
+
+        count = 0
+
+        # for agent_idx, timed_path in enumerate(reversed(timed_paths_list)):
+        for agent_idx, timed_path in enumerate(timed_paths_list):
+            self.auv_paths_dict[(self.num_auvs - 1) - agent_idx] = timed_path
+            count += 1
+
+        rospy.loginfo(f"Recording generated paths: count: {count}")
+
+    def plot_paths_with_names(paths, names=None):
+        """
+        Plots a list of Path objects using matplotlib and labels them with the provided names.
+        
+        Args:
+            paths (list of Path): List of Path objects to plot.
+            names (list of str): List of names corresponding to each Path object.
+        """
+        if names is None:
+            names = [f"Path {i+1}" for i in range(len(paths))]
+        elif len(paths) != len(names):
+            rospy.logwarn("The number of paths and names do not match. Generating default names.")
+            names = [f"Path {i+1}" for i in range(len(paths))]
+
+        plt.ion()  # Turn on interactive mode
+        fig, ax = plt.subplots()
+
+        for path, name in zip(paths, names):
+            x_coords = []
+            y_coords = []
+            
+            for pose_stamped in path.poses:
+                x_coords.append(pose_stamped.pose.position.x)
+                y_coords.append(pose_stamped.pose.position.y)
+            
+            # If the path has 4 elements, assume it ends at the beginning
+            if len(path.poses) == 4:
+                x_coords.append(x_coords[0])
+                y_coords.append(y_coords[0])
+            
+            ax.plot(x_coords, y_coords, marker='o', label=name)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_title('Paths')
+        ax.legend()
+        ax.grid(True)
+        plt.show()
+        
+
     # def exclude_wps_within_turning_radius(self, timed_path):
     #     """This method removes all waypoints that are within the turning radius of the start and end point of the path"""
     #     def _remove_wps_close_to(wp,distance,path):
