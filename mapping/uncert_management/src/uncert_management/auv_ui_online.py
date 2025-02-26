@@ -148,8 +148,10 @@ class auv_ui_online(object):
         # Signal to end survey and save data
         finished_top = rospy.get_param("~survey_finished_top", '/survey_finished')
         self.synch_pub = rospy.Subscriber(finished_top, Bool, self.synch_cb)
+        rospy.loginfo(f"({rospy.get_name()}) Survey finished topic: {finished_top}")
         self.survey_finished = False
         self.start_training = False
+        
         # self.covs_all = []
         # self.means_all = []
         self.covs_all = np.empty([1,2,2])
@@ -164,7 +166,7 @@ class auv_ui_online(object):
         manipulate_gp_name = rospy.get_param("~manipulate_gp_server")
         self.ac_manipulate = actionlib.SimpleActionClient(manipulate_gp_name, ManipulatePosteriorAction)
         while not self.ac_manipulate.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
-            print("Waiting for Manipulate AS ")
+            rospy.loginfo_throttle(25, f"({rospy.get_name}) Waiting for Manipulate AS {manipulate_gp_name}")
         rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {manipulate_gp_name}")
 
         # sample_gp_name = rospy.get_param("~sample_gp_server")
@@ -204,6 +206,11 @@ class auv_ui_online(object):
 
         # For gaussian sampling
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        # Counters for debuffing and output
+        self.odom_cb_count = -1
+        self.mbes_cb_count = -1
+        self.display_count_period = int(100)
 
         rospy.spin()
 
@@ -299,6 +306,8 @@ class auv_ui_online(object):
     # Base pose on odom frame
     def odom_cb(self, odom_msg):
 
+        self.odom_cb_count += 1
+
         if not self.survey_finished and self.start_training:
 
             self.time = odom_msg.header.stamp.to_sec()
@@ -308,8 +317,10 @@ class auv_ui_online(object):
                 self.first_odom = False
                 return
 
-            dt_real = self.time - self.old_time 
-            print(dt_real)
+            dt_real = self.time - self.old_time
+            # if self.odom_cb_count % self.display_count_period == 0:
+            #     print(f"dt: {dt_real}")
+            # print(dt_real)
             # dt_real = 0.2
             
             vt = np.array([odom_msg.twist.twist.linear.x,
@@ -379,7 +390,9 @@ class auv_ui_online(object):
             N = 50
             idx = np.round(np.linspace(0, len(beams_mbes)-1, N)).astype(int)
             beams_mbes_filt = beams_mbes[idx]
-            print("UI ping ", self.pings_num, " with: ", len(beams_mbes_filt), " beams")
+
+            if self.mbes_cb_count % self.display_count_period == 0:
+                print(f"({rospy.get_name()}):UI ping {self.pings_num} with: {len(beams_mbes_filt)} beams")
             
             for n, beam in enumerate(beams_mbes_filt):
             # for n in range(len(beams_mbes)):
