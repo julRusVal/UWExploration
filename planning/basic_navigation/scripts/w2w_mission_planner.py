@@ -81,7 +81,9 @@ class W2WMissionPlanner(object):
 
         self.wp_counter = 0
 
-        self.finished_pub = rospy.Publisher('/finished/' + self.namespace, Bool, queue_size=1)
+        # Indicates if the mission is completed
+        # was /finished/namespace -> /namespace/finished
+        self.finished_pub = rospy.Publisher(f"/{self.namespace}/finished", Bool, queue_size=1)
         self.started = False
 
         # Checks performed

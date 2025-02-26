@@ -75,8 +75,14 @@ class FLSModel(object):
         server_mode = rospy.get_param("~server_mode", False)
         if server_mode:
             rospy.loginfo(f"({rospy.get_name()}): FLS action server set to auto_start (this can cause problems)")
+            rospy.loginfo(f"({rospy.get_name()}): Setting auto_start of FLS action server false!!!")
+            server_mode = False
         self.as_ping = actionlib.SimpleActionServer(sim_fls_as, FlsSimAction,
                                                     execute_cb=self.fls_as_cb, auto_start=server_mode)
+        
+        if not server_mode:
+            self.as_ping.start()
+            
         #Publish scan area to rviz
         self.scan_area_marker_pub = rospy.Publisher(self.scan_area_marker_topic, MarkerArray, queue_size=1)
         self.goal_header_stamp = None

@@ -93,16 +93,26 @@ class auv_payload(object):
         server_mode = rospy.get_param("~server_mode", False)
         if server_mode:
             rospy.loginfo(f"({rospy.get_name()}): MBES action server set to auto_start (this can cause problems)")
+            rospy.loginfo(f"({rospy.get_name()}): Setting auto_start of MBES action server false!!!")
+            server_mode = False
         self.as_mbes = actionlib.SimpleActionServer(sim_mbes_as, MbesSimAction,
                                                     execute_cb=self.mbes_as_cb, auto_start=server_mode)
+        
+        if not server_mode:
+            self.as_mbes.start()
         
         # Action server for S pings sim (necessary to be able to use UFO maps as well)
         sim_sss_as = rospy.get_param('~sss_sim_as', '/sss_sim_server')
         server_mode = rospy.get_param("~server_mode", False)
         if server_mode:
             rospy.loginfo(f"({rospy.get_name()}): SSS action server set to auto_start (this can cause problems)")
+            rospy.loginfo(f"({rospy.get_name()}): Setting auto_start of SSS action server false!!!")
+            server_mode = False
         self.as_ping = actionlib.SimpleActionServer(sim_sss_as, SssSimAction,
                                                     execute_cb=self.sss_as_cb, auto_start=server_mode)
+        
+        if not server_mode:
+            self.as_ping.start()
 
         rospy.spin()
 
