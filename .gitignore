@@ -1,6 +1,7 @@
 *~
 *.pyc
 *.autosave
+*.DS_Store
 
 # Folders
 bin/*
