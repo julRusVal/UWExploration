@@ -7,15 +7,13 @@ import yaml
 import matplotlib.pyplot as plt
 import time
 
-from system_helperss import remove_files_in_directory
-
 import numpy as np
 import torch
-
 #from torch.utils.hipify.hipify_python import value
+from gpytorch.models import VariationalGP
 
 from gp import SVGP
-from gpytorch.models import VariationalGP
+from gp_mapping_utils.system_helperss import remove_files_in_directory
 
 '''
 Simple example of a multi-agent GP mappping
@@ -365,7 +363,6 @@ def instantiate_svgp_with_priors(survey_points, covariances=None, n_inducing=400
                    auto=False, verbose=verbose)
 
             return gp
-
 
 def plot_save_gp_model(gp, loss, output_path, name, points, n=100, n_contours=100, post_axis_count=1000):
     """

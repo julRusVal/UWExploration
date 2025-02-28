@@ -9,18 +9,37 @@ import numpy as np
 import open3d as o3d
 
 
-def train_svgp(gp_inputs_type, survey_name, inducing_bins=1, batch_bins=1):
+def train_svgp(gp_inputs_type, survey_name, inducing_bins=1, batch_bins=1, return_info=False):
     """
     Accepts the file name of either compressed np arrays, .npz, or an np array, .npy.
+
+
+    Parameters:
+    - survey_name: The name of the file containing the survey data.
+    - inducing_bins: The number of inducing bins to use in the GP.
+    - batch_bins: The number of batch bins to use in the GP.
+    - return_info: A boolean flag to return the [GP object, inputs, targets, covs] or not.
     """
-    print("Loading ", survey_name)
+    if not os.path.isfile(survey_name):
+        raise ValueError("The provided file does not exist.")
+    
+    print(f"Loading {survey_name}")
     cloud = np.load(survey_name)
 
-    # TODO Check for proper format
+    out_path = os.path.dirname(survey_name)
+    print(f"Output path {out_path}")
+
+    # Check for proper format:
     # The input is either a compress .npz that contains "points" and "convs"
     # or is a raw point cloud
     if hasattr(cloud, 'keys'):
-        points = cloud['points']
+        npz_keys = list(cloud.keys())
+        if 'points' in npz_keys:
+            points = cloud['points']
+        elif 'beams' in npz_keys:
+            points = cloud['beams']
+        else:
+            raise ValueError("The provided .npz file does not contain 'points' or 'beams'.")
         # Check if convs is present
         if 'covs' not in cloud.keys():
             gp_inputs_type = 'di'
@@ -54,24 +73,37 @@ def train_svgp(gp_inputs_type, survey_name, inducing_bins=1, batch_bins=1):
    
     # Save GP
     print("Saving trained GP")
-    gp.save(name + '.pth')
+    gp_name = os.path.join(out_path, name + '.pth')
+    gp.save(gp_name)
 
     # save figures
     print("Plotting results")
     gp.plot(inputs, targets, name + '.png',
              n=100, n_contours=100)
-    gp.plot_loss(name + '_loss.png')
+    loss_plot_name = os.path.join(out_path, name + '_loss.png')
+    gp.plot_loss(loss_plot_name)
     
     # Save loss for tunning of stopping criterion
-    np.save(name + '_loss.npy', np.asarray(gp.loss))
+    loss_data_name = os.path.join(out_path, name + '_loss.npy')
+    np.save(loss_data_name, np.asarray(gp.loss))
 
     # Save posterior
     print("Saving posterior")
     x = inputs[:,0]
     y = inputs[:,1]
+    post_data_name = os.path.join(out_path, name + '_post.npy')
     gp.save_posterior(1000, min(x), max(x), min(y), max(y), 
-                      name + '_post.npy', verbose=False)
+                      post_data_name, verbose=False)
 
+    if return_info:
+        return {
+            "gp": gp,
+            "inputs": inputs,
+            "targets": targets,
+            "covariances": covariances
+        }
+
+    return
 
 def trace_kernel(gp_path):
 

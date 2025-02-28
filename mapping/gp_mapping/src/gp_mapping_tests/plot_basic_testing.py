@@ -2,7 +2,7 @@
 
 import os
 import numpy as np
-from Consistancy_plot import compute_consistency_metrics
+from gp_mapping_utils.Consistancy_plot import compute_consistency_metrics
 
 """
 Script for comparing consistancy metrics between two methods of SVGP training.

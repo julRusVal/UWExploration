@@ -4,6 +4,8 @@ import os
 
 import metrics
 
+
+
 directory_path = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping/multi_agent_scenario_output/"
 scenario_i = int(7)
 agent_i = int(0)
