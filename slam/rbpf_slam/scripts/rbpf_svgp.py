@@ -409,6 +409,32 @@ class SVGP_map():
                           n_contours=100 )
                 self.n_plot += 1
 
+                # TODO: Fix how the GP posterior is saved to disk
+                # This is a copy of the code in the else statement, with some name changes
+
+                track_position = np.asarray(list(pc2.read_points(goal.track_position, 
+                                field_names = ("x", "y", "z"), skip_nans=True)))
+                track_position = np.reshape(track_position, (-1,3)) 
+
+                track_orientation = np.asarray(list(pc2.read_points(goal.track_orientation, 
+                                field_names = ("x", "y", "z"), skip_nans=True)))
+                track_orientation = np.reshape(track_orientation, (-1,3)) 
+
+                # Save GP hyperparams
+                self.save(f"{self.storage_path}/{self.namespace}_svgp_final_{self.particle_id}.pth")
+                # Save particle's MBES map, trajectory and loss
+                np.savez(f"{self.storage_path}/{self.namespace}_data_particle_{self.particle_id}.npz", beams=beams, loss=self.loss, 
+                        track_position=track_position, track_orientation=track_orientation)
+                self.plotting = False
+                self.mission_finished = True
+
+                del self.model
+                del self.likelihood
+                del self.opt
+                torch.cuda.empty_cache()
+
+
+
             # Save to disk 
             else:
                 track_position = np.asarray(list(pc2.read_points(goal.track_position, 
