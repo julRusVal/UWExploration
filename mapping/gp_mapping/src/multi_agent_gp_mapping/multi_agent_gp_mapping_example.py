@@ -12,7 +12,7 @@ import torch
 #from torch.utils.hipify.hipify_python import value
 from gpytorch.models import VariationalGP
 
-from gp import SVGP
+from gp_mapping.gp import SVGP
 from gp_mapping_utils.system_helperss import remove_files_in_directory
 
 '''
@@ -23,6 +23,8 @@ This is just a proof of concept.
 The number of agent is given, by agent_count
 '''
 
+
+# TODO: this needs some refactoring
 
 def generate_agent_sub_maps(map_mins, map_maxs, agent_count, survey_points, movement_axis='y'):
     """
@@ -464,12 +466,12 @@ def save_loss_plot(loss_array, fname):
 
 # Define the mission
 agent_count = 2  # nummber of agents
-transfer_count_start = 3  # total number of transfers between agents
-transfer_count_end = 10
+transfer_count_start = 1  # total number of transfers between agents
+transfer_count_end = 1
 movement_axis = 'y'
 
 # GP parameters
-max_iter = 200  # 250
+max_iter = 1000  # 250
 n_inducing_points = 400
 gp_learning_rate = 1e-1  # These parameters haven't been touched and are from gp_map_training.py
 gp_rtol = 1e-12
@@ -483,7 +485,7 @@ flag_clear_output_dir = True
 # Training parameters
 flag_baseline = False
 do_new_baseline = True  # This will perform the baseline with no communication but with inia
-method = 'f'  # 'b': baseline, 'f': federated, 'i': independent
+method = 'b'  # 'b': baseline, 'f': federated, 'i': independent
 verbose_baseline = False
 do_final_training = False
 verbose_final_training = False
@@ -498,9 +500,14 @@ compare_baseline_to_aggregated = False  # NOT IMPLEMENTED
 # dataset
 input_type = 'di'
 # Root data directory contains the relevant dataset while the root output directory contains the the output directory
-root_data_dir = "/home/julianvaldez/kth_projects/UWExploration/utils/uw_tests/datasets/lost_targets"
-root_output_dir = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping"
-file_name = "pcl_cleaned.npy"
+# root_data_dir = "/home/julianvaldez/kth_projects/UWExploration/utils/uw_tests/datasets/lost_targets"  # Original dataset
+# root_output_dir = "/home/julianvaldez/kth_projects/UWExploration/mapping/gp_mapping/src/gp_mapping"  # Original output
+# file_name = "pcl_cleaned.npy"  # Original file name
+
+root_data_dir = "/home/sam/auv_ws/src/UWExploration/utils/uw_tests/datasets/asko"
+root_output_dir = "/home/sam/auv_ws/src/UWExploration/mapping/gp_mapping/src/multi_agent_gp_mapping"
+file_name = "pcl.npy"
+
 file_path = os.path.join(root_data_dir, file_name)
 
 if method == 'b':

@@ -39,3 +39,24 @@ def load_yaml(file_path):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return None
+    
+# === File Paths ===
+def find_file_path(directory: str, filename: str) -> str:
+    """
+    Searches for a file with the given filename in the specified directory and its subdirectories.
+
+    Args:
+        directory (str): The directory to search in.
+        filename (str): The name of the file to search for.
+
+    Returns:
+        str: The full path to the file if found, otherwise None.
+    """
+    for root, dirs, files in os.walk(directory):
+        if filename in files:
+            file_path = os.path.join(root, filename)
+            print(f"File found: {file_path}")
+            return file_path
+    
+    print(f"File not found: {filename}")
+    return None

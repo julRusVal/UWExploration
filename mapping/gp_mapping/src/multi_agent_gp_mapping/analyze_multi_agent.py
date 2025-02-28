@@ -4,10 +4,10 @@ from operator import index
 
 import numpy as np
 import pickle
-import metrics
 import matplotlib.pyplot as plt
 
-from system_helperss import load_yaml
+import gp_mapping.metrics as metrics
+from gp_mapping_utils.system_helperss import load_yaml
 
 def extract_numbers_from_template(directory):
     """

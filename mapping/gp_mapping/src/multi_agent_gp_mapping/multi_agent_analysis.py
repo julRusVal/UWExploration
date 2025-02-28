@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, Normalize
-from Consistancy_plot import compute_consistency_metrics
+from gp_mapping_utils.consistancy_plot import compute_consistency_metrics
 
 """
 compare the consistancy metrics between the three models produced by the multi-agent method
