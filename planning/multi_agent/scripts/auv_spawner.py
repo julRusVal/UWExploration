@@ -26,6 +26,7 @@ class AUVSpawner():
         rospy.set_param(self.spawner_status_param_name, False)
         self.spawn_counter = 0
         
+        # AUV model parameters
         self.fls_horizontal_angle = rospy.get_param("~fls_horizontal_angle", 135)
         self.fls_vertical_angle = rospy.get_param("~fls_vertical_angle", 60)
         self.fls_max_range = rospy.get_param("~fls_max_range", 50) #meters
@@ -34,9 +35,12 @@ class AUVSpawner():
         self.odom_period = rospy.get_param("~odom_period") #seconds
         self.fls_period = rospy.get_param("~fls_meas_period") #seconds
         self.mbes_period = rospy.get_param("~mbes_meas_period") #seconds
-        rospack = rospkg.RosPack()
+
+        # SVGP parameters
+        # Parameter for the SVGP used in the multi agent scenario are define in the launch file, ma_gp_mapping.launch
 
         # Launch files
+        rospack = rospkg.RosPack()
         self.launch_file = rospy.get_param('~auv_launch_file',rospack.get_path('auv_model') + '/launch/auv_environment.launch')
         self.map_launch_file = rospy.get_param('~map_launch_file',rospack.get_path('gp_mapping') + '/launch/ma_gp_mapping.launch')
 
@@ -121,11 +125,9 @@ class AUVSpawner():
         self.display_message_in_rviz("Survey started!")
         self.display_message_in_rviz("")
 
-
     def display_message_in_rviz(self, message):
         self.message_srv(DisplayRvizMessageRequest(String(message)))
             
-
     def spawn_auv(self,x,y,z,roll,pitch,yaw,namespace):
         """
         Spawns an AUV in the simulation environment at the given position and orientation
@@ -161,16 +163,25 @@ class AUVSpawner():
         """
         rospy.loginfo(f"Spawning map for AUV - Namespace: {namespace} - Mode:{self.mode}")
         proc = Popen(["roslaunch", self.map_launch_file, 
-                            "mode:=" + self.mode,
-                            "dataset:=" + self.dataset,
-                            "namespace:=" + namespace,
-                            "x:=" + str(x), #This and yaw below are for the initial pose, such that the auvs are spawned along the x-axis heading looking along the y-axis
-                            "y:=" + str(y),
-                            "z:=" + str(z),
-                            "roll:=" + str(roll),
-                            "pitch:=" + str(pitch),
-                            "yaw:=" + str(yaw),
-                            ])
+                    "mode:=" + self.mode,
+                    "dataset:=" + self.dataset,
+                    "namespace:=" + namespace,
+                    "x:=" + str(x), #This and yaw below are for the initial pose, such that the auvs are spawned along the x-axis heading looking along the y-axis
+                    "y:=" + str(y),
+                    "z:=" + str(z),
+                    "roll:=" + str(roll),
+                    "pitch:=" + str(pitch),
+                    "yaw:=" + str(yaw),
+                    # "svgp_minibatch_size:=" + str(self.mb_size),
+                    # "svgp_learning_rate:=" + str(self.lr),
+                    # "svgp_rtol:=" + str(self.rtol),
+                    # "svgp_n_window:=" + str(self.n_window),
+                    # "svgp_auto_stop:=" + str(self.auto),
+                    # "svgp_verbose:=" + str(self.verbose),
+                    # "n_beams_mbes:=" + str(self.n_beams_mbes),
+                    # "svgp_num_ind_points:=" + str(self.svgp_num_ind_points),
+                    # "svgp_likelihood_noise_floor:=" + str(self.svgp_likelihood_noise_floor)
+                    ])
                             
         rospy.loginfo(str("Spawned Map: "+ str(namespace)) + str(" at x: " + str(x) + " y: " + str(y) + " z: " + str(z) + " roll: " + str(roll) + " pitch: " + str(pitch) + " yaw: " + str(yaw)))
 

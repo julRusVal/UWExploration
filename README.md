@@ -23,6 +23,12 @@ pip install configargparse pygame dubins
 ```
 Make sure your scipy version is >= 1.4.0
 
+Install dubins for multi-agent planner planner
+* dubins [here](https://pypi.org/project/dubins/)
+```
+pip install dubins
+```
+
 If you're going to be working with Gaussian Processes maps, also install
 * Pytorch [here](https://pytorch.org/)
 ```

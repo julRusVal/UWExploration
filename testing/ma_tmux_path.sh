@@ -27,7 +27,7 @@ sleep 2
 # -----------------------------------------------------------------------------
 # Window 1: Load parameters from YAML
 # -----------------------------------------------------------------------------
-tmux new-window -t $SESSION -n 'load_params'
+tmux new-window -t $SESSION -n 'Params & RVIZ'
 tmux send-keys -t $SESSION:1 "
 echo 'Clearing parameters...'
 rosparam delete \/
@@ -39,25 +39,24 @@ rosparam get \/
 # Optional small delay so params are definitely on the server
 sleep 3
 
-# -----------------------------------------------------------------------------
-# Window 2: RVIZ
-# -----------------------------------------------------------------------------
-tmux new-window -t $SESSION -n 'RVIZ'
-tmux send-keys -t $SESSION:2 "
+tmux send-keys -t $SESSION:1 "
 echo 'Starting RVIZ using config: $RVIZ_FILE'
 rviz -d $RVIZ_FILE
 " C-m
 
+
 # -----------------------------------------------------------------------------
-# Window 2: AUV Spawner
+# Window 3: AUV Spawner
 # Spawner node is responsible for spawning AUVs in the simulation
 # Parameters are loaded from the YAML file
 # -----------------------------------------------------------------------------
+
+
 tmux new-window -t $SESSION -n 'spawner'
-tmux send-keys -t $SESSION:3 "
+tmux send-keys -t $SESSION:2 "
 echo 'Starting AUV spawner...'
 
-SPAWNER_NAME=\$(rosparam get node_name_spawner)
+SPAWNER_NAME_OTHER=\$(rosparam get node_name_spawner)
 MODE=\$(rosparam get mode)
 DATASET=\$(rosparam get dataset)
 AUV_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_environment.launch
@@ -69,7 +68,7 @@ ODOM_PERIOD=\$(rosparam get odom_period)
 MBES_PERIOD=\$(rosparam get mbes_meas_period)
 
 rosrun multi_agent auv_spawner.py \\
-  __name:=\$SPAWNER_NAME \\
+  __name:=\$SPAWNER_NAME_OTHER \\
   _mode:=\$MODE \\
   _dataset:=\$DATASET \\
   _auv_launch_file:=\$AUV_LAUNCH_FILE \\
@@ -85,7 +84,53 @@ rosrun multi_agent auv_spawner.py \\
 " C-m
 
 # -----------------------------------------------------------------------------
-# Window 3: AUV Navigation
+# Window 2: RVIZ
+# -----------------------------------------------------------------------------
+# SPAWNER_MODE='comms'
+# SPAWNER_NAME=$(rosparam get node_name_spawner)_${SPAWNER_MODE}
+
+tmux new-window -t $SESSION -n 'Spawner - Comms'
+tmux send-keys -t $SESSION:3 "
+echo 'Starting AUV spawner (Comms)'
+
+SPAWNER_MODE='comms'
+SPAWNER_NAME_COMMS=\$(rosparam get node_name_spawner)_\${SPAWNER_MODE}
+
+echo \"SPAWNER_NAME=\${SPAWNER_NAME_COMMS}\"
+echo \"SPAWNER_MODE=\${SPAWNER_MODE}\"
+
+MODE=\$(rosparam get mode)
+DATASET=\$(rosparam get dataset)
+AUV_LAUNCH_FILE=\$(rospack find auv_model)/launch/auv_environment.launch
+MAP_LAUNCH_FILE=\$(rospack find gp_mapping)/launch/ma_gp_mapping.launch
+COMMS_LAUNCH_FILE=\$(rospack find multi_agent_comms)/launch/ma_comms.launch
+FLS_HORIZONTAL=\$(rosparam get fls_horizontal_angle)
+FLS_VERTICAL=\$(rosparam get fls_vertical_angle)
+FLS_RANGE=\$(rosparam get fls_max_range)
+ODOM_PERIOD=\$(rosparam get odom_period)
+MBES_PERIOD=\$(rosparam get mbes_meas_period)
+
+rosrun multi_agent ma_auv_spawner.py \\
+  __name:=\$SPAWNER_NAME_COMMS \\
+  _spawner_mode:=\$SPAWNER_MODE \\
+  _mode:=\$MODE \\
+  _dataset:=\$DATASET \\
+  _auv_launch_file:=\$AUV_LAUNCH_FILE \\
+  _map_launch_file:=\$MAP_LAUNCH_FILE \\
+  _comms_launch_file:=\$COMMS_LAUNCH_FILE \\
+  _fls_horizontal_angle:=\$FLS_HORIZONTAL \\
+  _fls_vertical_angle:=\$FLS_VERTICAL \\
+  _fls_max_range:=\$FLS_RANGE \\
+  _fls_range_std:=0.0 \\
+  _fls_angle_std:=0.0 \\
+  _fls_meas_period:=0.1 \\
+  _odom_period:=\$ODOM_PERIOD \\
+  _mbes_meas_period:=\$MBES_PERIOD
+" C-m
+
+
+# -----------------------------------------------------------------------------
+# Window 4: AUV Navigation
 # -----------------------------------------------------------------------------
 tmux new-window -t $SESSION -n 'navigation'
 tmux send-keys -t $SESSION:4 "

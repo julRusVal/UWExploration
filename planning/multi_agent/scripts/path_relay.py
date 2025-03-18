@@ -21,7 +21,9 @@ class PathRelay():
         self.path_array_topic = rospy.get_param('path_array_topic', '/multi_agent/path_array')
         self.paths_sub = rospy.Subscriber(self.path_array_topic, AgentPathArray, self.path_array_cb)
         self.paths = AgentPathArray()
-        self.pub_dict = {}
+        self.agent_path_pub_dict = {}  # For publishing the actual waypoints to agents
+        self.agent_path_rviz_pub_dict = {}  # For publishing the waypoints for visualization
+        self.agent_path_dict = {}
 
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
 
@@ -33,7 +35,8 @@ class PathRelay():
         #Create publishers for each AUV
         for i in range(self.num_auvs):
             namespace = self.vehicle_model + '_' + str(i)
-            self.pub_dict[i] = rospy.Publisher(namespace + '/waypoints', Path, queue_size=1)
+            self.agent_path_pub_dict[i] = rospy.Publisher(namespace + '/waypoints', Path, queue_size=1)
+            self.agent_path_rviz_pub_dict[i] = rospy.Publisher(namespace + '/waypoints_viz', Path, queue_size=1)
 
         rate = 10 #Hz
         self.rate = rospy.Rate(rate)
@@ -41,6 +44,9 @@ class PathRelay():
 
         # Use a timer to periodically check and process paths
         rospy.Timer(rospy.Duration(0.1), self.process_paths)
+
+        # Timer to republish waypoints
+        rospy.Timer(rospy.Duration(1), self.republish_waypoints)
 
         # while not rospy.is_shutdown():
             
@@ -60,12 +66,24 @@ class PathRelay():
             AgentPath_instance = self.paths.path_array.pop()
             agent_path = AgentPath_instance.path
             agent_id = AgentPath_instance.agent_id
+
+            # Add to agent paths dict
+            self.agent_path_dict[agent_id] = agent_path
+
             # if self.pattern_generator:
             #     start_pose = agent_path.poses[0].pose
             #     self.teleport_agent_to_pose(agent_id, start_pose)
-            self.pub_dict[agent_id].publish(agent_path)
+            self.agent_path_pub_dict[agent_id].publish(agent_path)
             rospy.loginfo(str("Published lawn mover path for agent: " + str(agent_id)))
             self.rate.sleep()
+
+    def republish_waypoints(self, event):
+        """
+        Republish waypoints for visualization.
+        """
+        for agent_id, agent_path in self.agent_path_dict.items():
+            self.agent_path_rviz_pub_dict[agent_id].publish(agent_path)
+            # rospy.loginfo(f"Republished path for agent: {agent_id}")
 
     def path_array_cb(self, msg):
         if not self.path_array_cb_logged:

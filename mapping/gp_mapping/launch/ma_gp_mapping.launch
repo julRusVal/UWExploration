@@ -48,6 +48,17 @@
 
     <arg name="results_path"                    default="/home/sam/auv_ws/src/UWExploration/utils/uw_tests/datasets/asko/svgp"/>
 
+    <!-- SVGP params-->
+    <arg name="svgp_num_ind_points"             default="400"/>     
+    <arg name="svgp_minibatch_size"             default="1000"/>     
+    <arg name="svgp_learning_rate"              default="1e-1"/>     
+    <arg name="svgp_rtol"                       default="1e-1"/>     
+    <arg name="svgp_n_window"                   default="400"/>     
+    <arg name="svgp_auto_stop"                  default="False"/>     
+    <arg name="svgp_likelihood_noise_floor"     default="0.5"/>     
+    <arg name="svgp_verbose"                    default="True"/>
+
+
     <!-- <node type="particles_launcher.py" pkg="rbpf_slam" name="particle_launcher" output="screen">
         <param name="namespace" value="$(arg namespace)"/>  
         <param name="n_beams_mbes" value="$(arg n_beams_mbes)"/>  
@@ -73,7 +84,8 @@
         <param name="svgp_learning_rate" value="1e-1"/>     
         <param name="svgp_rtol" value="1e-1"/>     
         <param name="svgp_n_window" type="int" value="400"/>     
-        <param name="svgp_auto_stop" value="False"/>     
+        <param name="svgp_auto_stop" value="False"/>
+        <param name="svgp_likelihood_noise_floor" value="$(arg svgp_likelihood_noise_floor)"/> 
         <param name="svgp_verbose" value="True"/>     
         <!-- End SVGP params -->
         <param name="num_particles_per_handler" value="$(arg num_particles_per_handler)"/>     
@@ -101,23 +113,6 @@
         <param name="manipulate_gp_server"  value="$(arg manipulate_gp_server)" />
         <param name="synch_topic" value="/$(arg app)/synch" />
     </node>
-
-    <!-- UW environment -->
-    <!-- <include file="$(find auv_model)/launch/auv_environment.launch" >
-        <arg name="mode" value="$(arg mode)"/>
-        <arg name="namespace" value="$(arg namespace)"/>
-        <arg name="dataset" value="$(arg dataset)" />
-        <arg name="debug" value="$(arg debug)" />
-        <arg name="app" value="$(arg app)"/>
-        <arg name="n_beams_mbes" value="$(arg n_beams_mbes)"/>
-        <arg name="mbes_open_angle" value="$(arg mbes_open_angle)" />
-        <arg name="x" value="$(arg x)"/>
-        <arg name="y" value="$(arg y)"/>
-        <arg name="z" value="$(arg z)"/>
-        <arg name="roll" value="$(arg roll)"/>
-        <arg name="pitch" value="$(arg pitch)"/>
-        <arg name="yaw" value="$(arg yaw)"/>
-    </include> -->
 
 </launch>
 

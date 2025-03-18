@@ -1,12 +1,12 @@
 # multi_agent_params.yaml
 
 # --- High-level numeric/string parameters ---
-num_auvs: 1
+num_auvs: 2
 vehicle_model: "hugin"
 namespace: "hugin_0"
 
 mode: "sim"
-dataset: "asko"
+dataset: "asko"  # "antarctica19_7", "asko", "ripples"
 
 path_array_topic: "/multi_agent/path_array"
 path_array_spawn_pos_topic: "/multi_agent/spawn_pos/path_array"

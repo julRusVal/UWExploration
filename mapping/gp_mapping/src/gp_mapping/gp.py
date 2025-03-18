@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import gpytorch.constraints
 import torch, numpy as np, tqdm, matplotlib.pyplot as plt
 from gpytorch.models import VariationalGP, ExactGP
 from gpytorch.variational import CholeskyVariationalDistribution, VariationalStrategy
@@ -183,7 +184,8 @@ class RGP(ExactGP):
 
 class SVGP(VariationalGP):
 
-    def __init__(self, n_inducing, inducing_bins=1, batch_bins=1):
+    def __init__(self, n_inducing: int, inducing_bins: int = 1, batch_bins: int = 1, 
+                 likelihood_noise_floor=None):
 
         # number of inducing points and optimisation samples
         assert isinstance(n_inducing, int)
@@ -210,6 +212,16 @@ class SVGP(VariationalGP):
         self.cov = ScaleKernel(self.cov, ard_num_dims=2)
         
         # likelihood
+        # likelihood_noise_floor is the minimum value of the noise variance.
+        # This can be used to prevent overfitting.
+        # if likelihood_noise_floor is not None and likelihood_noise_floor > 0:
+        #     self.likelihood_noise_contraint = gpytorch.constraints.GreaterThan(likelihood_noise_floor)
+        # else:
+        #     self.likelihood_noise_contraint = None
+        
+        # self.likelihood = GaussianLikelihood(noise_constraint=self.likelihood_noise_contraint)
+        
+        # rbpf_svgp.py allows for the likelihood noise floor to be set externally
         self.likelihood = GaussianLikelihood()
 
         # hardware allocation
