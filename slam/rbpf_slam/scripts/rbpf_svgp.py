@@ -1,6 +1,22 @@
 #!/usr/bin/env python3
 
-import torch, numpy as np, tqdm, matplotlib.pyplot as plt
+# General imports
+import os
+import warnings
+import time
+from pathlib import Path
+import ast
+import copy
+from collections import OrderedDict
+
+# Data processing imports
+import gpytorch.constraints
+import matplotlib.pyplot as plt
+import numpy as np, tqdm
+import open3d as o3d
+
+# GP imports
+import torch
 from gpytorch.models import VariationalGP, ExactGP
 from gpytorch.variational import CholeskyVariationalDistribution, VariationalStrategy
 from gpytorch.means import ConstantMean
@@ -11,40 +27,28 @@ from gpytorch.mlls import VariationalELBO, PredictiveLogLikelihood, ExactMargina
 from gpytorch.test.utils import least_used_cuda_device
 import gpytorch.settings
 from gp_mapping.convergence import ExpMAStoppingCriterion
-import matplotlib.pyplot as plt
 
+# ROS imports
 import rospy
+import tf
+from tf.transformations import quaternion_matrix
+import actionlib
+
+# ROS msgs 
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs import point_cloud2
-from std_msgs.msg import Header
+from std_msgs.msg import Header, String
 import sensor_msgs.point_cloud2 as pc2
 from rospy.numpy_msg import numpy_msg
 from std_msgs.msg import Int32, Float32, Int32MultiArray
 from geometry_msgs.msg import PointStamped
 
+# ROS srvs
 from slam_msgs.msg import PlotPosteriorResult, PlotPosteriorAction
 from slam_msgs.msg import ManipulatePosteriorAction, ManipulatePosteriorResult
 from slam_msgs.msg import SamplePosteriorResult, SamplePosteriorAction
 from slam_msgs.msg import MinibatchTrainingAction, MinibatchTrainingResult, MinibatchTrainingGoal
 from slam_msgs.srv import Resample, ResampleResponse
-
-import actionlib
-
-import numpy as np
-
-import warnings
-import os
-import time
-import tf
-from tf.transformations import quaternion_matrix
-from pathlib import Path
-import ast
-import copy
-
-import open3d as o3d
-
-from collections import OrderedDict
-
 
 class SVGP(VariationalGP):
 
@@ -81,82 +85,260 @@ class SVGP_map():
         self.particle_id = particle_id
     
         self.namespace = rospy.get_namespace().strip("/")
-        
-        # Results storage path
-        default_path = "/home/sam/auv_ws/src/UWExploration/utils/uw_tests/rbpf"
-        self.storage_path = rospy.get_param("~results_path", default_path)
+        self.name = rospy.get_name()
+        self.svgp_mapper = "svgp_mapper" in self.name
 
         # svgp_mapper node
         # Used modify some behaviour when the instance is a SVGP mapper
         # e.g. naming convention for the manipulate_gp_name
-        self.svgp_mapper = "svgp_mapper" in rospy.get_name()
+        
         if self.svgp_mapper:
             rospy.loginfo(f"({rospy.get_name()}): Node in svgp mapper mode")
         
-        # AS for posterior region
-        sample_gp_name = rospy.get_param("~sample_gp_server")
-        self._as_posterior = actionlib.SimpleActionServer(sample_gp_name, SamplePosteriorAction,
-                                                     execute_cb=self.full_posterior_cb, auto_start=False)
-        self._as_posterior.start()
-        rospy.loginfo(f"({rospy.get_name()}) Sample GP server: {sample_gp_name}")
-
-        # AS for expected meas
-        manipulate_gp_name = rospy.get_param("~manipulate_gp_server")
-        # Check if the node is a SVGP mapper
-        # If so will use the provided manipulate_gp_name
-        # Else will use the default naming convention /particle_#{manipulate_gp_name}
-        if self.svgp_mapper:
-            complete_manipulate_gp_name = manipulate_gp_name
-            rospy.loginfo(f"({rospy.get_name()}): Utilizing svgp mapper naming convention")
-        else:
-            complete_manipulate_gp_name = "/particle_" + str(self.particle_id) + manipulate_gp_name
-        self._as_manipulate = actionlib.SimpleActionServer(complete_manipulate_gp_name, ManipulatePosteriorAction, 
-                                                execute_cb=self.manipulate_posterior_cb, auto_start = False)
-        self._as_manipulate.start()
-        rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {complete_manipulate_gp_name}")
-        
+        # Set initial state
         self.training = False
         self.plotting = False
         self.sampling = False
         self.resampling = False
-
-        # AS for minibath training data from RBPF
-        mb_gp_name = rospy.get_param("~minibatch_gp_server")
-        self.ac_mb = actionlib.SimpleActionClient(mb_gp_name, MinibatchTrainingAction)
-        while not self.ac_mb.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
-            rospy.loginfo(f"({rospy.get_name()}) Waiting for Minibatch GP server: {mb_gp_name}")
-        rospy.loginfo(f"({rospy.get_name()}) Minibatch GP Client: {mb_gp_name}")
-
-         # Subscription to GP inducing points from RBPF
-        ip_top = rospy.get_param("~inducing_points_top")
-        rospy.Subscriber(ip_top, PointCloud2, self.ip_cb, queue_size=1)
         self.inducing_points_received = False
+        self.ready_for_LC = False # Set to true when ELBO converges
+        self.n_plot = 0
+        self.n_plot_loss = 0
+        self.mission_finished = False
+        
+        # Load parameters from the ROS server
+        self.load_parameters()
 
-        # Subscription to particle resampling indexes from RBPF
-        p_resampling_top = rospy.get_param("~gp_resampling_top")
-        self.resample_srv = rospy.Service(str(p_resampling_top) + "/particle_" + str(self.particle_id), Resample,
-                         self.resampling_cb)
+        # Set up ROS action servers, subscribers, and publishers
+        self.initialize_ros_interfaces() 
+        self.listener = tf.TransformListener()
 
-        mbes_pc_top = rospy.get_param("~particle_sim_mbes_topic", '/expected_mbes')
-        self.pcloud_pub = rospy.Publisher(mbes_pc_top, PointCloud2, queue_size=10)
+        # Create storage path if it doesn't exist
+        # if not os.path.exists(self.storage_path):
+        #     os.makedirs(self.storage_path)
+
+        self.initialize_gp()
+
+        
+        # # AS for posterior region
+        # ## self.sample_gp_name = rospy.get_param("~sample_gp_server")
+        # self._as_posterior = actionlib.SimpleActionServer(self.sample_gp_name, SamplePosteriorAction,
+        #                                              execute_cb=self.full_posterior_cb, auto_start=False)
+        # self._as_posterior.start()
+        # rospy.loginfo(f"({rospy.get_name()}) Sample GP server: {self.sample_gp_name}")
+
+        # # AS for expected meas
+        # ## manipulate_gp_name = rospy.get_param("~manipulate_gp_server")
+        # # Check if the node is a SVGP mapper
+        # # If so will use the provided manipulate_gp_name
+        # # Else will use the default naming convention /particle_#{manipulate_gp_name}
+
+        # # TODO Clean this up a bit
+        # if self.svgp_mapper:
+        #     complete_manipulate_gp_name = self.manipulate_gp_name
+        #     rospy.loginfo(f"({rospy.get_name()}): Utilizing svgp mapper naming convention")
+        # else:
+        #     complete_manipulate_gp_name = "/particle_" + str(self.particle_id) + self.manipulate_gp_name
+        # self._as_manipulate = actionlib.SimpleActionServer(complete_manipulate_gp_name, ManipulatePosteriorAction, 
+        #                                         execute_cb=self.manipulate_posterior_cb, auto_start = False)
+        # self._as_manipulate.start()
+        # rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {complete_manipulate_gp_name}")
+        
+
+        # # AS for minibath training data from RBPF
+        # ## mb_gp_name = rospy.get_param("~minibatch_gp_server")
+        # self.ac_mb = actionlib.SimpleActionClient(self.mb_gp_name, MinibatchTrainingAction)
+        # while not self.ac_mb.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
+        #     rospy.loginfo(f"({rospy.get_name()}) Waiting for Minibatch GP server: {self.mb_gp_name}")
+        # rospy.loginfo(f"({rospy.get_name()}) Minibatch GP Client: {self.mb_gp_name}")
+
+        # # Subscription to GP inducing points from RBPF
+        # ## ip_top = rospy.get_param("~inducing_points_top")
+        # rospy.Subscriber(self.ip_top, PointCloud2, self.ip_cb, queue_size=1)
+
+        # # Subscription to particle resampling indexes from RBPF
+        # ## p_resampling_top = rospy.get_param("~gp_resampling_top")
+        # # TODO Clean this up a bit later, not sure I always want to use this naming convention
+        # self.resample_srv = rospy.Service(str(self.p_resampling_top) + "/particle_" + str(self.particle_id), Resample,
+        #                  self.resampling_cb)
+
+        # ## mbes_pc_top = rospy.get_param("~particle_sim_mbes_topic", '/expected_mbes')
+        # self.pcloud_pub = rospy.Publisher(self.mbes_pc_top, PointCloud2, queue_size=10)
+
+        # # Subscription for saving the current GP to disk
+        # # TODO add service for this later
+        # ## save_svgp_top = rospy.get_param("~save_svgp_top", f'/{self.namespace}/save_svgp')
+        # rospy.Subscriber(self.save_svgp_top, String, self.save_svgp_cb, queue_size=1)
+    
+        # # Set a parameter on the ROS parameter server
+        # rospy.set_param(f'/{self.namespace}/valid_svgp', False)
 
         ## SVGP SETUP
+        # Load SVGP parameters
+        ## self.mb_size = rospy.get_param("~svgp_minibatch_size", 1000)
+        # self.lr = rospy.get_param("~svgp_learning_rate", 1e-1)
+        # self.rtol = rospy.get_param("~svgp_rtol", 1e-4)
+        # self.n_window = rospy.get_param("~svgp_n_window", 100)
+        # self.auto = rospy.get_param("~svgp_auto_stop", False)
+        # self.verbose = rospy.get_param("~svgp_verbose", True)
+        # n_beams_mbes = rospy.get_param("~n_beams_mbes", 1000)
+        # num_inducing = rospy.get_param("~svgp_num_ind_points", 100)
+        ## likelihood_noise_floor = rospy.get_param("~svgp_likelihood_noise_floor", -1)
+
+        # # Condition SVGP parameter
+        # assert isinstance(self.num_inducing, int)
+        # self.s = int(self.num_inducing)
+
+        # if self.likelihood_noise_floor > 0:
+        #     self.likelihood_noise_floor_contraint = gpytorch.constraints.GreaterThan(self.likelihood_noise_floor)
+        # else:
+        #     self.likelihood_noise_floor_contraint = None
+
+        # # hardware allocation
+        # self.model = SVGP(self.num_inducing)
+        # self.likelihood = GaussianLikelihood(noise_constraint=self.likelihood_noise_floor_contraint)
+        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # self.likelihood.to(self.device).float()
+        # self.model.to(self.device).float()
+
+        # self.mll = VariationalELBO(self.likelihood, self.model, self.mb_size, combine_terms=True)
+        # self.opt = torch.optim.Adam([
+        #     {'params': self.model.parameters()},
+        #     {'params': self.likelihood.parameters()},
+        # ], lr=float(self.lr))
+        # # opt = torch.optim.SGD(self.parameters(),lr=learning_rate)
+
+        # # Convergence criterion
+        # self.criterion = ExpMAStoppingCriterion(rel_tol=float(self.rtol), 
+        #                                         minimize=True, n_window=self.n_window)
+        
+        # ## self.enable_lc_pub = rospy.Publisher(self.enable_lc_top, Int32, queue_size=10)
+        
+        # # Toggle training mode
+        # self.model.train()
+        # self.likelihood.train()
+        # self.loss = list()
+        # self.iterations = 0
+
+        rospy.loginfo(f"({rospy.get_name()}): Particle " + str(self.particle_id) + " set up")
+        # print("Particle ", self.particle_id, " set up")
+
+        # Remove Qt out of main thread warning (use with caution)
+        warnings.filterwarnings("ignore")
+
+    def load_parameters(self):
+        # Load the parameters from the ROS server
+        pass
+        # Results storage path
+        default_path = "/home/sam/auv_ws/src/UWExploration/utils/uw_tests/rbpf"
+        self.storage_path = rospy.get_param("~results_path", default_path)
+
+        # === Action servers ===
+        # Names of AS for posterior region
+        self.sample_gp_name = rospy.get_param("~sample_gp_server")
+
+        # AS for expected meas
+        self.manipulate_gp_name = rospy.get_param("~manipulate_gp_server")
+        
+        # AS for minibath training data from RBPF
+        self.mb_gp_name = rospy.get_param("~minibatch_gp_server")
+
+        # === Topics ===
+        # = Subscriptions =
+        # GP inducing points from RBPF This is supplied by the online ui node
+        self.ip_top = rospy.get_param("~inducing_points_top")
+
+        # particle resampling indexes from RBPF
+        self.p_resampling_top = rospy.get_param("~gp_resampling_top")
+
+        # = Publishers =
+        self.mbes_pc_top = rospy.get_param("~particle_sim_mbes_topic", '/expected_mbes')
+
+        # === Parameters for the SVGP ===
         self.mb_size = rospy.get_param("~svgp_minibatch_size", 1000)
         self.lr = rospy.get_param("~svgp_learning_rate", 1e-1)
         self.rtol = rospy.get_param("~svgp_rtol", 1e-4)
         self.n_window = rospy.get_param("~svgp_n_window", 100)
         self.auto = rospy.get_param("~svgp_auto_stop", False)
         self.verbose = rospy.get_param("~svgp_verbose", True)
-        n_beams_mbes = rospy.get_param("~n_beams_mbes", 1000)
+        self.n_beams_mbes = rospy.get_param("~n_beams_mbes", 1000)
+        self.num_inducing = rospy.get_param("~svgp_num_ind_points", 100)
+        self.likelihood_noise_floor = rospy.get_param("~svgp_likelihood_noise_floor", -1)
 
-        # Number of inducing points
-        num_inducing = rospy.get_param("~svgp_num_ind_points", 100)
-        assert isinstance(num_inducing, int)
-        self.s = int(num_inducing)
+        # loop closure topic
+        self.enable_lc_top = rospy.get_param("~particle_enable_lc", '/enable_lc')
+
+        # = Parameters for saving/communicating svgp models = 
+        self.save_svgp_top = rospy.get_param("~save_svgp_top", f'/{self.namespace}/save_svgp')
+
+    def initialize_ros_interfaces(self):
+        ## TODO Add so description
+        
+        # AS for posterior region
+        ## self.sample_gp_name = rospy.get_param("~sample_gp_server")
+        self._as_posterior = actionlib.SimpleActionServer(self.sample_gp_name, SamplePosteriorAction,
+                                                     execute_cb=self.full_posterior_cb, auto_start=False)
+        self._as_posterior.start()
+        rospy.loginfo(f"({rospy.get_name()}) Sample GP server: {self.sample_gp_name}")
+
+        # AS for expected meas
+        # TODO Clean this up a bit
+        
+        # Check if the node is a SVGP mapper
+        # If so will use the provided manipulate_gp_name
+        # Else will use the default naming convention /particle_#{manipulate_gp_name}
+
+        if self.svgp_mapper:
+            complete_manipulate_gp_name = self.manipulate_gp_name
+            rospy.loginfo(f"({rospy.get_name()}): Utilizing svgp mapper naming convention")
+        else:
+            complete_manipulate_gp_name = "/particle_" + str(self.particle_id) + self.manipulate_gp_name
+        
+        self._as_manipulate = actionlib.SimpleActionServer(complete_manipulate_gp_name, ManipulatePosteriorAction, 
+                                                execute_cb=self.manipulate_posterior_cb, auto_start = False)
+        self._as_manipulate.start()
+        rospy.loginfo(f"({rospy.get_name()}) Manipulate GP server: {complete_manipulate_gp_name}")
+
+        # AS for minibath training data from RBPF
+        self.ac_mb = actionlib.SimpleActionClient(self.mb_gp_name, MinibatchTrainingAction)
+        while not self.ac_mb.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
+            rospy.loginfo(f"({rospy.get_name()}) Waiting for Minibatch GP server: {self.mb_gp_name}")
+        rospy.loginfo(f"({rospy.get_name()}) Minibatch GP Client: {self.mb_gp_name}")
+
+        # Subscription to GP inducing points from RBPF
+        rospy.Subscriber(self.ip_top, PointCloud2, self.ip_cb, queue_size=1)
+
+        # Subscription to particle resampling indexes from RBPF
+        # TODO Clean this up a bit later, not sure I always want to use this naming convention
+        self.resample_srv = rospy.Service(str(self.p_resampling_top) + "/particle_" + str(self.particle_id), Resample,
+                         self.resampling_cb)
+
+        ## mbes_pc_top = rospy.get_param("~particle_sim_mbes_topic", '/expected_mbes')
+        self.pcloud_pub = rospy.Publisher(self.mbes_pc_top, PointCloud2, queue_size=10)
+
+        # Subscription for saving the current GP to disk
+        # TODO add service for this later
+        rospy.Subscriber(self.save_svgp_top, String, self.save_svgp_cb, queue_size=1)
+    
+        # Set a parameter on the ROS parameter server
+        rospy.set_param(f'/{self.namespace}/valid_svgp', False)
+
+        # Publisher for loop closure topic
+        self.enable_lc_pub = rospy.Publisher(self.enable_lc_top, Int32, queue_size=10)
+        
+    def initialize_gp(self):
+        # Condition SVGP parameter
+        assert isinstance(self.num_inducing, int)
+        self.s = int(self.num_inducing)
+
+        if self.likelihood_noise_floor > 0:
+            self.likelihood_noise_floor_contraint = gpytorch.constraints.GreaterThan(self.likelihood_noise_floor)
+        else:
+            self.likelihood_noise_floor_contraint = None
 
         # hardware allocation
-        self.model = SVGP(num_inducing)
-        self.likelihood = GaussianLikelihood()
+        self.model = SVGP(self.num_inducing)
+        self.likelihood = GaussianLikelihood(noise_constraint=self.likelihood_noise_floor_contraint)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.likelihood.to(self.device).float()
         self.model.to(self.device).float()
@@ -171,27 +353,12 @@ class SVGP_map():
         # Convergence criterion
         self.criterion = ExpMAStoppingCriterion(rel_tol=float(self.rtol), 
                                                 minimize=True, n_window=self.n_window)
-        self.ready_for_LC = False # Set to true when ELBO converges
-        enable_lc_top = rospy.get_param("~particle_enable_lc", '/enable_lc')
-        self.enable_lc_pub = rospy.Publisher(enable_lc_top, Int32, queue_size=10)
         
         # Toggle training mode
         self.model.train()
         self.likelihood.train()
         self.loss = list()
         self.iterations = 0
-
-        self.listener = tf.TransformListener()
-
-        rospy.loginfo(f"({rospy.get_name()}): Particle " + str(self.particle_id) + " set up")
-        # print("Particle ", self.particle_id, " set up")
-
-        # Remove Qt out of main thread warning (use with caution)
-        warnings.filterwarnings("ignore")
-
-        self.n_plot = 0
-        self.n_plot_loss = 0
-        self.mission_finished = False
 
     def resampling_cb(self, req):
 
@@ -500,7 +667,18 @@ class SVGP_map():
         self.likelihood.train()
         self.model.train()
         return dist.mean.cpu().numpy(), dist.variance.cpu().numpy()
-        
+
+    def save_svgp_cb(self, msg: String):
+        if msg.data == "save_svgp":
+            # Check that the model hasnt been deleted
+            # This occurs at the end of the mission
+            if not hasattr(self, 'model'):
+                return
+
+            online_file_path = f"{self.storage_path}/{self.namespace}_online_svgp.pth"
+            self.save(online_file_path)
+            rospy.loginfo(f"({rospy.get_name()}): Saved GP to {online_file_path}")
+                            
     def full_posterior_cb(self, goal):
 
         # toggle evaluation mode
