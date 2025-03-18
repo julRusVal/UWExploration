@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<launch>
+    <!-- This is based off the ipp.launch file. -->
+    
+    <!-- Define namespace and agent details -->
+    <arg name="namespace" default="hugin_0"/>
+    <arg name="agent_id" default="0"/>
+    <arg name="agent_count" default="1"/>
+    
+    <!-- Communication Parameters -->
+    <arg name="comm_range" value="50"/> 
+    <arg name="comm_sound_speed" value="1500.0"/>
+    <arg name="comm_send_rate" value="1.0"/>
+    <arg name="comm_delayed" default="True"/>
+
+    <arg name="comm_testing" default="False"/>
+    <arg name="comm_verbose" default="True"/> 
+
+    <!-- Dynamically generate node name based on namespace -->
+    <node ns="$(arg namespace)" type="simple_comms.py" pkg="multi_agent_comms"
+          name="comms_node" output="screen">
+
+        <!-- Pass parameters to the node -->
+        <param name="namespace" value="$(arg namespace)"/>
+        <param name="agent_id" value="$(arg agent_id)"/>
+        <param name="agent_count" value="$(arg agent_count)"/>
+        <param name="comm_range" value="$(arg comm_range)"/>
+        <param name="comm_sound_speed" value="$(arg comm_sound_speed)"/>
+        <param name="comm_send_rate" value="$(arg comm_send_rate)"/>
+        <param name="comm_delayed" value="$(arg comm_delayed)"/>
+        <!-- Testing and Verbose flags -->
+        <param name="comm_testing" value="$(arg comm_testing)"/>
+        <param name="comm_verbose" value="$(arg comm_verbose)"/>
+
+    </node>
+
+</launch>
