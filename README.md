@@ -199,7 +199,7 @@ The results will look like these (for 3 random particles)
 **Important**: this is a very computationally heavy algorithm, tune it with care or your PC will run out of resources quickly. The params "particle_count" and "num_particle_handlers" will have a direct impact on the memory and GPU usage, so careful when instantiating them. The same applies to the SVGP parameters "svgp_num_ind_points" and "svgp_minibatch_size" and how often the filter prompts a loop closure detection "rbpf_period".
 
 ### Non-myopic, layered BO for informative path planning
-Demo code coming soon!
+Find the demo code [here](https://github.com/Alwaki/UWExploration/tree/master). Not merged yet 
 
 ### Submap graph SLAM
 Currently porting [Bathymetric SLAM](https://github.com/ignaciotb/bathymetric_slam) into this framework.
