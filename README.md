@@ -44,7 +44,7 @@ If you experience errors with GTSAM libraries not being found, add this line at 
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 ## Papers using the frameworks and datasets
-If you find the repo and datasets useful, please cite us.
+If you find the repo and datasets useful, please cite the relevant work.
 ```
 @article{torroba2022fully,
   title={Fully-Probabilistic Terrain Modelling and Localization With Stochastic Variational Gaussian Process Maps},
@@ -70,6 +70,15 @@ If you find the repo and datasets useful, please cite us.
   year={2023},
   organization={IEEE}
 }
+
+@article{kiessling2024efficient,
+  title={Efficient Non-Myopic Layered Bayesian Optimization For Large-Scale Bathymetric Informative Path Planning},
+  author={Kiessling, Alexander and Torroba, Ignacio and Sidrane, Chelsea Rose and Stenius, Ivan and Tumova, Jana and Folkesson, John},
+  booktitle={2025 IEEE International Conference on Robotics and Automation (ICRA)},
+  year={2025},
+  organization={IEEE}
+}
+
 ```
 
 ## Demos
@@ -188,6 +197,9 @@ The results will look like these (for 3 random particles)
 <img src="utils/media/rbpf.png" height="400" width="800"/>
 
 **Important**: this is a very computationally heavy algorithm, tune it with care or your PC will run out of resources quickly. The params "particle_count" and "num_particle_handlers" will have a direct impact on the memory and GPU usage, so careful when instantiating them. The same applies to the SVGP parameters "svgp_num_ind_points" and "svgp_minibatch_size" and how often the filter prompts a loop closure detection "rbpf_period".
+
+### Non-myopic, layered BO for informative path planning
+Find the demo code [here](https://github.com/Alwaki/UWExploration/tree/master). Not merged yet 
 
 ### Submap graph SLAM
 Currently porting [Bathymetric SLAM](https://github.com/ignaciotb/bathymetric_slam) into this framework.

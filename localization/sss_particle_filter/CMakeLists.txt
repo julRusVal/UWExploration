@@ -1,5 +1,12 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(sss_particle_filter)
+cmake_minimum_required(VERSION 3.12)
+
+# Set CMP0048 to NEW to allow project VERSION specification
+if (POLICY CMP0048)
+    cmake_policy(SET CMP0048 NEW)
+endif()
+
+project(sss_particle_filter VERSION 1.0.0)
+include(ExternalProject)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -26,13 +33,54 @@ find_package(catkin REQUIRED COMPONENTS
   auv_model
 )
 
+## System dependencies are found with CMake's conventions
+# find_package(Boost REQUIRED)
+# find_package(OpenCV REQUIRED)
+
+# AUVLIB stuff
+find_package(LibXTF REQUIRED)
+find_package(LibGSF REQUIRED)
+find_package(EigenCereal REQUIRED)
+find_package(DataTools REQUIRED)
+find_package(SonarTracing REQUIRED)
+find_package(AuvlibGlad REQUIRED)
+find_package(BathyMaps REQUIRED)
+
+find_package(PCL 1.8 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Threads REQUIRED)
 
-## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED)
-find_package(OpenCV REQUIRED)
 
+set_target_properties(xtf_data PROPERTIES 
+    IMPORTED_LOCATION "/home/sam/workspaces/auvlib/install/lib/libxtf_data.a"
+)
+
+set_target_properties(std_data PROPERTIES 
+    IMPORTED_LOCATION "/home/sam/workspaces/auvlib/install/lib/libstd_data.a"
+)
+
+set_target_properties(mesh_map PROPERTIES 
+    IMPORTED_LOCATION "/home/sam/workspaces/auvlib/install/lib/libmesh_map.a"
+)
+
+set_target_properties(base_draper PROPERTIES 
+    IMPORTED_LOCATION "/home/sam/workspaces/auvlib/install/lib/libbase_draper.a"
+)
+
+# Libigl for raytracing
+set(EMBREE_ISPC_SUPPORT OFF)
+set(EMBREE_TUTORIALS OFF)
+# Install this https://github.com/libigl/libigl-example-project/tree/main
+list(PREPEND CMAKE_MODULE_PATH "/home/sam/auv_ws/src/libigl-example-project/cmake")
+# Add as a set of headers
+include(libigl) 
+# Add modules here
+igl_include(glfw)
+igl_include(embree)
+
+include_directories(${LIBIGL_INCLUDE_DIR})
+include_directories(${EMBREE_INCLUDE_DIRS})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -122,9 +170,9 @@ find_package(OpenCV REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
-#  LIBRARIES auv_particle_filter
- CATKIN_DEPENDS message_runtime actionlib_msgs sensor_msgs std_msgs slam_msgs
-#  DEPENDS system_lib
+#  LIBRARIES sss_pf_meas
+#  CATKIN_DEPENDS message_runtime actionlib_msgs sensor_msgs std_msgs slam_msgs
+#  DEPENDS xtf_data
 )
 
 ###########
@@ -133,39 +181,72 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+
+# To include lib cnpy
+add_subdirectory(/home/sam/auv_ws/src/cnpy/ [/home/sam/auv_ws/src/cnpy/])
+
 include_directories(
   include
-  ${EIGEN_INCLUDE_DIRS} 
-	${PCL_INCLUDE_DIRS}
-	${OpenCV_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS} 
+	# ${PCL_INCLUDE_DIRS}
+  # ${DataTools_INCLUDE_DIRS}
+  /home/sam/auv_ws/src/cnpy/
 )
 
-## Declare a C++ library
-add_library(sss_pf_localization
-  src/pf_particle.cpp
-  src/sss_pf_localization.cpp
-)
+# add_library(sss_pf_meas
+#   src/sss_payload.cpp)
 
-# add_executable(${PROJECT_NAME}
-#   rbpf_par_slam_node src/rbpf_par_slam_node.cpp
+# target_include_directories(sss_pf_meas PUBLIC
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#     $<INSTALL_INTERFACE:include>
+#     PRIVATE src)
+
+# add_dependencies(sss_pf_meas 
+#   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+#   ${catkin_EXPORTED_TARGETS})
+
+
+# target_link_libraries(sss_pf_meas
+#     igl::embree 
+#     cnpy
+#     z    
+#     base_draper 
+#     xtf_data 
+#     std_data
+#     mesh_map 
 # )
-
-target_link_libraries(sss_pf_localization 
-  ${PCL_LIBRARIES}
-  ${catkin_LIBRARIES}
-  ${eigen_LIBRARIES}
-  ${OpenCV_LIBS}
-)
 
 add_executable(sss_pf_localization_node src/sss_pf_localization_node.cpp
                 src/pf_particle.cpp
+                src/sss_payload.cpp
                 src/sss_pf_localization.cpp)
 
-add_dependencies(sss_pf_localization_node ${catkin_EXPORTED_TARGETS})
+target_include_directories(sss_pf_localization_node PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    PRIVATE src)
 
-target_link_libraries(sss_pf_localization_node ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS})
-target_link_libraries(sss_pf_localization_node Threads::Threads)
+# add_dependencies(sss_pf_localization_node 
+#   ${catkin_EXPORTED_TARGETS}
+#   ${${PROJECT_NAME}_EXPORTED_TARGETS}
+# )
+
+target_link_libraries(sss_pf_localization_node     
+    igl::embree 
+    cnpy
+    z    
+    xtf_data 
+    std_data
+    mesh_map  
+    base_draper 
+    bathy_tracer
+    ${PCL_LIBRARIES} 
+    ${catkin_LIBRARIES} 
+    ${OpenCV_LIBS}
+    Threads::Threads
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -214,7 +295,7 @@ target_link_libraries(sss_pf_localization_node Threads::Threads)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS sss_pf_localization
+install(TARGETS sss_pf_localization_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
