@@ -30,9 +30,9 @@
 					<param name="odom_frame"  value="$(arg namespace)/odom" />
 					<param name="base_frame"  value="$(arg namespace)/base_link" />
 					<param name="map_frame"  value="map" />
-					<param name="throttle_cmd" value="/$(arg namespace)/throttle_cmd" />
-					<param name="thruster_cmd" value="/$(arg namespace)/thruster_cmd" />
-					<param name="inclination_cmd" value="/$(arg namespace)/inclination_cmd" />
+					<param name="throttle_cmd" value="/$(arg namespace)/sim/throttle_cmd" />
+					<param name="thruster_cmd" value="/$(arg namespace)/sim/thruster_cmd" />
+					<param name="inclination_cmd" value="/$(arg namespace)/sim/inclination_cmd" />
 					<param name="path_planner_as"  value="path_planner" />
 				</node>
 
