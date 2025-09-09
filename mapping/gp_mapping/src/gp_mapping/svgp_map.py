@@ -105,7 +105,7 @@ class SVGP_map():
         self._as_manipulate = actionlib.SimpleActionServer(manipulate_gp_name, ManipulatePosteriorAction, 
                                                execute_cb=self.manipulate_posterior_cb, auto_start = False)
         self._as_manipulate.start()
-        
+       
         self.training = False
         self.plotting = False
         self.sampling = False
@@ -150,6 +150,7 @@ class SVGP_map():
         # hardware allocation
         initial_x = torch.randn(self.s,2)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         var_dist = gpytorch.variational.CholeskyVariationalDistribution(self.s)
         self.model = botorch.models.SingleTaskVariationalGP(
             train_X=initial_x,
@@ -260,7 +261,7 @@ class SVGP_map():
                         self.loss.append(loss_np)
 
                         if self.agent_id == 0:
-                            if self.verbose == True:
+                            if self.verbose == False:
                                 print("Agent ", self.agent_id,
                                     "with iterations: ", self.iterations) #, "Training time ", time.time() - time_start)
                         # print("Training time ", time.time() - time_start)
