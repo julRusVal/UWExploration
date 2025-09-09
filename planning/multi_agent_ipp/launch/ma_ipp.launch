@@ -114,6 +114,26 @@
         <param name="bo_replan_topic"       value="/$(arg namespace)/replan" />     
     </node>
 
+    <!-- <node type="svgp_map.py" pkg="gp_mapping" name="svgp_map_node" output="screen">
+      <param name="minibatch_gp_server" value="$(arg gp_mb_server)"/>     
+      <param name="manipulate_gp_server" value="$(arg manipulate_gp_server)"/>     
+      <param name="sample_gp_server" value="$(arg sample_gp_server)"/>     
+      <param name="inducing_points_top" value="$(arg corner_topic)"/>   
+      <param name="svgp_num_ind_points" value="400"/>     
+      <param name="svgp_minibatch_size" value="1000"/>     
+      <param name="svgp_learning_rate" value="1e-1"/>     
+      <param name="prior_mean" value="$(arg prior_mean)"/>     
+      <param name="prior_vari" value="$(arg prior_vari)"/>     
+      <param name="svgp_rtol" value="1e-3"/>     
+      <param name="svgp_n_window" type="int" value="400"/>     
+      <param name="svgp_auto_stop" value="False"/>     
+      <param name="svgp_verbose" value="True"/>     
+      <param name="num_particles_per_handler" value="$(arg num_particles_per_handler)"/>     
+      <param name="results_path" value="$(arg results_path)"/> 
+      <param name="particle_enable_lc" value="/$(arg namespace)/enable_lc"/> 
+      <param name="n_beams_mbes"   type= "int"  value="$(arg n_beams_mbes)" />       
+    </node> -->
+
 
     <!-- Run uncertainty management node -->
     <node type="auv_ui_online.py" pkg="uncert_management" name="auv_ui_online" output="screen">
