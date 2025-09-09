@@ -295,7 +295,7 @@ class auv_ui_online(object):
     # Base pose on odom frame
     def odom_cb(self, odom_msg):
 
-        if not self.survey_finished and self.start_training:
+        if not self.survey_finished:
 
             self.time = odom_msg.header.stamp.to_sec()
             
@@ -355,7 +355,7 @@ class auv_ui_online(object):
         
     def mbes_cb(self, mbes_ping):
         
-        if not self.survey_finished and self.start_training:
+        if not self.survey_finished:
             
             # Measurements
             self.yspcov_vec.clear()
