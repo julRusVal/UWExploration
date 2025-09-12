@@ -20,6 +20,7 @@ import rospy
 # Custom imports
 from gp_mapping.svgp_map import SVGP_map
 import BayesianOptimizerClass
+from botorch.generation.gen import gen_candidates_torch
 # import BayesianPlannerClass
 import ipp_utils
 
@@ -42,6 +43,25 @@ from geometry_msgs.msg import PoseStamped
 import std_msgs.msg
 import tf.transformations
 from sensor_msgs.msg import PointCloud2
+import actionlib
+from ipp.msg import PathPlanAction, PathPlanActionGoal, PathPlanResult
+
+# Path to catch scipy - botorch incompatibility when reaching iter max in optimize_acqf
+from botorch.generation.gen import _process_scipy_result as _orig
+
+def _patched(res, options):
+    # normalize SciPy's OptimizeResult.message to str
+    if hasattr(res, "message") and isinstance(res.message, (bytes, bytearray)):
+        try:
+            res.message = res.message.decode("utf-8", errors="ignore")
+        except Exception:
+            res.message = str(res.message)
+    return _orig(res, options)
+
+# apply patch
+import botorch.generation.gen as gen_mod
+gen_mod._process_scipy_result = _patched
+
 
 class MyopicBOPlanner():
     
@@ -72,6 +92,7 @@ class MyopicBOPlanner():
         
         # Setup GP for storage
         self.gp          = SVGP_map(int(0))
+        self.gp_mutex = self.gp.mutex
         self.beams       = np.empty((0, 3))
         
         # Parameters for optimizer
@@ -102,8 +123,7 @@ class MyopicBOPlanner():
 
         # Publish an initial path
         # initial_path = self.initial_random_path(1)
-        initial_path = self.initial_deterministic_path()
-        self.path_pub.publish(initial_path) 
+        # initial_path = self.initial_deterministic_path()
 
         # Setup timers for callbacks
         self.finish_imminent = False
@@ -111,18 +131,17 @@ class MyopicBOPlanner():
         # rospy.Timer(rospy.Duration(2), self.periodic_call)
         # self.execute_planner_pub    = rospy.Publisher("execute_planning_topic_handle", std_msgs.msg.Bool, queue_size=1)
 
-        bo_replan_topic = rospy.get_param("~bo_replan_topic")
-        self.execute_planner_sub    = rospy.Subscriber(bo_replan_topic, std_msgs.msg.Bool, self.execute_planning)
+        # bo_replan_topic = rospy.get_param("~bo_replan_topic")
+        # self.execute_planner_sub    = rospy.Subscriber(bo_replan_topic, std_msgs.msg.Bool, self.execute_planning)
+        
+        bo_replan_as = rospy.get_param("~bo_replan_as")
+        self._as_plan = actionlib.SimpleActionServer(bo_replan_as, PathPlanAction,
+                                                        execute_cb=self.execute_planning, auto_start=False)
+        self._as_plan.start()
         
         # Initiate training of GP
-        r = rospy.Rate(1)
+        r = rospy.Rate(training_rate)
         while not rospy.is_shutdown():
-
-            # If planning requested
-            if self.bo_planning:
-                self.bo_plan()
-                self.bo_planning = False
-
             # GP training 
             self.gp.train_iteration()  
             r.sleep()
@@ -240,26 +259,43 @@ class MyopicBOPlanner():
         return sampling_path
     
     
-    # def calculate_time2target(self):
-    #     """ Calculates the time to target based on euclidean distance
-    #         along the path. 
+    def calculate_time2target(self):
+        """ Calculates the time to target based on euclidean distance
+            along the path. 
             
-    #         NOTE: The Euclidean path is not a perfect measurement,
-    #         but it is fast. This was not used in real experiments,
-    #         as it was found to be unreliable (speed was not as expected).
+            NOTE: The Euclidean path is not a perfect measurement,
+            but it is fast. This was not used in real experiments,
+            as it was found to be unreliable (speed was not as expected).
 
-    #     Returns:
-    #         double: time to arrival at target location
+        Returns:
+            double: time to arrival at target location
+        """
+        speed = self.vehicle_velocity
+        distance = 0
+        current = copy.deepcopy(self.state)
+        for pose in self.wp_list:
+            distance += np.hypot(current[0] - pose[0], current[1] - pose[1])
+            current = pose
+        return distance/speed
+    
+    # def periodic_call(self, msg):
+    #     """ Timer based callback which initiates planner actions.
+
+    #     Args:
+    #         msg (bool): not used.
     #     """
-    #     speed = self.vehicle_velocity
-    #     distance = 0
-    #     current = copy.deepcopy(self.state)
-    #     for pose in self.wp_list:
-    #         distance += np.hypot(current[0] - pose[0], current[1] - pose[1])
-    #         current = pose
-    #     return distance/speed
+    #     #time2target = self.calculate_time2target()
+    #     if self.nbr_wp < 2 and self.currently_planning == False:
+    #         self.currently_planning = True
+    #         self.execute_planner_pub.publish(True)
+    #         print("Beginning planning...")
+        
+    #     if self.nbr_wp < 1 and self.finish_imminent == False:
+    #         self.finish_imminent = True
+    #         print("Stopping planning... No more tree nodes will be expanded.")
+    
              
-    def execute_planning(self, msg):
+    def execute_planning(self, goal):
         """ 
             This callback essentially runs the entire BO planning loop. To begin with,
             we freeze a copy of the current GP to use for BO. A myopic BO could potentially
@@ -281,75 +317,101 @@ class MyopicBOPlanner():
     
         if self.odom_init:
 
-            self.bo_planning = True
+            if goal.request == 0:
+                rospy.loginfo("Initial deterministic path requested")
+                sampling_path = self.initial_deterministic_path()
+
+            elif goal.request == 1:
+                rospy.loginfo("Initial random path requested")
+                sampling_path = self.initial_random_path(1)
+
+            else:
+                rospy.loginfo("IPP path requested")
+                # if not self.gp.training:
+                with self.gp_mutex:
+
+                    self.bo_planning = True
+                    # Myopic quick candidate with angle optimization 
+
+                    # rush_order_activated  = True
+                    local_bounds          = ipp_utils.generate_local_bounds(self.bounds, self.planner_initial_pose, self.horizon_distance, self.border_margin)
+                    self.bounds_XY_torch  = torch.tensor([[local_bounds[0], local_bounds[1]], [local_bounds[2], local_bounds[3]]]).to(torch.float).to(self.gp.device)
+                    self.XY_acqf          = botorch.acquisition.UpperConfidenceBound(model=self.gp.model, beta=self.beta)
+                    candidates_XY, _      = botorch.optim.optimize_acqf(acq_function=self.XY_acqf, bounds=self.bounds_XY_torch, q=1, num_restarts=5, raw_samples=50)
+                    
+                    # candidates_XY, _ = gen_candidates_torch(
+                    #                                                             initial_conditions=Xinit,
+                    #                                                             acquisition_function=self.XY_acqf,
+                    #                                                             lower_bounds=self.bounds_XY_torch[0],
+                    #                                                             upper_bounds=self.bounds_XY_torch[1],
+                    #                                                             options={"maxiter": self.beta},   # torch.optim loop options
+                    #                                                         )
+
+                    # print("Optimizing angle...")
+                    BO = BayesianOptimizerClass.BayesianOptimizer(self.state, self.gp.model, wp_resolution=self.wp_resolution,
+                                                                turning_radius=self.turning_radius, swath_width=self.swath_width,
+                                                                path_nbr_samples=self.path_nbr_samples, voxel_size=self.voxel_size,
+                                                                wp_sample_interval=self.wp_sample_interval, device=self.gp.device)
+                    
+                    angle_optim_max_iter = 5
+                    # if rush_order_activated:
+                    #     print("Not enough time for full angle optimization, rush order requested")
+                    #     angle_optim_max_iter = 0
+
+                    candidates_theta, angle_gp  = BO.optimize_theta_with_grad(XY=candidates_XY, max_iter=angle_optim_max_iter, nbr_samples=15)
+                    candidate = torch.cat([candidates_XY.to(self.gp.device), candidates_theta.to(self.gp.device)], 1).squeeze(0)
+                    
+                    # candidate = torch.cat([candidates_XY.to(self.gp.device), torch.tensor([[0.]]).to(self.gp.device)], 1).squeeze(0)
+                    
+                    # with open("angle_gp" + str(self.distance_travelled) + ".pickle", 'wb') as handle:
+                    #     pickle.dump(angle_gp, handle)
+                    
+                    print("Optimal pose: ", candidate, ", publishing trajectory.")
+                    
+                    # Publish this trajectory as a set of waypoints
+                    h = std_msgs.msg.Header()
+                    h.stamp = rospy.Time.now()
+                    h.frame_id = self.map_frame
+                    sampling_path = Path()
+                    sampling_path.header = h
+                    location = candidate.cpu().numpy()
+                    path = dubins.shortest_path(self.planner_initial_pose, [location[0], location[1], location[2]], self.turning_radius)
+                    wp_poses, _ = path.sample_many(self.wp_resolution)
+                    skip = 1
+                    if len(wp_poses) == 1:
+                        skip = 0
+                    self.wp_list.extend(wp_poses[skip:])
+                    for pose in wp_poses[skip:]:       #removing first as hack to ensure AUV doesnt get stuck
+                        wp = PoseStamped()
+                        wp.header = h
+                        wp.pose.position.x = pose[0] 
+                        wp.pose.position.y = pose[1]  
+                        wp.pose.orientation = geometry_msgs.msg.Quaternion(*tf_conversions.transformations.quaternion_from_euler(0, 0, pose[2]))
+                        sampling_path.poses.append(wp)
+                        self.nbr_wp += 1
+                    self.planner_initial_pose = wp_poses[-1]
+                    # self.path_pub.publish(sampling_path)
+
+                    self.currently_planning = False
+                    self.finish_imminent = False
+
+                    self.bo_planning = False
+                    
+                    #torch.save({"model": angle_gp.state_dict()}, self.store_path  + "_GP_" + str(round(self.distance_travelled)) + "_angle.pickle")
+                    #torch.save({"model": self.gp.model.state_dict()}, self.store_path + "_GP_" + str(round(self.distance_travelled)) + "_env.pickle")
+                    #print("Decision models saved.")
+                    print("Current distance travelled: " + str(round(self.distance_travelled)) + " m.")
+            
+            result = PathPlanResult()
+            result.path = sampling_path
+            self._as_plan.set_succeeded(result)
+            # For visualization in rviz only
+            self.path_pub.publish(sampling_path) 
+
 
         else:
-
             print("Odom not initialized yet")
-        
-    def bo_plan(self):
-
-        # Myopic quick candidate with angle optimization 
-
-        # rush_order_activated  = True
-        local_bounds          = ipp_utils.generate_local_bounds(self.bounds, self.planner_initial_pose, self.horizon_distance, self.border_margin)
-        self.bounds_XY_torch  = torch.tensor([[local_bounds[0], local_bounds[1]], [local_bounds[2], local_bounds[3]]]).to(torch.float)
-        self.XY_acqf          = botorch.acquisition.UpperConfidenceBound(model=self.gp.model, beta=self.beta)
-        candidates_XY, _      = botorch.optim.optimize_acqf(acq_function=self.XY_acqf, bounds=self.bounds_XY_torch, q=1, num_restarts=5, raw_samples=50)
-        
-        print("XY cand ", candidates_XY)
-        
-        print("Optimizing angle...")
-        BO = BayesianOptimizerClass.BayesianOptimizer(self.state, self.gp.model, wp_resolution=self.wp_resolution,
-                                                    turning_radius=self.turning_radius, swath_width=self.swath_width,
-                                                    path_nbr_samples=self.path_nbr_samples, voxel_size=self.voxel_size,
-                                                    wp_sample_interval=self.wp_sample_interval, device=self.gp.device)
-        
-        angle_optim_max_iter = 5
-        # if rush_order_activated:
-        #     print("Not enough time for full angle optimization, rush order requested")
-        #     angle_optim_max_iter = 0
-
-        candidates_theta, angle_gp  = BO.optimize_theta_with_grad(XY=candidates_XY, max_iter=angle_optim_max_iter, nbr_samples=15)
-        candidate = torch.cat([candidates_XY.to(self.gp.device), candidates_theta.to(self.gp.device)], 1).squeeze(0)
-        
-        with open("angle_gp" + str(self.distance_travelled) + ".pickle", 'wb') as handle:
-            pickle.dump(angle_gp, handle)
-        
-        print("Optimal pose: ", candidate, ", publishing trajectory.")
-        
-        # Publish this trajectory as a set of waypoints
-        h = std_msgs.msg.Header()
-        h.stamp = rospy.Time.now()
-        h.frame_id = self.map_frame
-        sampling_path = Path()
-        sampling_path.header = h
-        location = candidate.cpu().numpy()
-        path = dubins.shortest_path(self.planner_initial_pose, [location[0], location[1], location[2]], self.turning_radius)
-        wp_poses, _ = path.sample_many(self.wp_resolution)
-        skip = 1
-        if len(wp_poses) == 1:
-            skip = 0
-        self.wp_list.extend(wp_poses[skip:])
-        for pose in wp_poses[skip:]:       #removing first as hack to ensure AUV doesnt get stuck
-            wp = PoseStamped()
-            wp.header = h
-            wp.pose.position.x = pose[0] 
-            wp.pose.position.y = pose[1]  
-            wp.pose.orientation = geometry_msgs.msg.Quaternion(*tf_conversions.transformations.quaternion_from_euler(0, 0, pose[2]))
-            sampling_path.poses.append(wp)
-            self.nbr_wp += 1
-        self.planner_initial_pose = wp_poses[-1]
-        self.path_pub.publish(sampling_path)
-
-        self.currently_planning = False
-        self.finish_imminent = False
-        
-        #torch.save({"model": angle_gp.state_dict()}, self.store_path  + "_GP_" + str(round(self.distance_travelled)) + "_angle.pickle")
-        #torch.save({"model": self.gp.model.state_dict()}, self.store_path + "_GP_" + str(round(self.distance_travelled)) + "_env.pickle")
-        #print("Decision models saved.")
-        print("Current distance travelled: " + str(round(self.distance_travelled)) + " m.")
-        
+            self._as_plan.set_aborted()
 
 
 if __name__ == '__main__':
@@ -361,8 +423,8 @@ if __name__ == '__main__':
     # Get parameters from ROS
     # choice              = rospy.get_param("~planner_type")
     turn_radius         = rospy.get_param("~turning_radius")
-    corner_topic        = rospy.get_param("~corner_topic")
-    path_topic          = rospy.get_param("~path_topic")
+    corner_topic        = rospy.get_param("~corners_topic")
+    path_topic_vis          = rospy.get_param("~path_topic_vis")
     planner_req_topic   = rospy.get_param("~planner_req_topic")
     odom_topic          = rospy.get_param("~odom_topic")
     swath_width         = rospy.get_param("~swath_width")
@@ -390,12 +452,12 @@ if __name__ == '__main__':
     assert bounds[0] < bounds[2],       "planner_node: Given global bounds wrong in X dimension"
     assert bounds[1] < bounds[3],       "planner_node: Given global bounds wrong in Y dimension"
     assert odom_topic != "",            "planner_node: Odom topic empty"
-    assert path_topic != "",            "planner_node: Path topic empty"
+    assert path_topic_vis != "",            "planner_node: Path topic empty"
     assert corner_topic != "",          "planner_node: Corner topic empty"
 
     try:
         rospy.loginfo("Initializing planner node! Using Bayesian Optimization.")  
-        planner = MyopicBOPlanner(corner_topic=corner_topic, path_topic=path_topic, 
+        planner = MyopicBOPlanner(corner_topic=corner_topic, path_topic=path_topic_vis, 
                             planner_req_topic=planner_req_topic, odom_topic=odom_topic,bounds=bounds, 
                             turning_radius=turn_radius, training_rate=train_rate, 
                             wp_resolution=wp_resolution, swath_width=swath_width, 

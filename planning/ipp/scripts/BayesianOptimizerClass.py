@@ -43,6 +43,8 @@ class BayesianOptimizer():
         self.path_reward            = UCB_path(model=gp_terrain, current_pose=current_pose, wp_resolution=wp_resolution,
                                                turning_radius=turning_radius, swath_width=swath_width, path_nbr_samples=path_nbr_samples,
                                                voxel_size=voxel_size, wp_sample_interval=wp_sample_interval, device=self.device)
+        
+        self.path_reward.to(self.device)
     
     
     def _sample_paths(self, nbr_samples, X=None):
@@ -65,6 +67,8 @@ class BayesianOptimizer():
             #                         high=self.bounds_list[1], size=[nbr_samples, 3]))).type(torch.FloatTensor).to(self.device)
             # else:
             train_X = X    
+            # print("Model device:", next(self.path_reward.parameters()).device)
+            # print("Tensor devices:", train_X.device)
             train_Y = (self.path_reward.forward(train_X.unsqueeze(-2))).unsqueeze(1)
         return train_X, train_Y        
     
@@ -192,11 +196,9 @@ class UCB_path(botorch.acquisition.AnalyticAcquisitionFunction):
             b[:,:-1] = pcl
             pcd3 = o3d.geometry.PointCloud()
             pcd3.points = o3d.utility.Vector3dVector(b)
-
             pcd3 = pcd3.voxel_down_sample(self.voxel_size)
             #o3d.visualization.draw_geometries([pcd3])
             xyz = np.asarray(pcd3.points)
-
             xy = torch.from_numpy(xyz[:, :2]).type(torch.FloatTensor).to(self.device)
             
             # Calculate UCB/cost reward of travelling to candidate

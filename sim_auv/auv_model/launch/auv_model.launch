@@ -4,6 +4,7 @@
 	If mode = gt: reproduce Hugin survey and construct map of real bathymetry --> 
     <arg name="mode" default="sim"/>
 	<arg name="namespace" default="hugin"/>
+	<arg name="leader" default="hugin"/>
 	<arg name="dataset" default="ripples"/>
     <arg name="app" default="basic"/>
     <arg name="debug" default="0"/>
@@ -55,9 +56,9 @@
         <param name="sss_link" value="$(arg namespace)/sss_link" />
         <param name="mbes_pings_topic" value="/$(arg namespace)/$(arg mode)/mbes_pings" />
         <param name="sss_pings_topic" value="/$(arg namespace)/$(arg mode)/sss_pings" />
-        <param name="throttle_cmd" value="/$(arg namespace)/sim/throttle_cmd" />
-        <param name="thruster_cmd" value="/$(arg namespace)/sim/thruster_cmd" />
-        <param name="inclination_cmd" value="/$(arg namespace)/sim/inclination_cmd" />
+        <param name="throttle_cmd" value="/$(arg leader)/sim/throttle_cmd" />
+        <param name="thruster_cmd" value="/$(arg leader)/sim/thruster_cmd" />
+        <param name="inclination_cmd" value="/$(arg leader)/sim/inclination_cmd" />
         <param name="mbes_sim_as" value="/$(arg namespace)/sim/mbes_server" />
         <param name="sss_sim_as" value="/$(arg namespace)/sim/sss_server" />
         <param name="n_beams_mbes" value="$(arg n_beams_mbes)" />

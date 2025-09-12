@@ -4,6 +4,7 @@
 	If mode = gt: reproduce Hugin survey and construct map of real bathymetry --> 
     <arg name="mode" default="gt"/>
 	<arg name="namespace" default="hugin_0"/>
+	<arg name="leader" default="hugin_0"/>
 	<arg name="dataset" default="ripples"/>
     <arg name="app" default="basic"/>
     <arg name="debug" default="0"/>
@@ -87,6 +88,7 @@
 			<include file="$(find auv_model)/launch/auv_model.launch" >
 				<arg name="mode" value="$(arg mode)"/>
 				<arg name="namespace" value="$(arg namespace)"/>
+				<arg name="leader" value="$(arg leader)"/>
 				<arg name="dataset" value="$(arg dataset)"/>
 				<arg name="app" value="$(arg app)"/>
 				<arg name="debug" value="$(arg debug)"/>

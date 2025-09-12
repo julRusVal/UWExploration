@@ -117,10 +117,14 @@ class SVGP_map():
         while not self.ac_mb.wait_for_server(timeout=rospy.Duration(5)) and not rospy.is_shutdown():
             print("Waiting for MB AS ", agent_id)
         
-         # Subscription to GP inducing points from RBPF
-        ip_top = rospy.get_param("~inducing_points_top")
-        rospy.Subscriber(ip_top, PointCloud2, self.ip_cb, queue_size=1)
+         # Subscription to corners of area to map to distribute inducing points locations
         self.inducing_points_received = False
+        ip_top = rospy.get_param("~ip_top")
+        self.ip_pub = rospy.Publisher(ip_top, PointCloud2, queue_size=10)
+        rospy.Subscriber(ip_top, PointCloud2, self.ip_cb, queue_size=1)
+        
+        corners_top = rospy.get_param("~corners_topic")
+        rospy.Subscriber(corners_top, PointCloud2, self.corners_cb, queue_size=1)
 
         # # Subscription to particle resampling indexes from RBPF
         # p_resampling_top = rospy.get_param("~gp_resampling_top")
@@ -157,7 +161,7 @@ class SVGP_map():
             num_outputs=1,
             variational_distribution=var_dist,
             likelihood=GaussianLikelihood(),
-            learn_inducing_points=True,
+            learn_inducing_points=False,
             mean_module = ConstantMean(constant_prior=NormalPrior(self.prior_mean, self.prior_vari)),
             covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=2.5, )))
         self.likelihood = GaussianLikelihood()
@@ -204,7 +208,6 @@ class SVGP_map():
         if self.mission_finished:
             rospy.loginfo_once("GP finished %s", self.agent_id)
             return
-
 
         # Get beams for minibatch training as pcl
         goal = MinibatchTrainingGoal()
@@ -277,26 +280,40 @@ class SVGP_map():
         # print("Done with the training ", self.agent_id)
 
     def ip_cb(self, ip_cloud):
-        print("Agent ", self.agent_id, " received inducing points")
+            print("Agent ", self.agent_id, " received inducing points locations")
+            
+            if not self.inducing_points_received:
+                # Store beams as array of 3D points
+                ip_locations = []
+                for p_map in pc2.read_points(ip_cloud, 
+                                        field_names = ("x", "y", "z"), skip_nans=True):
+                    ip_locations.append((p_map[0], p_map[1]))
+
+                self.model.model.variational_strategy.inducing_points.data = torch.from_numpy(
+                    np.asarray(ip_locations)).to(self.device).float()
+
+                self.inducing_points_received = True
+                print("Agent ", self.agent_id, " starting training")
+
+
+    def corners_cb(self, ip_cloud):
+        print("Agent ", self.agent_id, " received corners points")
         
         if not self.inducing_points_received:
             # Store beams as array of 3D points
-            wp_locations = []
-            for p_utm in pc2.read_points(ip_cloud, 
+            self.corners_locations = []
+            for p_map in pc2.read_points(ip_cloud, 
                                     field_names = ("x", "y", "z"), skip_nans=True):
-                # p_map = np.dot(self.rot, p_utm)
-                # p_map = np.add(p_map, -self.trans)
-                p_map = p_utm
-                wp_locations.append((p_map[0], p_map[1], p_map[2]))
+                self.corners_locations.append((p_map[0], p_map[1], p_map[2]))
                 
-            wp_locations = np.asarray(wp_locations)
-            wp_locations = np.reshape(wp_locations, (-1,3))
-            wp_locations[0, 2] += 1.
-            wp_locations[-1, 2] += -1.
+            self.corners_locations = np.asarray(self.corners_locations)
+            self.corners_locations = np.reshape(self.corners_locations, (-1,3))
+            self.corners_locations[0, 2] += 1.
+            self.corners_locations[-1, 2] += -1.
 
             # Distribute IPs evenly over irregular-shaped target area
             pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(wp_locations)
+            pcd.points = o3d.utility.Vector3dVector(self.corners_locations)
             tetra_mesh, pt_map = o3d.geometry.TetraMesh.create_from_point_cloud(
                 pcd)
             alpha = 1000000000.0
@@ -309,6 +326,9 @@ class SVGP_map():
                 np.asarray(pcl.points)[:, 0:2]).to(self.device).float()
 
             self.inducing_points_received = True
+
+            ip_cloud = self.pack_cloud("map", pcl.points)
+            self.ip_pub.publish(ip_cloud)
             print("Agent ", self.agent_id, " starting training")
 
 
@@ -602,10 +622,8 @@ class SVGP_map():
 if __name__ == '__main__':
 
     rospy.init_node('svgp_map_node' , disable_signals=False)
-    node_name = rospy.get_name()
-    namespace = rospy.get_namespace()
-    # node_name = node_name.replace(namespace, '')
-    # hdl_number = int(node_name.split('_')[2])
+    namespace = rospy.get_param("~namespace")
+    agent_number = int(namespace.split('_')[1])
     # particles_per_hdl = rospy.get_param("~num_particles_per_handler")
 
     try:
@@ -615,7 +633,7 @@ if __name__ == '__main__':
         # for i in range(0, int(particles_per_hdl)):
         #     particles_svgps.append(SVGP_map(int(hdl_number)+i))
         #     # particles_ids.append(int(hdl_number)+i)
-        svgp_map_node = SVGP_map(int(0))
+        svgp_map_node = SVGP_map(int(agent_number))
 
         # In each round, call one minibatch training iteration per SVGP
         r = rospy.Rate(10)
@@ -626,4 +644,4 @@ if __name__ == '__main__':
 
         # rospy.spin()
     except rospy.ROSInterruptException:
-        rospy.logerr("Couldn't launch rbpf_svgp")
+        rospy.logerr("Couldn't launch svgp map")

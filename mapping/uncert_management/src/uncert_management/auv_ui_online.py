@@ -184,8 +184,8 @@ class auv_ui_online(object):
                                                 execute_cb=self.mb_cb, auto_start = False)
         self.mb_server.start()
 
-        ip_top = rospy.get_param("~inducing_points_top")
-        self.ip_pub = rospy.Publisher(ip_top, PointCloud2, queue_size=10)
+        # ip_top = rospy.get_param("~inducing_points_top")
+        # self.ip_pub = rospy.Publisher(ip_top, PointCloud2, queue_size=10)
 
         # Subscription to path to distribute inducing points
         wp_top = rospy.get_param("~path_topic", "/waypoints")
@@ -210,14 +210,14 @@ class auv_ui_online(object):
 
             if not self.start_training:
 
-                rospy.loginfo("Sending inducing points")
+                # rospy.loginfo("Sending inducing points")
 
-                wps = []
-                for pose in path.poses:
-                    wps.append(np.array([pose.pose.position.x, pose.pose.position.y, 0.]))
+                # wps = []
+                # for pose in path.poses:
+                #     wps.append(np.array([pose.pose.position.x, pose.pose.position.y, 0.]))
 
-                wp_cloud = pack_cloud(self.map_frame, wps)
-                self.ip_pub.publish(wp_cloud)
+                # wp_cloud = pack_cloud(self.map_frame, wps)
+                # self.ip_pub.publish(wp_cloud)
 
                 # This service will start the auv simulation or auv_2_ros nodes to start the mission
                 synch_top = rospy.get_param("~synch_topic", '/pf_synch')
