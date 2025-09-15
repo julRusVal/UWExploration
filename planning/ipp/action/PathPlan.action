@@ -1,0 +1,8 @@
+#goal definition
+int32 request
+---
+#result definition
+nav_msgs/Path path
+---
+#feedback (not used)
+bool planning 
