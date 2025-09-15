@@ -81,9 +81,9 @@ class W2WMissionPlanner(object):
                 self.ac.wait_for_result()
                 rospy.loginfo("WP reached, moving on to next one")
 
-                # Request new IPP path when only 2 wp left. 
+                # Request new IPP path when only 3 wp left. 
                 # TODO: this needs to be done based on time to last wp
-                if len(self.latest_path.poses) < 2:
+                if len(self.latest_path.poses) < 3:
                     rospy.loginfo("Reaching final WP. Calling IPP planner")
                     result = self.request_ipp_path(2)
                     self.latest_path.poses += result.path.poses
