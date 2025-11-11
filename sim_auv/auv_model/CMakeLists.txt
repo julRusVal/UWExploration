@@ -8,6 +8,11 @@ endif()
 project(auv_model VERSION 1.0.0)
 include(ExternalProject)
 
+# Optionally build SSS payload (requires libigl + embree toolchain)
+option(BUILD_SSS "Build sidescan payload (requires libigl/embree)" OFF)
+# Path to libigl example project's CMake modules (only used when BUILD_SSS is ON)
+set(IGL_CMAKE_DIR "/home/sam/auv_ws/src/libigl-example-project/cmake" CACHE PATH "Path to libigl example project's cmake directory")
+
 
 # # Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -68,20 +73,29 @@ set_target_properties(base_draper PROPERTIES
 # message("Message=================================: " ${LIBXTF_FOUND})
 	#endif()
 
-# Libigl for raytracing
-set(EMBREE_ISPC_SUPPORT OFF)
-set(EMBREE_TUTORIALS OFF)
-# Install this https://github.com/libigl/libigl-example-project/tree/main
-list(PREPEND CMAKE_MODULE_PATH "/home/sam/auv_ws/src/libigl-example-project/cmake")
-# Add as a set of headers
-include(libigl) 
-# Add modules here
-igl_include(glfw)
-igl_include(embree)
+# Libigl for raytracing (optional)
+if(BUILD_SSS)
+  set(EMBREE_ISPC_SUPPORT OFF)
+  set(EMBREE_TUTORIALS OFF)
+  # Install this https://github.com/libigl/libigl-example-project/tree/main
+  if(EXISTS "${IGL_CMAKE_DIR}/libigl.cmake")
+    list(PREPEND CMAKE_MODULE_PATH "${IGL_CMAKE_DIR}")
+    # Add as a set of headers
+    include(libigl)
+    # Add modules here
+    igl_include(glfw)
+    igl_include(embree)
+    include_directories(${LIBIGL_INCLUDE_DIR})
+    include_directories(${EMBREE_INCLUDE_DIRS})
+  else()
+    message(WARNING "libigl cmake modules not found at ${IGL_CMAKE_DIR}. Disabling BUILD_SSS.")
+    set(BUILD_SSS OFF)
+  endif()
+endif()
 
-include_directories(${LIBIGL_INCLUDE_DIR})
-include_directories(${EMBREE_INCLUDE_DIRS})
-include_directories(/home/sam/workspaces/auvlib/src/sonar_tracing/include)
+if(BUILD_SSS)
+  include_directories(/home/sam/workspaces/auvlib/src/sonar_tracing/include)
+endif()
 
 # list(PREPEND CMAKE_MODULE_PATH "/home/sam/auv_ws/src/libigl-example-project/cmake")
 
@@ -153,19 +167,30 @@ add_message_files(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
- INCLUDE_DIRS include
- LIBRARIES sss_payload
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS xtf_data
-)
+if(BUILD_SSS)
+  catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES sss_payload
+  )
+else()
+  catkin_package(
+    INCLUDE_DIRS include
+  )
+endif()
 
 ###########
 ## Build ##
 ###########
 
-# To include lib cnpy
-add_subdirectory(/home/sam/auv_ws/src/cnpy/ [/home/sam/auv_ws/src/cnpy/])
+if(BUILD_SSS)
+  # To include lib cnpy (optional, only for SSS payload). Adjust path if needed.
+  if(EXISTS "/home/sam/auv_ws/src/cnpy/CMakeLists.txt")
+    add_subdirectory(/home/sam/auv_ws/src/cnpy/ [/home/sam/auv_ws/src/cnpy/])
+  else()
+    message(WARNING "cnpy not found at /home/sam/auv_ws/src/cnpy; disabling BUILD_SSS.")
+    set(BUILD_SSS OFF)
+  endif()
+endif()
 
 # add_subdirectory(/home/sam/workspaces/auvlib/ [/home/sam/workspaces/auvlib/])
 
@@ -177,20 +202,25 @@ include_directories(
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
  ${EIGEN3_INCLUDE_DIRS}
- /home/sam/auv_ws/src/cnpy/
-#  /home/sam/workspaces/auvlib/
-#  /home/sam/auv_ws/src/libigl-example-project/
 )
 
-# Declare a C++ library
-add_library(sss_payload
-  src/sss_payload.cpp
-)
+if(BUILD_SSS)
+  include_directories(
+    /home/sam/auv_ws/src/cnpy/
+  )
+endif()
 
-target_include_directories(sss_payload PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    PRIVATE src)
+if(BUILD_SSS)
+  # Declare a C++ library
+  add_library(sss_payload
+    src/sss_payload.cpp
+  )
+
+  target_include_directories(sss_payload PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include>
+      PRIVATE src)
+endif()
 
 
 add_executable(auv_motion_model
@@ -198,9 +228,11 @@ add_executable(auv_motion_model
        src/auv_motion_simple.cpp
 )
 
-add_executable(auv_payload_cpp
-  src/auv_payload.cpp
-)
+if(BUILD_SSS)
+  add_executable(auv_payload_cpp
+    src/auv_payload.cpp
+  )
+endif()
 
 # add_executable(view_sidescan_particles
 #   src/view_sidescan_particles.cpp
@@ -216,9 +248,11 @@ add_dependencies(auv_motion_model
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
-add_dependencies(auv_payload_cpp
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS})
+if(BUILD_SSS)
+  add_dependencies(auv_payload_cpp
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
+    ${catkin_EXPORTED_TARGETS})
+endif()
 
 # add_dependencies(view_sidescan_particles
 #   ${${PROJECT_NAME}_EXPORTED_TARGETS}
@@ -228,16 +262,18 @@ add_dependencies(auv_payload_cpp
 #   ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 # Specify libraries to link a library or executable target against
-target_link_libraries(sss_payload
-    igl::embree 
-    cnpy
-    z    
-    xtf_data 
-    std_data
-    mesh_map 
-    base_draper 
-    bathy_tracer
-)
+if(BUILD_SSS)
+  target_link_libraries(sss_payload
+      igl::embree 
+      cnpy
+      z    
+      xtf_data 
+      std_data
+      mesh_map 
+      base_draper 
+      bathy_tracer
+  )
+endif()
 
 target_link_libraries(auv_motion_model
     ${catkin_LIBRARIES}
@@ -247,13 +283,15 @@ target_link_libraries(auv_motion_model
 # #     ${catkin_LIBRARIES}
 # # )
 
-target_link_libraries(auv_payload_cpp
-    ${OpenCV_LIBRARIES}
-    ${catkin_LIBRARIES}
-    ${PCL_LIBRARIES}
-    # igl::embree 
-    sss_payload
-)
+if(BUILD_SSS)
+  target_link_libraries(auv_payload_cpp
+      ${OpenCV_LIBRARIES}
+      ${catkin_LIBRARIES}
+      ${PCL_LIBRARIES}
+      # igl::embree 
+      sss_payload
+  )
+endif()
 
 
 #############
