@@ -41,7 +41,9 @@ find_package(OpenCV REQUIRED)
 set(EMBREE_ISPC_SUPPORT OFF)
 set(EMBREE_TUTORIALS OFF)
 # Install this https://github.com/libigl/libigl-example-project/tree/main
-list(PREPEND CMAKE_MODULE_PATH "/home/torroba/workspaces/libigl-example-project/cmake")
+# provide the path to libigl-example-project/cmake
+# list(PREPEND CMAKE_MODULE_PATH "/home/torroba/workspaces/libigl-example-project/cmake")
+list(PREPEND CMAKE_MODULE_PATH "/home/sam/libigl-example-project/cmake")
 # Add as a set of headers
 include(libigl) 
 # Add modules here
@@ -127,7 +129,9 @@ catkin_package(
 ###########
 
 # To include lib cnpy
-add_subdirectory(/home/torroba/workspaces/cnpy/ [/home/torroba/workspaces/cnpy/])
+# Also add this direcotory to the add_directories() below.
+# add_subdirectory(/home/torroba/workspaces/cnpy/ [/home/torroba/workspaces/cnpy/])
+add_subdirectory(/home/sam/cnpy/  [home/sam/cnpy/])
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -136,7 +140,8 @@ include_directories(
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
  ${EIGEN3_INCLUDE_DIRS}
- /home/torroba/workspaces/cnpy/
+#  /home/torroba/workspaces/cnpy/include
+ /home/sam/cnpy/install/include
 )
 
 # Declare a C++ library
