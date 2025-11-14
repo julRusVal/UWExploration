@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+
+<!-- 
+Simple launch file to start a team of AUVs performing IPP with multi-agent coordination.
+This file launches one leader and two followers.
+
+Minimal changes to the individual leader and follower launch files have been made, please refer to those for more details on the parameters used.
+-->
+
+
+<launch>
+    <!-- Shared configuration -->
+    <arg name="mode"        default="sim"/>
+    <arg name="dataset"     default="ripples"/>
+
+    <!-- Leader config -->
+    <arg name="leader_ns"   default="hugin_0"/>
+    <arg name="leader_x"    default="0"/>
+    <arg name="leader_y"    default="175"/>
+    <arg name="leader_z"    default="0.0"/>
+    <arg name="leader_roll" default="0.0"/>
+    <arg name="leader_pitch" default="0.0"/>
+    <arg name="leader_yaw"  default="-1.57"/>
+
+    <!-- Planner constraints -->
+    <arg name="bound_left"                      default="-175"/>
+    <arg name="bound_right"                     default="158"/>
+    <arg name="bound_up"                        default="200"/>
+    <arg name="bound_down"                      default="-200"/>
+    <arg name="max_travel_distance"             default="1000" />
+
+    <!-- Followers start configuration -->
+    <arg name="follower1_ns"  default="hugin_1"/>
+    <arg name="follower1_x"   default="-25"/>
+    <arg name="follower1_y"   default="175"/>
+    <arg name="follower1_z"   default="0.0"/>
+    <arg name="follower1_yaw" default="-1.57"/>
+
+    <arg name="follower2_ns"  default="hugin_2"/>
+    <arg name="follower2_x"   default="25"/>
+    <arg name="follower2_y"   default="175"/>
+    <arg name="follower2_z"   default="0.0"/>
+    <arg name="follower2_yaw" default="-1.57"/>
+
+    <!-- Launch leader -->
+    <include file="$(find multi_agent_ipp)/launch/leader_ipp.launch">
+        <arg name="mode"        value="$(arg mode)"/>
+        <arg name="dataset"     value="$(arg dataset)"/>
+        <arg name="namespace"   value="$(arg leader_ns)"/>
+        <arg name="leader"      value="$(arg leader_ns)"/>
+        <arg name="x"           value="$(arg leader_x)"/>
+        <arg name="y"           value="$(arg leader_y)"/>
+        <arg name="z"           value="$(arg leader_z)"/>
+        <arg name="roll"        value="$(arg leader_roll)"/>
+        <arg name="pitch"       value="$(arg leader_pitch)"/>
+        <arg name="yaw"         value="$(arg leader_yaw)"/>
+        <param name="bound_left"                value="$(arg bound_left)" />
+        <param name="bound_right"               value="$(arg bound_right)" />
+        <param name="bound_up"                  value="$(arg bound_up)" />
+        <param name="bound_down"                value="$(arg bound_down)" />
+        <param name="max_travel_distance"       value="$(arg max_travel_distance)" />
+    </include>
+
+    <!-- Launch follower 1 -->
+    <include file="$(find multi_agent_ipp)/launch/follower_ipp.launch">
+        <arg name="mode"        value="$(arg mode)"/>
+        <arg name="dataset"     value="$(arg dataset)"/>
+        <arg name="namespace"   value="$(arg follower1_ns)"/>
+        <arg name="leader"      value="$(arg leader_ns)"/>
+        <arg name="x"           value="$(arg follower1_x)"/>
+        <arg name="y"           value="$(arg follower1_y)"/>
+        <arg name="z"           value="$(arg follower1_z)"/>
+        <arg name="yaw"         value="$(arg follower1_yaw)"/>
+    </include>
+
+    <!-- Launch follower 2 -->
+    <include file="$(find multi_agent_ipp)/launch/follower_ipp.launch">
+        <arg name="mode"        value="$(arg mode)"/>
+        <arg name="dataset"     value="$(arg dataset)"/>
+        <arg name="namespace"   value="$(arg follower2_ns)"/>
+        <arg name="leader"      value="$(arg leader_ns)"/>
+        <arg name="x"           value="$(arg follower2_x)"/>
+        <arg name="y"           value="$(arg follower2_y)"/>
+        <arg name="z"           value="$(arg follower2_z)"/>
+        <arg name="yaw"         value="$(arg follower2_yaw)"/>
+    </include>
+
+</launch>

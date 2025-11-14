@@ -36,7 +36,8 @@
     <arg name="manipulate_gp_server"            default="/$(arg namespace)/gp/manipulate_server"/>
     <arg name="sample_gp_server"                default="/$(arg namespace)/gp/sample_server"/>
     <arg name="gp_resample_top"                 default="/$(arg namespace)/gp/resample_top"/>
-    <arg name="results_path"                    default="/home/torroba/catkin_workspaces/auv_ws/src/UWExploration/planning/ipp/data/"/>   
+    <!-- <arg name="results_path"                    default="/home/torroba/catkin_workspaces/auv_ws/src/UWExploration/planning/ipp/data/"/>    -->
+    <arg name="results_path"                    default="/home/auv_ws/src/UWExploration/planning/multi_agent_ipp/data/"/>   
     <arg name="num_particles_per_handler"       default="1"/>      
     <arg name="svgp_minibatch_size"             default="1024" />
     <arg name="prior_mean"                      default="0" />
@@ -74,28 +75,28 @@
         <arg name="visualize"                       default="0"/>
 
         <node type="MyopicBOPlanner.py" pkg="ipp" name="myopic_bo_node" output="screen">
-            <param name="minibatch_gp_server" value="$(arg gp_mb_server)"/>     
-            <param name="manipulate_gp_server" value="$(arg manipulate_gp_server)"/>     
-            <param name="sample_gp_server" value="$(arg sample_gp_server)"/>     
-            <param name="corners_topic" value="$(arg corners_topic)"/>   
-            <param name="ip_top"       value="$(arg gp_ip_topic)"/>     
-            <param name="svgp_num_ind_points" value="400"/>     
-            <param name="svgp_minibatch_size" value="1000"/>     
-            <param name="svgp_learning_rate" value="1e-1"/>     
-            <param name="prior_mean" value="$(arg prior_mean)"/>     
-            <param name="prior_vari" value="$(arg prior_vari)"/>     
-            <param name="svgp_rtol" value="1e-3"/>     
-            <param name="svgp_n_window" type="int" value="400"/>     
-            <param name="svgp_auto_stop" value="False"/>     
-            <param name="svgp_verbose" value="True"/>     
+            <param name="minibatch_gp_server"   value="$(arg gp_mb_server)"/>     
+            <param name="manipulate_gp_server"  value="$(arg manipulate_gp_server)"/>     
+            <param name="sample_gp_server"      value="$(arg sample_gp_server)"/>     
+            <param name="corners_topic"         value="$(arg corners_topic)"/>   
+            <param name="ip_top"                value="$(arg gp_ip_topic)"/>     
+            <param name="svgp_num_ind_points"   value="400"/>     
+            <param name="svgp_minibatch_size"   value="1000"/>     
+            <param name="svgp_learning_rate"    value="1e-1"/>     
+            <param name="prior_mean"            value="$(arg prior_mean)"/>     
+            <param name="prior_vari"            value="$(arg prior_vari)"/>     
+            <param name="svgp_rtol"             value="1e-3"/>     
+            <param name="svgp_n_window"         type="int" value="400"/>     
+            <param name="svgp_auto_stop"        value="False"/>     
+            <param name="svgp_verbose"          value="True"/>     
             <param name="num_particles_per_handler" value="$(arg num_particles_per_handler)"/>     
-            <param name="results_path" value="$(arg results_path)"/> 
-            <param name="particle_enable_lc" value="/$(arg namespace)/enable_lc"/> 
-            <param name="n_beams_mbes"   type= "int"  value="$(arg n_beams_mbes)" />  
-            <param name="bo_replan_as"   value="$(arg bo_replan_as)" />  
+            <param name="results_path"          value="$(arg results_path)"/> 
+            <param name="particle_enable_lc"    value="/$(arg namespace)/enable_lc"/> 
+            <param name="n_beams_mbes"          type= "int"  value="$(arg n_beams_mbes)" />  
+            <param name="bo_replan_as"          value="$(arg bo_replan_as)" />  
 
             <param name="turning_radius"            value="$(arg turning_radius)" />
-            <param name="path_topic_vis"                value="/$(arg namespace)/path/visualization" />
+            <param name="path_topic_vis"            value="/$(arg namespace)/path/visualization" />
             <param name="planner_req_topic"         value="$(arg planner_req_topic)" />
             <param name="odom_topic"                value="$(arg odometry_topic)" />
             <param name="beta"                      value="$(arg beta)" />

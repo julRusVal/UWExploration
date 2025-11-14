@@ -65,7 +65,8 @@ gen_mod._process_scipy_result = _patched
 
 class MyopicBOPlanner():
     
-    def __init__(self, corner_topic, path_topic, planner_req_topic, odom_topic, bounds, turning_radius, 
+    def __init__(self, corner_topic, path_topic, planner_req_topic, odom_topic, 
+                 bounds, turning_radius, 
                  training_rate, wp_resolution, swath_width, path_nbr_samples, voxel_size, 
                  wp_sample_interval, horizon_distance, border_margin, beta):
         
