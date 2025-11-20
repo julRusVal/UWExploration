@@ -38,3 +38,6 @@ install/*
 
 # Datasets
 datasets/
+
+# output directories
+**/output/**

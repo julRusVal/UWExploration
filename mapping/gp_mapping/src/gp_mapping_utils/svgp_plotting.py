@@ -1,9 +1,13 @@
-from typing import List
+from typing import List, Optional
 
 import open3d as o3d
-import torch
-import matplotlib.pyplot as plt
 import numpy as np
+import torch
+
+import matplotlib.pyplot as plt
+from matplotlib.path import Path
+from matplotlib.tri import Triangulation
+
 
 import gp_mapping.gp as gp
 
@@ -31,7 +35,6 @@ def plot_3d_point_cloud(points: np.ndarray, title: str = "3D Point Cloud", color
     vis.add_geometry(point_cloud)
     vis.run()
     vis.destroy_window()
-
 
 def plot_complete(svgp_model: gp.SVGP, inputs, targets, fname, n=80, n_contours=50):
     '''
@@ -122,3 +125,93 @@ def plot_loss(svgp_model: gp.SVGP, fname: str) -> None:
 
     # save
     fig.savefig(fname, bbox_inches='tight', dpi=1000)
+
+def plot_two_arrays(arr1, arr2, label1="Array 1", label2="Array 2", xlabel="X-axis", ylabel="Y-axis", title="Plot of Two Arrays"):
+    """
+    Plots two (N,) arrays on the same figure with labels.
+
+    Parameters:
+    - arr1: 1D NumPy array for the first dataset.
+    - arr2: 1D NumPy array for the second dataset.
+    - label1: Label for the first dataset (default is "Array 1").
+    - label2: Label for the second dataset (default is "Array 2").
+    - xlabel: Label for the x-axis.
+    - ylabel: Label for the y-axis.
+    - title: Title of the plot.
+    """
+    # Create the x values for the arrays, assuming they're indices
+    x = np.arange(len(arr1))
+
+    # Plot both arrays
+    plt.plot(x, arr1, label=label1)
+    plt.plot(x, arr2, label=label2)
+
+    # Set labels and title
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    # Add a legend
+    plt.legend()
+
+    # Show the plot
+    plt.show()
+
+def plot_survey_and_inducing_points(survey_points: np.ndarray,
+                                    inducing_points: Optional[np.ndarray] = None,
+                                    output_path: Optional[str] = None,
+                                    title: Optional[str] = None) -> None:
+    """
+    Create a simple mesh-style visualization of survey points with optional inducing points.
+
+    Parameters
+    ----------
+    survey_points : np.ndarray
+        Array of shape (N, 3) containing [x, y, z] samples.
+    inducing_points : np.ndarray, optional
+        Array of shape (M, 2) containing [x, y] inducing points to overlay.
+    output_path : str, optional
+        Path to save the plot if provided. When None, the figure is shown interactively.
+    title : str, optional
+        Custom plot title.
+    """
+    survey_points = np.asarray(survey_points)
+    if survey_points.ndim != 2 or survey_points.shape[1] < 3:
+        raise ValueError("survey_points must be an (N, 3) array.")
+
+    x, y, z = survey_points[:, 0], survey_points[:, 1], survey_points[:, 2]
+    fig, ax = plt.subplots(figsize=(7, 6))
+
+    # tri = Triangulation(x, y)
+    # ax.triplot(tri, color="#cccccc", linewidth=0.1, alpha=0.7)
+    # scatter = ax.scatter(x, y, c=z, cmap='jet', s=1, edgecolors='none')
+    scatter = ax.scatter(x, y, c=z, cmap="viridis", s=8, edgecolors="none")
+    cbar = fig.colorbar(scatter, ax=ax)
+    cbar.set_label("Survey value")
+
+    if inducing_points is not None:
+        inducing_points = np.asarray(inducing_points)
+        if inducing_points.ndim != 2 or inducing_points.shape[1] != 2:
+            raise ValueError("inducing_points must be an (M, 2) array.")
+        ax.scatter(
+            inducing_points[:, 0],
+            inducing_points[:, 1],
+            s=35,
+            facecolors="none",
+            edgecolors="red",
+            linewidths=1.0,
+            label="Inducing points",
+        )
+        ax.legend(loc="upper right")
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_title(title or "Survey Map with Inducing Points")
+    fig.tight_layout()
+
+    if output_path:
+        fig.savefig(output_path, dpi=300)
+        plt.close(fig)
+    else:
+        plt.show()

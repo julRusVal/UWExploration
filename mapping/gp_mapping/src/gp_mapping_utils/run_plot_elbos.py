@@ -2,38 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-
-def plot_two_arrays(arr1, arr2, label1="Array 1", label2="Array 2", xlabel="X-axis", ylabel="Y-axis", title="Plot of Two Arrays"):
-    """
-    Plots two (N,) arrays on the same figure with labels.
-
-    Parameters:
-    - arr1: 1D NumPy array for the first dataset.
-    - arr2: 1D NumPy array for the second dataset.
-    - label1: Label for the first dataset (default is "Array 1").
-    - label2: Label for the second dataset (default is "Array 2").
-    - xlabel: Label for the x-axis.
-    - ylabel: Label for the y-axis.
-    - title: Title of the plot.
-    """
-    # Create the x values for the arrays, assuming they're indices
-    x = np.arange(len(arr1))
-
-    # Plot both arrays
-    plt.plot(x, arr1, label=label1)
-    plt.plot(x, arr2, label=label2)
-
-    # Set labels and title
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-
-    # Add a legend
-    plt.legend()
-
-    # Show the plot
-    plt.show()
+from gp_mapping_utils.svgp_plotting import plot_two_arrays
 
 if __name__ == "__main__":
     # Example usage

@@ -13,8 +13,12 @@ import torch
 from gpytorch.models import VariationalGP
 
 from gp_mapping.gp import SVGP
-from mapping.gp_mapping.src.gp_mapping_utils.system_helpers import remove_files_in_directory
+# from mapping.gp_mapping.src.gp_mapping_utils.system_helpers import remove_files_in_directory
+from gp_mapping_utils.system_helpers import remove_files_in_directory
+# Functions to generate the mission scenario
+from gp_mapping_utils.mapping_scenario import generate_agent_sub_maps, generate_transfer_pairs, generate_transfer_coordinates
 
+from gp_mapping_utils.federated import extract_svgp_model_hypers, extract_svgp_model_inducing_info, federated_average, fed_avg_state_dicts
 '''
 Simple example of a multi-agent GP mappping
 This approach makes a lot of simplifications to the problem.
@@ -25,172 +29,6 @@ The number of agent is given, by agent_count
 
 
 # TODO: this needs some refactoring
-
-def generate_agent_sub_maps(map_mins, map_maxs, agent_count, survey_points, movement_axis='y'):
-    """
-    This will divide the map into sections of points for the different agents
-    This will always divide the map into equal sections along the x axis
-    """
-
-    if movement_axis.lower() == 'y':
-        # If movement along the y-axis, divide the map along the x-axis
-        dimension_ind = 0
-    else:
-        # If movement along the x-axis, divide the map along the y-axis
-        dimension_ind = 1
-
-    map_min = map_mins[dimension_ind]
-    map_max = map_maxs[dimension_ind]
-
-    agent_span = (map_max - map_min) / agent_count
-    boundaries = [map_min + i * agent_span for i in range(agent_count + 1)]
-
-    agent_sub_maps = []
-
-    for i in range(agent_count):
-        # Filter points within the current boundary for agent i
-        mask = (survey_points[:, dimension_ind] >= boundaries[i]) & (survey_points[:, dimension_ind] < boundaries[i + 1])
-        agent_points = survey_points[mask]
-        agent_sub_maps.append(agent_points)
-
-    return agent_sub_maps
-
-def generate_transfer_pairs(agents, meetings):
-    """
-    This looks pretty lame but it'll work for now.
-
-    """
-    if meetings == 0:
-        return []
-
-    pairs = []
-    start = 0
-    # end = agents - 2  # this accouns for 0 indexing and that we want to include the next agent
-    end = agents - 1  # Confused how the above ever worked??
-    current = 0
-    step = 1
-    for meeting_i in range(meetings):
-        pairs.append([current, current + step])
-        current += step
-        if current == end or current == start:
-            step *= -1
-
-    return pairs
-
-def generate_transfer_coordinates(map_mins, map_maxs, transfer_count, movement_axis='y'):
-    """
-    This assumes the transfers all take place equally spaced along the movement axis.
-    """
-    if transfer_count == 0:
-        return []
-
-    if movement_axis.lower() == 'y':
-        # If movement along the y-axis, divide the map along the y-axis
-        dimension_ind = 1
-    else:
-        # If movement along the x-axis, divide the map along the x-axis
-        dimension_ind = 0
-
-    map_min = map_mins[dimension_ind]
-    map_max = map_maxs[dimension_ind]
-    transfer_step_size = (map_max - map_min) / transfer_count
-    transfer_coordinates = [map_min + (i + 1) * transfer_step_size for i in range(transfer_count)]
-
-    return transfer_coordinates
-
-def extract_svgp_model_hypers(model):
-    """
-    extract the needed parameters from a given model
-    """
-
-    mean = model.mean.raw_constant.item()
-    cov = model.cov.raw_outputscale.item()
-
-    # Sometimes the parameter is [1,2] and others times it is [2,]
-    # cov_kernel_lengthscale = model.cov.base_kernel.raw_lengthscale.tolist()[0]
-    if model.cov.base_kernel.raw_lengthscale.shape[0] == 1:
-        cov_kernel_lengthscale = model.cov.base_kernel.raw_lengthscale.tolist()[0]
-    else:
-        cov_kernel_lengthscale = model.cov.base_kernel.raw_lengthscale.tolist()[:2]
-
-    likelihood_noise = model.likelihood.noise_covar.raw_noise.item()
-
-    hyperparameters = [mean, cov]
-    hyperparameters.extend(cov_kernel_lengthscale)  # Flatten into a list
-    hyperparameters.append(likelihood_noise)
-
-    return hyperparameters
-
-def extract_svgp_model_inducing_info(model):
-    """
-    Extract the inducing point from a given model.
-    These inducing points can be used to train a new model.
-    """
-
-    inducing_points = model.variational_strategy.inducing_points.detach()
-    inducing_means = model.variational_strategy.variational_distribution.mean.detach()
-
-    return inducing_points, inducing_means
-
-def federated_average(hyperparameters):
-    """
-    Simple federated average
-    """
-
-    if len(hyperparameters) == 0:
-        return []
-
-    hyperparameter_array = np.array(hyperparameters)
-
-    # n_agents = hyperparameter_array.shape[0]
-
-    hyperparameter_avg = np.mean(hyperparameter_array, axis=0)
-
-    return hyperparameter_avg
-
-def fed_avg_state_dicts(state_dicts):
-    # Elements of interest
-    # 'variational_strategy.inducing_points'
-    # 'variational_strategy.variational_params_initialized'
-    # 'variational_strategy.updated_strategy'
-    # 'variational_strategy._variational_distribution.variational_mean'
-    # 'variational_strategy._variational_distribution.chol_variational_covar'
-    # 'mean.raw_constant'  # Used
-    # 'cov.raw_outputscale'  # Used
-    # 'cov.base_kernel.raw_lengthscale'  # Used
-    # 'likelihood.noise_covar.raw_noise'  # Used
-
-    # this expects a list of ordered dicts
-    copy_keys = ['variational_strategy.updated_strategy']
-
-    avg_keys = ['mean.raw_constant',
-                'cov.raw_outputscale',
-                'cov.base_kernel.raw_lengthscale',
-                'likelihood.noise_covar.raw_noise']
-
-    # These might be of some use but are currently not inserted into the agggregated output
-    min_keys = ['cov.base_kernel.raw_lengthscale_constraint.lower_bound',
-                'cov.raw_outputscale_constraint.lower_bound',
-                'likelihood.noise_covar.raw_noise_constraint.lower_bound']
-    max_keys = ['cov.base_kernel.raw_lengthscale_constraint.upper_bound',
-                'cov.raw_outputscale_constraint.upper_bound',
-                'likelihood.noise_covar.raw_noise_constraint.upper_bound']
-
-    aggregated_dict = OrderedDict()
-
-    for key in copy_keys:
-        value = state_dicts[0][key]
-        aggregated_dict[key] = value
-
-    for key in avg_keys:
-
-        values = [state_dict[key] for state_dict in state_dicts]
-
-        aggregated_dict[key] = sum(values)/len(values)
-
-
-    return aggregated_dict
-
 def train_svgp_simple(survey_points, covariances=None, n_inducing=400, verbose=False, max_iter=500):
     """
     Stripped down version of the training example shown in gp_map_training
@@ -199,7 +37,7 @@ def train_svgp_simple(survey_points, covariances=None, n_inducing=400, verbose=F
     targets = survey_points[:, 2]
 
     # initialise GP with 1000 inducing points
-    gp = SVGP(n_inducing=n_inducing, batch_bins=1, inducing_bins=1)
+    gp = SVGP(n_inducing=n_inducing)
     gp.fit(inputs, targets, covariances=covariances, n_samples=1000,
            max_iter=max_iter, learning_rate=1e-1, rtol=1e-12, n_window=2000,
            auto=False, verbose=verbose)
@@ -233,7 +71,7 @@ def train_svgp_fixed(survey_points, covariances=None, n_inducing=400, verbose=Fa
         targets = survey_points[:, 2]
 
         # initialise GP with 1000 inducing points
-        gp = SVGP(n_inducing=n_inducing, batch_bins=1, inducing_bins=1)
+        gp = SVGP(n_inducing=n_inducing)
 
         # Set hyperparameters
         # mean: model.mean.raw_constant.item()
@@ -313,7 +151,7 @@ def instantiate_svgp_with_priors(survey_points, covariances=None, n_inducing=400
         targets = survey_points[:, 2]
 
         # initialise GP with 1000 inducing points
-        gp = SVGP(n_inducing=n_inducing, batch_bins=1, inducing_bins=1)
+        gp = SVGP(n_inducing=n_inducing)
 
         # Set hyperparameters
         # mean: model.mean.raw_constant.item()
@@ -484,7 +322,7 @@ flag_clear_output_dir = True
 
 # Training parameters
 flag_baseline = False
-do_new_baseline = True  # This will perform the baseline with no communication but with inia
+do_new_baseline = False  # This will perform the baseline with no communication but with inia
 method = 'b'  # 'b': baseline, 'f': federated, 'i': independent
 verbose_baseline = False
 do_final_training = False
@@ -505,7 +343,7 @@ input_type = 'di'
 # file_name = "pcl_cleaned.npy"  # Original file name
 
 root_data_dir = "/home/sam/auv_ws/src/UWExploration/utils/uw_tests/datasets/asko"
-root_output_dir = "/home/sam/auv_ws/src/UWExploration/mapping/gp_mapping/src/multi_agent_gp_mapping"
+root_output_dir = "/home/sam/auv_ws/src/UWExploration/mapping/gp_mapping/src/offline_ma_gp_mapping/output"
 file_name = "pcl.npy"
 
 file_path = os.path.join(root_data_dir, file_name)
