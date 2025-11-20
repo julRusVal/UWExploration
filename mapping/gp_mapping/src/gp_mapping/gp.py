@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import torch, numpy as np, tqdm, matplotlib.pyplot as plt
+from typing import Optional, Tuple, Union, Any
 from gpytorch.models import VariationalGP, ExactGP
 from gpytorch.variational import CholeskyVariationalDistribution, VariationalStrategy
 from gpytorch.means import ConstantMean
@@ -9,14 +10,14 @@ from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.distributions import MultivariateNormal
 from gpytorch.mlls import VariationalELBO, PredictiveLogLikelihood, ExactMarginalLogLikelihood
 import gpytorch.settings
-#from convergence import ExpMAStoppingCriterion
-from gp_mapping.convergence import ExpMAStoppingCriterion
+from convergence import ExpMAStoppingCriterion
+#from gp_mapping.convergence import ExpMAStoppingCriterion
 import matplotlib.pyplot as plt
 
 # This is not tested
 class RGP(ExactGP):
 
-    def __init__(self, inputs, targets, likelihood):
+    def __init__(self, inputs: np.ndarray, targets: np.ndarray, likelihood: Any) -> None:
 
         # check the hardware
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -40,12 +41,12 @@ class RGP(ExactGP):
         self.likelihood.to(self.device).float()
         self.to(self.device).float()
 
-    def forward(self, inputs):
+    def forward(self, inputs: torch.Tensor) -> MultivariateNormal:
         mean = self.mean(inputs)
         cov = self.cov(inputs)
         return MultivariateNormal(mean, cov)
 
-    def fit(self, max_iter=100, learning_rate=1e-3, rtol=1e-2, n_window=100, auto=False, verbose=True):
+    def fit(self, max_iter: int = 100, learning_rate: float = 1e-3, rtol: float = 1e-2, n_window: int = 100, auto: bool = False, verbose: bool = True) -> None:
 
         # loss function
         mll = ExactMarginalLogLikelihood(self.likelihood, self)
@@ -149,21 +150,38 @@ class RGP(ExactGP):
 
 class SVGP(VariationalGP):
 
-    def __init__(self, n_inducing):
+    def __init__(self, n_inducing: Union[int, np.ndarray],
+                 learn_inducing: bool = True) -> None:
 
         # number of inducing points and optimisation samples
-        assert isinstance(n_inducing, int)
-        self.m = n_inducing
+        if isinstance(n_inducing, int):
+            if n_inducing <= 0:
+                raise ValueError('n_inducing must be a positive integer.')
+            self.m = n_inducing
+            initial_inducing_points = torch.randn((self.m, 2))
+            self._user_inducing_points = None
+        elif isinstance(n_inducing, np.ndarray):
+            if n_inducing.ndim != 2 or n_inducing.shape[1] != 2:
+                raise ValueError('Inducing array must have shape (N, 2).')
+            self.m = n_inducing.shape[0]
+            self._user_inducing_points = torch.as_tensor(n_inducing).float()
+            initial_inducing_points = self._user_inducing_points.clone()
+        else:
+            raise TypeError('n_inducing must be an int or an (N,2) numpy array.')
+        
+        self.learn_inducing = learn_inducing
 
         # variational distribution and strategy
-        # NOTE: we put random normal dumby inducing points
+        # NOTE: Two methos for inducing points
+        # 1) we put random normal dumby inducing points
         # here, which we'll change in self.fit
+        # 2)
         vardist = CholeskyVariationalDistribution(self.m)
         varstra = VariationalStrategy(
             self,
-            torch.randn((self.m, 2)),
+            initial_inducing_points,
             vardist,
-            learn_inducing_locations=True
+            learn_inducing_locations=self.learn_inducing
         )
         VariationalGP.__init__(self, varstra)
 
@@ -181,13 +199,22 @@ class SVGP(VariationalGP):
         self.likelihood.to(self.device).float()
         self.to(self.device).float()
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> MultivariateNormal:
         m = self.mean(input)
         v = self.cov(input)
         return MultivariateNormal(m, v)
 
-    def fit(self, inputs, targets, covariances=None, n_samples=5000, max_iter=10000, 
-            learning_rate=1e-3, rtol=1e-4, n_window=100, auto=True, verbose=True):
+    def fit(self, 
+            inputs: np.ndarray,
+            targets: np.ndarray, 
+            covariances: Optional[np.ndarray] = None, 
+            n_samples: int = 5000, 
+            max_iter: int = 10000, 
+            learning_rate: float = 1e-3,
+            rtol: float = 1e-4, 
+            n_window: int = 100, 
+            auto: bool = True, 
+            verbose: bool = True) -> None:
 
         '''
         Optimises the hyperparameters of the GP kernel and likelihood.
@@ -202,9 +229,10 @@ class SVGP(VariationalGP):
         verbose: if True show progress bar, else nothing
         '''
 
-        # inducing points randomly distributed over data
-        indpts = np.random.choice(inputs.shape[0], self.m, replace=True)
-        self.variational_strategy.inducing_points.data = torch.from_numpy(inputs[indpts]).to(self.device).float()
+        # Inducing points randomly distributed over data
+        if self._user_inducing_points is None:
+            indpts = np.random.choice(inputs.shape[0], self.m, replace=True)
+            self.variational_strategy.inducing_points.data = torch.from_numpy(inputs[indpts]).to(self.device).float()
 
         # number of random samples
         n = inputs.shape[0]
@@ -257,7 +285,7 @@ class SVGP(VariationalGP):
             if auto and criterion.evaluate(loss.detach()):
                 break
 
-    def sample(self, x):
+    def sample(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
         '''
         Samples the posterior at x
@@ -283,10 +311,10 @@ class SVGP(VariationalGP):
             dist = self.likelihood(self(x))
             return dist.mean.cpu().numpy(), dist.variance.cpu().numpy()
 
-    def save_posterior(self, n, xlb, xub, ylb, yub, fname, verbose=True):
+    def save_posterior(self, n: int, xlb: float, xub: float, ylb: float, yub: float, fname: str, verbose: bool = True) -> None:
 
         '''
-        Samples the GP posterior on a inform grid over the
+        Samples the GP posterior on a uniform grid over the
         rectangular region defined by (xlb, xub) and (ylb, yub)
         and saves it as a pointcloud array.
 
@@ -335,7 +363,7 @@ class SVGP(VariationalGP):
         # save it
         np.save(fname, cloud)
 
-    def plot(self, inputs, targets, fname, n=80, n_contours=50, track=None):
+    def plot(self, inputs: np.ndarray, targets: np.ndarray, fname: str, n: int = 80, n_contours: int = 50, track: Optional[np.ndarray] = None) -> None:
 
         '''
         Plots:
@@ -409,7 +437,12 @@ class SVGP(VariationalGP):
         # save
         fig.savefig(fname, bbox_inches='tight', dpi=1000)
 
-    def plot_loss(self, fname):
+        # plt.close(fig=fig)
+
+    def plot_loss(self, fname: str) -> None:
+        """
+        Plots loss
+        """
 
         # plot
         fig, ax = plt.subplots(1)
@@ -424,12 +457,11 @@ class SVGP(VariationalGP):
         # save
         fig.savefig(fname, bbox_inches='tight', dpi=1000)
         
-    def save(self, fname):
+    def save(self, fname: str) -> None:
         torch.save(self.state_dict(), fname)
 
     @classmethod
-    def load(cls, nind, fname):
+    def load(cls, nind: int, fname: str) -> 'SVGP':
         gp = cls(nind)
         gp.load_state_dict(torch.load(fname))
         return gp
-
